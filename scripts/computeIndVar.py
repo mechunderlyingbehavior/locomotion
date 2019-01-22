@@ -22,14 +22,26 @@ def main():
   
   variable_names = raw_input(str("Which variables do you want to use? (e.g., 'Y Velocity Curvature') ")).split()
 
-  start_time = input(str("Specify the start time of the segment you want to compare: "))
-  end_time = input(str("Specify the end time of the segment you want to compare: "))
+  num_exps = input(str("Specify the number of comparisons you want to run for each individual: "))
 
-  norm_mode = raw_input(str("Which time segment do you want to normalize over: the predetermined baseline or the segment specified above [b/s]: "))
+  start_time = input(str("Specify the start time of the overall segment in which you want to run the comparisons: "))
+  end_time = input(str("Specify the end time of the overall segment in which you want to run the comparisons: "))
+
+  norm_mode = raw_input(str("Which time segment do you want to normalize over: the predetermined baseline or the specific segment [b/s]: "))
   if norm_mode == 'b': norm_mode = 'baseline'
   elif norm_mode == 's': norm_mode = 'spec'
   else:
     print("Invalid norm mode")
+    exit(1)
+
+  intervals = raw_input(str("Do you want to specify a set of interval lengths to use? [y/n] "))
+  if intervals == 'y':
+    interval_lengths = raw_input(str("Which interval lengths would you like to use? (e.g., '0.5 1.0 1.25 2.4') ")).split()
+    interval_lengths = [float(l) for l in interval_lengths]
+  elif intervals == 'n':
+    interval_lengths = None
+  else:
+    print("That wasn't quite one of the options...")
     exit(1)
   
   output = raw_input(str("Do you want to write the results into a file? [y/n] "))
@@ -37,26 +49,6 @@ def main():
     outdir = raw_input(str("Specify the output directory: "))
     outdir = os.path.abspath(outdir)
     outfilename = raw_input(str("Specify the output file name: "))
-    sort_table = raw_input(str("Do you want to sort the output? [y/n] "))
-    if sort_table == 'y':
-      sort_table = True
-    elif sort_table == 'n':
-      sort_table = False
-    else:
-      print("Invalid input.")
-      exit(1)
-    square_table = raw_input(str("Do you want the distance table to be square instead of upper triangular? [y/n] "))
-    if square_table == 'y':
-      square_table = True
-    elif square_table == 'n':
-      square_table = False
-    else:
-      print("Invalid input.")
-      exit(1)
-    color_min = input(str("What should be the minimum value for the distance table color scale? "))
-    color_max = input(str("What should be the maximum value for the distance table color scale? "))
-    #check 0<=0min<max<=1
-      
   elif output != 'n':
     print("That wasn't quite one of the options...")
     exit(1)
@@ -64,9 +56,10 @@ def main():
   animals = locomotion.getAnimalObjs(infofile,name_list)
   for a in animals:
     locomotion.trajectory.getCurveData(a)
-  D = locomotion.trajectory.computeAllBDD(animals, variable_names, start_time, end_time, norm_mode)
   if output == 'y':
-    locomotion.write.postProcess(animals, D, outdir, outfilename, sort_table, square_table, color_min, color_max)
+    locomotion.trajectory.runIndividualVariabilityTests(animals, variable_names, norm_mode, num_exps, interval_lengths, outdir, outfilename, start_time, end_time)
+  else:
+    locomotion.trajectory.runIndividualVariabilityTests(animals, variable_names, norm_mode, num_exps, interval_lengths, None, None, start_time, end_time)
   
 if __name__=="__main__":
   main()

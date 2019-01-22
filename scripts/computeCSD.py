@@ -19,18 +19,11 @@ def main():
   else:
     print("Invalid answer.")
     exit(1)
-  
-  variable_names = raw_input(str("Which variables do you want to use? (e.g., 'Y Velocity Curvature') ")).split()
 
   start_time = input(str("Specify the start time of the segment you want to compare: "))
   end_time = input(str("Specify the end time of the segment you want to compare: "))
 
-  norm_mode = raw_input(str("Which time segment do you want to normalize over: the predetermined baseline or the segment specified above [b/s]: "))
-  if norm_mode == 'b': norm_mode = 'baseline'
-  elif norm_mode == 's': norm_mode = 'spec'
-  else:
-    print("Invalid norm mode")
-    exit(1)
+  grid_size = input(str("Specify the grid size for the heatmap (in the same units as the x- and y- dimensions): "))
   
   output = raw_input(str("Do you want to write the results into a file? [y/n] "))
   if output == 'y':
@@ -53,9 +46,8 @@ def main():
     else:
       print("Invalid input.")
       exit(1)
-    color_min = input(str("What should be the minimum value for the distance table color scale? "))
-    color_max = input(str("What should be the maximum value for the distance table color scale? "))
-    #check 0<=0min<max<=1
+    color_min = input(str("What should be the minimum value for the distance table color scale?" ))
+    color_max = input(str("What should be the maximum value for the distance table color scale?" ))
       
   elif output != 'n':
     print("That wasn't quite one of the options...")
@@ -63,8 +55,13 @@ def main():
 
   animals = locomotion.getAnimalObjs(infofile,name_list)
   for a in animals:
-    locomotion.trajectory.getCurveData(a)
-  D = locomotion.trajectory.computeAllBDD(animals, variable_names, start_time, end_time, norm_mode)
+    x_dim,y_dim = a.getDims()
+    if not float(x_dim/grid_size).is_integer() or not float(y_dim/grid_size).is_integer():
+      print("The grid size must divide each of the dimensions evenly.")
+      exit(1)
+  for a in animals:
+    locomotion.heatmap.getSurfaceData(a, grid_size, start_time, end_time)
+  D = locomotion.heatmap.computeAllCSD(animals)
   if output == 'y':
     locomotion.write.postProcess(animals, D, outdir, outfilename, sort_table, square_table, color_min, color_max)
   
