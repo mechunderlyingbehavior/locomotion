@@ -1,0 +1,83 @@
+[
+    {
+        "data_file_location": "/path/to/data/files/NSS_01.dat", 
+        "capture_attributes": {
+            "frames_per_sec": 20, 
+            "pixels_to_mm": 1.6, 
+            "dim_x": 200, 
+            "dim_y": 100, 
+            "start_time": 0, 
+            "end_time": 10,
+            "baseline_start_time": 0, 
+            "baseline_end_time": 2 
+        }, 
+        "name": "SS_01", 
+        "animal_attributes": {
+            "exp_type": "SS", 
+            "species": "medaka", 
+            "control_group": True,
+            "ID": "01"
+        }
+    },
+    {
+        "data_file_location": "/path/to/data/files/NSS_02.dat", 
+        "capture_attributes": {
+            "frames_per_sec": 20, 
+            "pixels_to_mm": 1.6, 
+            "dim_x": 200, 
+            "dim_y": 100, 
+            "start_time": 0, 
+            "end_time": 10,
+            "baseline_start_time": 0, 
+            "baseline_end_time": 2 
+        }, 
+        "name": "NSS_02", 
+        "animal_attributes": {
+            "exp_type": "SS", 
+            "species": "medaka", 
+            "control_group": True,
+            "ID": "02"
+        }
+    },
+    {
+        "data_file_location": "/path/to/data/files/SS_01.dat", 
+        "capture_attributes": {
+            "frames_per_sec": 20, 
+            "pixels_to_mm": 2.4, 
+            "dim_x": 200, 
+            "dim_y": 100, 
+            "start_time": 0, 
+            "end_time": 10,
+            "baseline_start_time": 0, 
+            "baseline_end_time": 2 
+        }, 
+        "name": "SS_01", 
+        "animal_attributes": {
+            "exp_type": "SS", 
+            "species": "medaka", 
+            "control_group": False, 
+            "ID": "01"
+        }
+    },
+    {
+        "data_file_location": "/path/to/data/files/SS_02.dat", 
+        "capture_attributes": {
+            "frames_per_sec": 20, 
+            "pixels_to_mm": 2.4, 
+            "dim_x": 200, 
+            "dim_y": 100, 
+            "start_time": 0, 
+            "end_time": 10,
+            "baseline_start_time": 0, 
+            "baseline_end_time": 2 
+        }, 
+        "name": "SS_02", 
+        "animal_attributes": {
+            "exp_type": "SS", 
+            "species": "medaka", 
+            "control_group": False, 
+            "ID": "02"
+        }
+    },
+    {
+]
