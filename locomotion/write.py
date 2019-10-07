@@ -44,22 +44,20 @@ def writeDistTableToHeatmap(animal_list, results, outdir, outfilename, color_min
                         showlegend=False,
                         xaxis={'showticklabels':False,'showgrid':False,'ticks':''},
                         yaxis={'showticklabels':False,'showgrid':False,'ticks':''},
-                        annotations=[dict(x=j+0.5,y=N+1.0,text=animal_list[j].getName() if animal_list[j].inControlGroup() else animal_list[j].getName()+' ',
-                                          font={'color':'cyan' if animal_list[j].inControlGroup() else 'magenta', 'size':6},
+                        annotations=[dict(x=j+0.5,y=N+1.0,text=animal_list[j].getName()[4:] if animal_list[j].inControlGroup() else animal_list[j].getName()[4:]+' ',
+                                          font={'color':'cyan' if animal_list[j].inControlGroup() else 'magenta', 'size':7},
                                           textangle=-45,showarrow=False) for j in range(N)]
-                                   +[dict(x=N+1.0,y=i+0.0,text=animal_list[N-i-1].getName() if animal_list[N-i-1].inControlGroup() else animal_list[N-i-1].getName()+' ',
-                                          font={'color':'cyan' if animal_list[N-i-1].inControlGroup() else 'magenta', 'size':6},
+                                   +[dict(x=N+1.0,y=i+0.0,text=animal_list[N-i-1].getName()[4:] if animal_list[N-i-1].inControlGroup() else animal_list[N-i-1].getName()[4:]+' ',
+                                          font={'color':'cyan' if animal_list[N-i-1].inControlGroup() else 'magenta', 'size':7},
                                           textangle=0,showarrow=False) for i in range(N)])
   plotly.offline.plot(figure, filename=outpath)
   print("LOG: Plot the heatmap in %s" % outpath)
 
 
-def writeSegmentExpsToCSV(animal_list, results, means, stds, normed_stds, outdir, outfilename):
+def writeSegmentExpsToCSV(animal_list, results, means, stds, outdir, outfilename):
   # Writes the results from trajectory.runRandomSegmentComparisons() to CSV
   # results is a table where results[i][j] is the j-th segment comparison for the i-th animal in animal_list. Note that the entry is a double, (segment lenth, distance).  
-  #header_top = []
-  #for animal_obj in animal_list:
-  #  header_top.extend([animal_obj.getName(), ""]) 
+ 
   num_animals = len(animal_list)
   if means == None:
     header_top = list(itertools.chain.from_iterable([[animal_obj.getName(),""] for animal_obj in animal_list]))
@@ -108,25 +106,18 @@ def writeSegmentExpsToCSV(animal_list, results, means, stds, normed_stds, outdir
         #row = list(itertools.chain.from_iterable([stds[j][i] for j in range(num_animals)]))
         row = [stds[0][i][0]] + [stds[j][i][1] for j in range(num_animals)]
         csvwriter.writerow(row)
-      #write the normed std information
-      csvwriter.writerow([""])
-      csvwriter.writerow(["Normed Standard Deviations"])
-      csvwriter.writerow(header_top)
-      csvwriter.writerow(header_bottom)
-      for i in range(num_segs):
-        #row = list(itertools.chain.from_iterable([normed_stds[j][i] for j in range(num_animals)]))
-        row = [normed_stds[0][i][0]] + [normed_stds[j][i][1] for j in range(num_animals)]
-        csvwriter.writerow(row)
     print("Saved the table in %s" % outfile )
 
 
 def renderSingleAnimalGraph(points, animal_obj, varname, outdir):
+
   filename = "figure_%s_%s.html" % (animal_obj.getName(), varname)
   outpath = os.path.join(outdir,filename).replace(' ','')
   N = len(points)
   trace = go.Scatter(x = range(N), y=points, mode='lines',showlegend=False,line={'width':4})
   data = [trace]
   plotly.offline.plot(data, filename=outpath, auto_open=False)
+
   print("Saved single animal graph in %s" % outpath)
 
 
@@ -265,5 +256,3 @@ def postProcess(animal_list, dists, outdir, outfilename, sort_table, square_tabl
           dists[i][j] = dists[j][i]
     writeDistTableToCSV(animal_list, dists, outdir, "%s" % outfilename+"_sorted.csv")
     writeDistTableToHeatmap(animal_list, dists, outdir, "%s" % outfilename+"_sorted.html", color_min, color_max)
-
-    
