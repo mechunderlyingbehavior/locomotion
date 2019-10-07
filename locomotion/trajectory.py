@@ -23,12 +23,14 @@ import csv
 import random
 import math
 import numpy as np
+from scipy.signal import savgol_filter
 import operator
 import animal
 from animal import throwError
 
 #Static Variables
-SMOOTH_RANGE = 5 #used in smooth(), technically (range-1)/2
+SMOOTH_RANGE = 53 #length of smoothing window in smooth()
+ORDER = 5 #order of smoothing curve used in smooth()
 
 #############################
 
@@ -39,13 +41,14 @@ def getDerivatives(X):
 
 
 def smooth(X):
-  """ Smoothes the sequence X by doing the "moving average" smoothing
+  """ Smoothes the sequence X by applying Savitzky-Golay smoothing
     :Parameters:
      X : list
     :Return:
      sX : list
   """
-  sX = [np.mean(X[:i+SMOOTH_RANGE]) for i in xrange(SMOOTH_RANGE)] + [np.mean(X[i-SMOOTH_RANGE:i+SMOOTH_RANGE]) for i in range(SMOOTH_RANGE, len(X)-SMOOTH_RANGE)] + [np.mean(X[len(X)-2*SMOOTH_RANGE+i:]) for i in xrange(SMOOTH_RANGE)]
+
+  sX = savgol_filter(X,SMOOTH_RANGE,ORDER)
 
   return sX
 
@@ -59,10 +62,10 @@ def getCurveData( animal_obj ):
    :Parameter:
     animal_obj : animal object, initialized
   """
-  X = animal_obj.getRawVals('X')
-  Y = animal_obj.getRawVals('Y')
-  dX = smooth(getDerivatives(X))
-  dY = smooth(getDerivatives(Y))
+  X = smooth(animal_obj.getRawVals('X'))
+  Y = smooth(animal_obj.getRawVals('Y'))
+  dX = getDerivatives(X)
+  dY = getDerivatives(Y)
   dX2 = getDerivatives(dX)
   dY2 = getDerivatives(dY)
   V = np.sqrt(np.add(np.power(dX,2),np.power(dY,2)))
@@ -165,7 +168,7 @@ def computeOneBDD(animal_obj_0, animal_obj_1, varnames, seg_start_time_0, seg_en
 
 
 def computeAllBDD(animal_list, varnames, seg_start_time, seg_end_time, norm_mode):
-  """ computes the BDD of each pair of trajectories in animal_list, all 
+  """ Computes the BDD of each pair of trajectories in animal_list, all 
    starting and ending at the respective time frame given in the function call.
 
   :Parameters:
@@ -197,11 +200,8 @@ def computeAllBDD(animal_list, varnames, seg_start_time, seg_end_time, norm_mode
 
 
 def runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_length=None, start_time=None, end_time=None):
-  """ Runs one interval-to-interval comparison for one animal, 
-    where the intervals' starting times are chosen at random in such a 
-    way the intervals do not overlap.
-    If the interval length is unspecified, a random length of time is 
-    chosen between 0.01 and half of the time specified by start and end times
+  """ Computes Behavioural Distortion Distance (BDD) from an animal's
+    trajectory to itself over a random pair of non-overlapping intervals. 
 
    :Parameters:
     animal_obj : animal object, initialized
@@ -213,7 +213,7 @@ def runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_le
      whereas the spec mode uses the mean and standard deivation 
      from the time period specified for this comparison.
     interval_legth : length of the interval to use. If unspecified, it will
-     be chosen at random to be between 0.01 and half the total time
+     be chosen at random.
     start_time : float, time in minutes
      time where the intervals can start. If omitted, exp start time is used
     end_time : float, time in minutes
@@ -231,23 +231,25 @@ def runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_le
 
   if interval_length == None:
   # No interval lengths are specified, so we are going to generate random interval lengths
-    interval_length = random.uniform(0.01,(end_time-start_time)/2.0)
+    x = sorted([random.uniform(start_time,end_time) for i in range(3)])
+    interval_length = (x[0]-start_time)/2
+  else:
+    x = sorted([2*interval_length+start_time]+[random.uniform(2*interval_length+start_time,end_time) for i in range(2)])
 
-  interval_start_time_0 = random.uniform(start_time, end_time-2*interval_length)
-  interval_end_time_0 = interval_start_time_0 + interval_length
-  interval_start_time_1 = random.uniform(interval_start_time_0 + interval_length, end_time-interval_length)
-  interval_end_time_1 = interval_start_time_1 + interval_length
+  interval_start_time_0 = x[1]-2*interval_length
+  interval_end_time_0 = x[1]-interval_length
+  interval_start_time_1 = x[2]-interval_length
+  interval_end_time_1 = x[2]
+  
   bdd = computeOneBDD(animal_obj, animal_obj, varnames, interval_start_time_0, interval_end_time_0, interval_start_time_1, interval_end_time_1, norm_mode)
 
   return [interval_length, bdd]
 
 
 def runIndividualVariabilityTests(animal_list, varnames, norm_mode, num_exps, interval_lengths=None, outdir=None, outfilename=None, start_time=None, end_time=None):
-  """ Runs one interval-to-interval comparison for one animal, 
-    where the intervals' starting times are chosen at random in such a 
-    way the intervals do not overlap.
-    If the interval length is unspecified, a random length of time is 
-    chosen between 0.01 and half of the time specified by start and end times
+  """ Computes the intra-individual Behavioural Distortion Distance (IIBDD) for
+   each trajectory in animal_list, all starting and ending at the respective 
+   time frame given in the function call.
 
    :Parameters:
     animal_obj : animal object, initialized
@@ -289,10 +291,6 @@ def runIndividualVariabilityTests(animal_list, varnames, norm_mode, num_exps, in
        std_table[i][j][0] is the j-th interval_length
        std_table[i][j][1] is the std of the distances from tests using 
        the j-th interval_length and i-th animal    
-     norm_std_table : 2D list
-       norm_std_table[i][j][0] is the j-th interval_length
-       norm_std_table[i][j][1] is the normalized standard deviation of
-       the distances from using the j-th interval_length and i-th animal
   """
 
   exp_table = []
@@ -305,41 +303,44 @@ def runIndividualVariabilityTests(animal_list, varnames, norm_mode, num_exps, in
         exp_list.append(res)
       exp_table.append(exp_list)
     if outdir:
-      write.writeSegmentExpsToCSV(animal_list, exp_table, None, None, None, outdir, outfilename)
+      write.writeSegmentExpsToCSV(animal_list, exp_table, None, None, outdir, outfilename)
     return exp_table
   else:
   #lengths given => run num_exps comparisons per length
     mean_table = []
     std_table = []
-    norm_std_table = []
+
     for animal_obj in animal_list:
       exp_list = []
       mean_list = []
       std_list = []
-      norm_std_list = []
 
       if start_time == None:
         start_time = animal_obj.getExpStartTime()
       if end_time == None:
         end_time = animal_obj.getExpEndTime()
 
+      slice_areas = [0.5*((end_time-start_time)-2*length)**2 for length in interval_lengths]
+      total_area = sum(slice_areas)
+      num_exps_per_slice = [int(num_exps*slice_area/total_area) for slice_area in slice_areas]
+      cum_exps_per_slice = [0]+[sum(num_exps_per_slice[:i+1]) for i in range(len(interval_lengths))]
+
       for j in range(len(interval_lengths)):
         interval_length = interval_lengths[j]
-        for i in range(num_exps):
+        num_slice_exps = num_exps_per_slice[j]
+        for i in range(num_slice_exps):
           res = runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_length, start_time, end_time)  
           exp_list.append(res)
-        m = np.mean(map(lambda x:x[1], exp_list[j*num_exps:(j+1)*num_exps]))
-        s = np.std(map(lambda x:x[1], exp_list[j*num_exps:(j+1)*num_exps]))
+        m = np.mean(map(lambda x:x[1], exp_list[cum_exps_per_slice[j]:cum_exps_per_slice[j+1]]))
+        s = np.std(map(lambda x:x[1], exp_list[cum_exps_per_slice[j]:cum_exps_per_slice[j+1]]))
         mean_list.append([interval_length,m])
         std_list.append([interval_length,s])
-        norm_std_list.append([interval_length,s*2.0/(end_time-start_time-2*interval_length)**2])
       exp_table.append(exp_list)
       mean_table.append(mean_list)
       std_table.append(std_list)
-      norm_std_table.append(norm_std_list)
 
     if outdir:
     #Time to write the results into a file
-      write.writeSegmentExpsToCSV(animal_list, exp_table, mean_table, std_table, norm_std_table, outdir, outfilename)
+      write.writeSegmentExpsToCSV(animal_list, exp_table, mean_table, std_table, outdir, outfilename)
 
-    return exp_table, mean_table, std_table, norm_std_table
+    return exp_table, mean_table, std_table

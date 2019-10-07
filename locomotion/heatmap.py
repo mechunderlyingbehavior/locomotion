@@ -1045,7 +1045,8 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
   print("Measuring conformal spatiotemporal distance between heat maps of %s and %s..." % (animal_obj_0.getName(),animal_obj_1.getName()))
 
   #calculate the optimal rotation for aligning the triangulations of the two animals
-  theta = optimalRotation(animal_obj_0,animal_obj_1)
+  #theta = optimalRotation(animal_obj_0,animal_obj_1)
+  theta = 0
 
   #store relevant parameters.  Note that we assume both animal observations have the same dimensions
   x_dim, y_dim = animal_obj_0.getDims()
