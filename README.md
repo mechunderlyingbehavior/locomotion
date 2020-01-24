@@ -28,7 +28,7 @@ folder into your working directory, or add the package to your environment. To
 do the latter, you may use the following methods in your terminal, replacing
 `/PATH/TO/DIRECTORY` with the directory containing the package:
 
-```
+```shell
 export PYTHONPATH=$PYTHONPATH:/PATH/TO/DIRECTORY
 export PYTHONPATH=$PYTHONPATH:/PATH/TO/DIRECTORY/locomotion
 
@@ -38,7 +38,7 @@ Note that this method will have to be repeated every time a new terminal window
 is opened. An alternative to the terminal method would be to add the following
 directly to the top of your python script, before any other imports:
 
-```
+```python
 import sys
 sys.path.append('/PATH/TO/DIRECTORY')
 sys.path.append('/PATH/TO/DIRECTORY/locomotion')
@@ -84,7 +84,7 @@ to read in relevant data for each computation. The fields and format are as in
 this sample entry below. Note that all times are in minutes. In general, avoid
 using spaces in the field values.
 
-```
+```json
 {
         "name": "NSS_01", //Can be anything. Make it unique
         "data_file_location": "/data/medaka/NSS_01.dat",
@@ -137,20 +137,120 @@ Do you want to add another file? [y/n] n
 Wrote the information entered into /path/to/json/files/sample.json
 ```
 
-### Break down into end to end tests
+## Using the Package
 
-Explain what these tests test and why
+Once you import the `locomotion` package, you will need to first initiate animal
+objects using the `locomotion.getAnimalObjs` command, which returns a list of
+animal objects with basic X and Y data from the data files.
+
+The routines for calculating Behavioral Distortion Distance (BDD) are located in
+the `trajectory.py` file and can be called by
+`locomotion.trajectory.[routine_name]`.
+
+Example script:
+
+```python
+import locomotion
+info_file = "/path/to/animal_info.json"
+animals = locomotion.getAnimalObjs( info_file )
+for a in animals:
+  locomotion.trajectory.getCurveData( a )
+variables = ['Y','Velocity','Curvature']
+start_time, end_time = 0, 1
+norm_mode = 'spec'
+distances = locomotion.trajectory.computeAllBDD( animals, variables, start_time, end_time, norm_mode )
+output_directory, outfile_name = "/path/to/outdir", "results"
+sort_table, square_table = False, False
+color_min, color_max = 0.1, 0.5
+locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+```
+
+Alternately, you can use the `computeBDD.py` script and follow prompts to run
+comparisons among animals in a given info file by running `python computeBDD.py`
+in your terminal, which should run similar to this sample snippet.
 
 ```
-Give an example
+Specify the path to the json file with animal information: /path/to/animal_info.json
+Use all entries in the info file? [y/n] y
+Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature
+Specify the start time of the segment you want to compare: 0
+Specify the end time of the segment you want to compare: 1
+Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b
+Do you want to write the results into a file? [y/n] y
+Specify the output directory: /path/to/outdir
+Specify the output file name: results
+Do you want to sort the output? [y/n] n
+Do you want the distance table to be square instead of upper triangular? [y/n] n
 ```
 
-### And coding style tests
+To calculate the intra-individual variation in BDD for each animal in a
+specified info sheet, one can run a script like the following:
 
-Explain what these tests test and why
+```python
+import locomotion
+info_file = "/path/to/animal_info.json"
+animals = locomotion.getAnimalObjs( info_file )
+for a in animals:
+  locomotion.trajectory.getCurveData( a )
+variables = ['Y','Velocity','Curvature']
+norm_mode = 'spec'
+number_of_comparisons_per_animal, specified_durations = 100, None
+output_directory, outfile_name = "/path/to/outdir", "results"
+start_time, end_time = 0, 1
+locomotion.trajectory.runIndividualVariabilityTests( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
+```
+
+Alternately, you can use the `computeIndVar.py` script and follow prompts to run
+comparisons among animals in a given info file by running `python
+computeIndVar.py` in your terminal, which should run similar to this sample
+snippet.
 
 ```
-Give an example
+Specify the path to the json file with animal information: /path/to/animal_info.json
+Use all entries in the info file? [y/n] y
+Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature
+Specify the start time of the overall segment in which you want to run comparisons: 0
+Specify the end time of the overall segment in which you want to run comparisons: 1
+Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b
+Do you want to write the results into a file? [y/n] y
+Specify the output directory: /path/to/outdir
+Specify the output file name: results
+```
+
+The routines for calculating Conformal Spatiotemporal Distance (CSD) are located
+in the `heatmap.py` file and can be called by `locomotion.heatmap.[routine_name]`.
+
+Example script:
+
+```python
+import locomotion
+info_file = "/path/to/animal_info.json"
+animals = locomotion.getAnimalObjs( info_file )
+grid_size, start_time, end_time = 10, 0, 2
+for a in animals:
+  locomotion.trajectory.getSurfaceData( a, grid_size, start_time, end_time )
+distances = locomotion.trajectory.computeAllCSD( animals )
+output_directory, outfile_name = "/path/to/outdir", "results"
+sort_table, square_table = False, False
+color_min, color_max = 0.1, 0.5
+locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+```
+
+Alternately, you can use the `computeCSD.py` script and follow prompts to run
+comparisons among animals in a given info file by running `python computeCSD.py`
+in your terminal, which should run similar to this sample snippet.
+
+```
+Specify the path to the json file with animal information: /path/to/animal_info.json
+Use all entries in the info file? [y/n] y
+Specify the start time of the segment you want to compare: 0
+Specify the end time of the segment you want to compare: 1
+Specify the grid size for the heat map (in the same units as the x- and y-dimensions): 10
+Do you want to write the results into a file? [y/n] y
+Specify the output directory: /path/to/outdir
+Specify the output file name: results
+Do you want to sort the output? [y/n] n
+Do you want the distance table to be square instead of upper triangular? [y/n] n
 ```
 
 ## Deployment
