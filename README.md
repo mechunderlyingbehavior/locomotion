@@ -84,7 +84,7 @@ to read in relevant data for each computation. The fields and format are as in
 this sample entry below. Note that all times are in minutes. In general, avoid
 using spaces in the field values.
 
-```json
+```javascript
 {
         "name": "NSS_01", //Can be anything. Make it unique
         "data_file_location": "/data/medaka/NSS_01.dat",
