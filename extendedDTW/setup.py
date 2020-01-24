@@ -58,6 +58,7 @@ cmdclass = {'build_py': build_py}
 #### Extension modules
 ext_modules = []
 if use_cython:
+   print("using cython")
    cmdclass.update({'build_ext': build_ext})
    ext_modules += [Extension("extendedDTW", 
                              ["cdtw.c",

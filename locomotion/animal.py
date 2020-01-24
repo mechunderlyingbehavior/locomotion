@@ -19,17 +19,16 @@ SMOOTH_RANGE = 5 #technically (range-1)/2
 class Animal(object):
 
   def __init__(self, json_item):
-    #.encode() all here because python 2's unicode handling drives me crazy
-    self.name = json_item["name"].encode()
-    self.data_file = os.path.abspath(json_item["data_file_location"].encode())
+    self.name = json_item["name"]
+    self.data_file = os.path.abspath(json_item["data_file_location"])
     self.filename = os.path.basename(self.data_file)
-    self.animal_type = json_item["animal_attributes"]["species"].encode()
-    self.exp_type = json_item["animal_attributes"]["exp_type"].encode()
-    self.ID = json_item["animal_attributes"]["ID"].encode()
+    self.animal_type = json_item["animal_attributes"]["species"]
+    self.exp_type = json_item["animal_attributes"]["exp_type"]
+    self.ID = json_item["animal_attributes"]["ID"]
     self.isControl = eval(json_item["animal_attributes"]["control_group"])
     self.dim_x = json_item["capture_attributes"]["dim_x"]
     self.dim_y = json_item["capture_attributes"]["dim_y"]
-    self.pix = json_item["capture_attributes"]["pixels_per_mm"]
+    self.pix = json_item["capture_attributes"]["pixels_to_mm"]
     self.frame_rate = json_item["capture_attributes"]["frames_per_sec"]
     self.start = json_item["capture_attributes"]["start_time"]
     self.end = json_item["capture_attributes"]["end_time"]
@@ -224,7 +223,7 @@ def norm(data):
 
 
 def normalize(data, m, s):
-  if s != 0: return map(lambda x: 1/(1 + math.exp(-(x-m)/s)), data)
+  if s != 0: return list(map(lambda x: 1/(1 + math.exp(-(x-m)/s)), data))
   else: return [0 for d in data]
 
     
@@ -248,7 +247,7 @@ def getRawData(animal, varnames = ['X','Y']):
     elif ',' in header: delim = ','
     else: throwError("invalid data format")
 
-    header = map(lambda x: x.strip(), header.split(delim))
+    header = list(map(lambda x: x.strip(), header.split(delim)))
     try: # verify the file can be parsed
       reader = csv.reader(infile, delimiter = delim)
     except:

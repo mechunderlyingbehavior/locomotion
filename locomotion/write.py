@@ -38,14 +38,19 @@ def writeDistTableToHeatmap(animal_list, results, outdir, outfilename, color_min
                       zmax=color_max
                      )
   figure['data'].append(trace)
+  print(type(animal_list[0].getName()))
   figure['layout']=dict(height=600,
                         width=630,
                        # margin=go.Margin(l=100,r=100,b=100,t=100),
                         showlegend=False,
                         xaxis={'showticklabels':False,'showgrid':False,'ticks':''},
                         yaxis={'showticklabels':False,'showgrid':False,'ticks':''},
-                        annotations=[dict(x=j+0.5,y=N+1.0,text=animal_list[j].getName()[4:] if animal_list[j].inControlGroup() else animal_list[j].getName()[4:]+' ',
-                                          font={'color':'cyan' if animal_list[j].inControlGroup() else 'magenta', 'size':7},
+                        annotations=[dict(x=j+0.5,
+                                          y=N+1.0,
+                                          text=animal_list[j].getName()[4:] if animal_list[j].inControlGroup()
+                                          else animal_list[j].getName()[4:]+' ',
+                                          font={'color':'cyan' if animal_list[j].inControlGroup()
+                                                else 'magenta', 'size':7},
                                           textangle=-45,showarrow=False) for j in range(N)]
                                    +[dict(x=N+1.0,y=i+0.0,text=animal_list[N-i-1].getName()[4:] if animal_list[N-i-1].inControlGroup() else animal_list[N-i-1].getName()[4:]+' ',
                                           font={'color':'cyan' if animal_list[N-i-1].inControlGroup() else 'magenta', 'size':7},
@@ -69,7 +74,7 @@ def writeSegmentExpsToCSV(animal_list, results, means, stds, outdir, outfilename
       csvwriter = csv.writer(outfile, delimiter=',')
       csvwriter.writerow(header_top)
       csvwriter.writerow(header_bottom)
-      for i in xrange(num_exps):
+      for i in range(num_exps):
         row = list(itertools.chain.from_iterable([results[j][i] for j in range(num_animals)]))
         csvwriter.writerow(row)
     
@@ -82,7 +87,7 @@ def writeSegmentExpsToCSV(animal_list, results, means, stds, outdir, outfilename
       csvwriter = csv.writer(outfile, delimiter=',')
       csvwriter.writerow(header_top)
       csvwriter.writerow(header_bottom)
-      for i in xrange(num_exps):
+      for i in range(num_exps):
         #row = list(itertools.chain.from_iterable([results[j][i] for j in range(num_animals)]))
         row = [results[0][i][0]] + [results[j][i][1] for j in range(num_animals)]
         csvwriter.writerow(row)
@@ -200,7 +205,11 @@ def renderAlignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
   N = len(alignment[0])
   data = []
   for i in range(N):
-    data.append(go.Scatter(x=[0,alignment[0][i],alignment[0][i]],y=[alignment[1][i],alignment[1][i],0],mode='lines',marker={'color':'black'},showlegend=False,opacity=0.1))
+    data.append(go.Scatter(x=[0,alignment[0][i],alignment[0][i]],
+                           y=[alignment[1][i],alignment[1][i],0],
+                           mode='lines',
+                           marker={'color':'black'},
+                           showlegend=False,opacity=0.1))
   trace = go.Scatter(x = alignment[0], y=alignment[1], mode='lines',showlegend=False,line={'width':4})
   data.append(trace)
   figure = {'data':data,'layout':{'height':500,'width':500,'xaxis':{'title': '%s Time' % animal_obj_0.getName()},'yaxis': {'title': '%s Time' % animal_obj_1.getName()}}}
@@ -226,8 +235,8 @@ def writeOFF(animal_obj, coordinates, outdir, filename):
 def postProcess(animal_list, dists, outdir, outfilename, sort_table, square_table, color_min=0.0, color_max=1.0):
   num_animals = len(animal_list)
   if square_table:
-    for i in xrange(num_animals):
-      for j in xrange(i):
+    for i in range(num_animals):
+      for j in range(i):
         dists[i][j] = dists[j][i]
     writeDistTableToCSV(animal_list, dists, outdir, outfilename+".csv")
     writeDistTableToHeatmap(animal_list, dists, outdir, outfilename+".html", color_min, color_max)
@@ -238,21 +247,21 @@ def postProcess(animal_list, dists, outdir, outfilename, sort_table, square_tabl
   if sort_table:
     dist_means = {}
     D = []
-    for i in xrange(num_animals):
-      dlist = [dists[j][i] for j in xrange(i)] + [dists[i][j] for j in xrange(i+1,num_animals)]
+    for i in range(num_animals):
+      dlist = [dists[j][i] for j in range(i)] + [dists[i][j] for j in range(i+1,num_animals)]
       dist_means.update({animal_list[i]:np.mean(dlist)})
     sorted_dists = sorted(dist_means.items(), key=operator.itemgetter(1))
-    sorted_indices = [animal_list.index(sorted_dists[i][0]) for i in xrange(num_animals)]
+    sorted_indices = [animal_list.index(sorted_dists[i][0]) for i in range(num_animals)]
     new_dists = [['' for i in range(num_animals)] for j in range(num_animals)]
-    for i in xrange(num_animals):
-      for j in xrange(i+1, num_animals):
+    for i in range(num_animals):
+      for j in range(i+1, num_animals):
         new_dists[i][j] = dists[sorted_indices[i]][sorted_indices[j]] if sorted_indices[j] > sorted_indices[i] else dists[sorted_indices[j]][sorted_indices[i]]
     dists = new_dists
-    animal_list = [animal_list[sorted_indices[i]] for i in xrange(num_animals)]
+    animal_list = [animal_list[sorted_indices[i]] for i in range(num_animals)]
 
     if square_table:
-      for i in xrange(num_animals):
-        for j in xrange(i):
+      for i in range(num_animals):
+        for j in range(i):
           dists[i][j] = dists[j][i]
     writeDistTableToCSV(animal_list, dists, outdir, "%s" % outfilename+"_sorted.csv")
     writeDistTableToHeatmap(animal_list, dists, outdir, "%s" % outfilename+"_sorted.html", color_min, color_max)

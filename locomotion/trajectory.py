@@ -72,7 +72,7 @@ def getCurveData( animal_obj ):
   numer = np.absolute(np.subtract(np.multiply(dX, dY2), np.multiply(dY,dX2))) 
   denom = np.power(V,3)
   C = []
-  for i in xrange(len(numer)):
+  for i in range(len(numer)):
     if denom[i] < 0.000125:
     #This causes the computation to spike, but in reality, the animal 
     #has not really moved, so we set the curvature to 0
@@ -145,7 +145,6 @@ def computeOneBDD(animal_obj_0, animal_obj_1, varnames, seg_start_time_0, seg_en
       data_0[i] = animal.normalize(data_0[i], m, s)
       m, s = animal.norm(data_1[i])
       data_1[i] = animal.normalize(data_1[i], m, s)
-
   dist, cost, alignment = extendedDTW.dtw_ext(data_0, data_1, dist_only=False)
   #dist is the integral part of the BDD formula
   scaler = len(alignment[0]) #arclength of the alignment
