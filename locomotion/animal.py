@@ -9,7 +9,6 @@ from math import ceil, exp, log, sin, asin, pi, acosh, cosh, sinh, cos, acos, at
 from numpy import min, mean, std, array, linalg, dot, cross
 from scipy.optimize import minimize_scalar
 
-
 SMOOTH_RANGE = 5 #technically (range-1)/2
 
 ################################################################################
@@ -28,7 +27,7 @@ class Animal(object):
     self.isControl = eval(json_item["animal_attributes"]["control_group"])
     self.dim_x = json_item["capture_attributes"]["dim_x"]
     self.dim_y = json_item["capture_attributes"]["dim_y"]
-    self.pix = json_item["capture_attributes"]["pixels_to_mm"]
+    self.pix = json_item["capture_attributes"]["pixels_per_mm"]
     self.frame_rate = json_item["capture_attributes"]["frames_per_sec"]
     self.start = json_item["capture_attributes"]["start_time"]
     self.end = json_item["capture_attributes"]["end_time"]
@@ -192,7 +191,6 @@ class Animal(object):
 ### Basic Functions
 ################################################################################
 
-
 # Sure, I suppose I could use the actual error handling, but...
 def throwError(errmsg):
   print("ERROR: %s" % errmsg)
@@ -214,7 +212,6 @@ def findColIndex(header, colName):
   throwError("invalid column name: %s" % colName)
 
 
-
 def norm(data):
   dArr = np.array(data, dtype=np.float)
   m = np.mean(dArr)
@@ -226,8 +223,6 @@ def normalize(data, m, s):
   if s != 0: return list(map(lambda x: 1/(1 + math.exp(-(x-m)/s)), data))
   else: return [0 for d in data]
 
-    
-    
 ################################################################################
 ### Meat & Potatoes
 ################################################################################
@@ -271,8 +266,8 @@ def getRawData(animal, varnames = ['X','Y']):
       X.append(float(x)/animal.getPixelDensity()) #scaling for pixel density while we are at it
       Y.append(float(y)/animal.getPixelDensity())  
 
-  #DEFN: baseline norm is where we take the stats from the first two minutes of the exp to get the "baseline normal" numbers
-  #DEFN: exp norm is where we take the stats from the whole exp duration and take all 'local data' into consideration
+      #DEFN: baseline norm is where we take the stats from the first two minutes of the exp to get the "baseline normal" numbers
+      #DEFN: exp norm is where we take the stats from the whole exp duration and take all 'local data' into consideration
 
   animal.addRawVals('X', X)
   animal.addRawVals('Y', Y)
@@ -286,7 +281,6 @@ def getRawData(animal, varnames = ['X','Y']):
 
 
 def getAnimalObjs(infofile, name_list = None):
-
   info = readInfo(infofile)
   if name_list != None:
     objs = [initAnimal(item) for item in info if item["name"] in name_list]

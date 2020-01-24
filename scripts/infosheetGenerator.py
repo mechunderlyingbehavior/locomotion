@@ -17,7 +17,7 @@ def getItemInfo(f):
     control_group = "False"
   dim_x = input(str("Horizontal dimension of the capture area (in mm): "))
   dim_y = input(str("Vertical dimension of the capture area (in mm): "))
-  pixels_to_mm = input(str("Pixels to mm ratio: "))
+  pixels_per_mm = input(str("Pixels per mm ratio: "))
   frames_per_sec = input(str("Frame rate (per second): "))
   start_time = input(str("Experiment starts at (in min): "))
   end_time = input(str("Experiment ends at (in min): "))
@@ -38,7 +38,7 @@ def getItemInfo(f):
     {
       "dim_x": dim_x,
       "dim_y": dim_y,
-      "pixels_to_mm": pixels_to_mm,
+      "pixels_per_mm": pixels_per_mm,
       "frames_per_sec": frames_per_sec,
       "start_time": start_time,
       "end_time": end_time,

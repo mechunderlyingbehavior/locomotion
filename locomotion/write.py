@@ -38,7 +38,6 @@ def writeDistTableToHeatmap(animal_list, results, outdir, outfilename, color_min
                       zmax=color_max
                      )
   figure['data'].append(trace)
-  print(type(animal_list[0].getName()))
   figure['layout']=dict(height=600,
                         width=630,
                        # margin=go.Margin(l=100,r=100,b=100,t=100),
