@@ -6,11 +6,11 @@ import json
 
 def getItemInfo(f):
   print("Required information for %s..." % f )
-  name = raw_input(str("Name: "))
-  species = raw_input(str("Species: "))
-  exp_type = raw_input(str("Experiment type: "))
-  ID = raw_input(str("ID: "))
-  control_group = raw_input(str("Is this the control group? [y/n] ")).lower()
+  name = input(str("Name: "))
+  species = input(str("Species: "))
+  exp_type = input(str("Experiment type: "))
+  ID = input(str("ID: "))
+  control_group = input(str("Is this the control group? [y/n] ")).lower()
   if control_group == 'y':
     control_group = "True"
   else:
@@ -51,21 +51,21 @@ def getItemInfo(f):
   
 def main():
   #Where is the file going to be saved?
-  outdir = raw_input(str("Specify the directory the json file will be saved: "))
+  outdir = input(str("Specify the directory the json file will be saved: "))
   outdir = os.path.abspath(outdir)
-  filename = raw_input(str("Specify the json file name: "))
+  filename = input(str("Specify the json file name: "))
   outfilename = os.path.join(outdir,filename)
-  write_mode = raw_input(str("Write new file or append to an existing file? [w/a] ")).lower()
+  write_mode = input(str("Write new file or append to an existing file? [w/a] ")).lower()
   if write_mode != 'w' and write_mode != 'a':
     print("Invalid input")
     exit(1)
   if write_mode == 'w' and os.path.isfile(outfilename): 
-    confirmation = raw_input(str("%s already exists. Are you sure you want to overwrite? [y/n] " % outfilename))
+    confirmation = input(str("%s already exists. Are you sure you want to overwrite? [y/n] " % outfilename))
     if confirmation == 'n':
       print("Alrighty then, let's have you start over.")
       exit()
   if write_mode == 'a' and not os.path.isfile(os.path.join(outdir,filename)): 
-    confirmation = raw_input(str("%s doesn't exist. Do you want to write it as a new file? [y/n] " % outfilename))
+    confirmation = input(str("%s doesn't exist. Do you want to write it as a new file? [y/n] " % outfilename))
     if confirmation == 'n':
       print("Alrighty then, let's have you start over.")
       exit()
@@ -73,14 +73,14 @@ def main():
       write_mode = 'w'
 
   # Ask how we are going to read in the files
-  input_mode = raw_input(str("Read in all data files in a directory or individual data files? [d/f] ")).lower()
+  input_mode = input(str("Read in all data files in a directory or individual data files? [d/f] ")).lower()
 
   jsonItems = []
   if input_mode == 'd':
   #Survey the directory
-    dirname = raw_input(str("Specify the path of the directory containing data files: "))
+    dirname = input(str("Specify the path of the directory containing data files: "))
     dirname = os.path.abspath(dirname)
-    datext = raw_input(str("Specify the file extension of the data files: "))
+    datext = input(str("Specify the file extension of the data files: "))
     if os.path.isdir(dirname):
       #Edit to filter out the hidden files on Windows based systems
       files = [ os.path.join(dirname,f) for f in os.listdir(dirname) if f.endswith(datext) and not f.startswith(".")] 
@@ -98,14 +98,14 @@ def main():
   elif input_mode == 'f':
   #Select data files one by one
     while True:
-      filename = raw_input(str("Specify the data file to read from: "))
+      filename = input(str("Specify the data file to read from: "))
       if os.path.isfile(filename): filename = os.path.abspath(filename)
       else:
         print("Invalid file name %s" % filename)
         exit(1)
       item = getItemInfo(filename)
       jsonItems.append(item)
-      cont = raw_input(str("Do you want to add another animal? [y/n] ")).lower()
+      cont = input(str("Do you want to add another animal? [y/n] ")).lower()
       if cont == 'y': continue
       if cont == 'n': break
       else:
