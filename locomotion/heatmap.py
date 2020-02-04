@@ -18,9 +18,9 @@
 from math import ceil, exp, log, sin, asin, pi, acosh, cosh, sinh, cos, acos, atanh, tanh
 from numpy import min, mean, std, array, linalg, dot, cross
 from scipy.optimize import minimize_scalar
-import write
-import animal
-from animal import throwError
+import locomotion.write as write
+import locomotion.animal as animal
+from locomotion.animal import throwError
 
 #Static Variables
 PERTURBATION = 0.000000001

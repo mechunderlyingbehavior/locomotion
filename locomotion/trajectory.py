@@ -17,16 +17,16 @@
 
 import os
 import sys
-import extendedDTW
-import write
+import locomotion.extendedDTW as extendedDTW
+import locomotion.write as write
 import csv
 import random
 import math
 import numpy as np
 from scipy.signal import savgol_filter
 import operator
-import animal
-from animal import throwError
+import locomotion.animal as animal
+from locomotion.animal import throwError
 
 #Static Variables
 SMOOTH_RANGE = 53 #length of smoothing window in smooth()
@@ -35,7 +35,9 @@ ORDER = 5 #order of smoothing curve used in smooth()
 #############################
 
 def getDerivatives(X):
-# Computes the derivative of the series X. Returns a numpy array
+  """
+  Computes the derivative of the series X. Returns a numpy array
+  """
   dX = np.gradient(X)
   return dX
 
@@ -47,10 +49,19 @@ def smooth(X):
     :Return:
      sX : list
   """
-
   sX = savgol_filter(X,SMOOTH_RANGE,ORDER)
-
   return sX
+
+def euclideanNorm(V):
+  """
+  Calculate the Euclidean Norm
+  :Parameters:
+  V : list
+  :Return:
+  nV : list
+  """
+  nV = np.sqrt(np.sum([np.power(x, 2) for x in V], axis = 0))
+  return nV
 
 
 def getCurveData( animal_obj ):
@@ -68,7 +79,7 @@ def getCurveData( animal_obj ):
   dY = getDerivatives(Y)
   dX2 = getDerivatives(dX)
   dY2 = getDerivatives(dY)
-  V = np.sqrt(np.add(np.power(dX,2),np.power(dY,2)))
+  V = euclideanNorm( [dX, dY])
   numer = np.absolute(np.subtract(np.multiply(dX, dY2), np.multiply(dY,dX2))) 
   denom = np.power(V,3)
   C = []
