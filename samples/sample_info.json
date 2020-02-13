@@ -1,6 +1,6 @@
 [
     {
-        "data_file_location": "/home/zhongxuan/ync/compgeom/samples/sample_data/NSS_01.dat", 
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/NSS_01.dat", 
         "capture_attributes": {
             "frames_per_sec": 20, 
             "pixels_to_mm": 1.6, 
@@ -20,7 +20,7 @@
         }
     },
     {
-        "data_file_location": "/home/zhongxuan/ync/compgeom/samples/sample_data/NSS_02.dat", 
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/NSS_02.dat", 
         "capture_attributes": {
             "frames_per_sec": 20, 
             "pixels_to_mm": 1.6, 
@@ -40,7 +40,7 @@
         }
     },
     {
-        "data_file_location": "/home/zhongxuan/ync/compgeom/samples/sample_data/SS_01.dat", 
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_01.dat", 
         "capture_attributes": {
             "frames_per_sec": 20, 
             "pixels_to_mm": 2.4, 
@@ -60,7 +60,7 @@
         }
     },
     {
-        "data_file_location": "/home/zhongxuan/ync/compgeom/samples/sample_data/SS_02.dat", 
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_02.dat", 
         "capture_attributes": {
             "frames_per_sec": 20, 
             "pixels_to_mm": 2.4, 
