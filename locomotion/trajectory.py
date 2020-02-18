@@ -47,9 +47,7 @@ def smooth(X):
     :Return:
      sX : list
   """
-
   sX = savgol_filter(X,SMOOTH_RANGE,ORDER)
-
   return sX
 
 
@@ -68,9 +66,9 @@ def getCurveData( animal_obj ):
   dY = getDerivatives(Y)
   dX2 = getDerivatives(dX)
   dY2 = getDerivatives(dY)
-  V = np.sqrt(np.add(np.power(dX,2),np.power(dY,2)))
-  numer = np.absolute(np.subtract(np.multiply(dX, dY2), np.multiply(dY,dX2))) 
-  denom = np.power(V,3)
+  V = np.sqrt(np.add(np.power(dX,2),np.power(dY,2))) # Calculate Velocity
+  numer = np.absolute(np.subtract(np.multiply(dX, dY2), np.multiply(dY,dX2))) # Curvature numerator
+  denom = np.power(V,3) # Curvature denominator
   C = []
   for i in range(len(numer)):
     if denom[i] < 0.000125:
