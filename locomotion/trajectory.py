@@ -17,16 +17,17 @@
 
 import os
 import sys
-import locomotion.extendedDTW as extendedDTW
-import locomotion.write as write
 import csv
 import random
 import math
-import numpy as np
-from scipy.signal import savgol_filter
 import operator
+import numpy as np
+import locomotion.extendedDTW as extendedDTW
+import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import throwError
+from scipy.signal import savgol_filter
+from collections import defaultdict
 
 #Static Variables
 SMOOTH_RANGE = 53 #length of smoothing window in smooth()
@@ -52,51 +53,83 @@ def smooth(X):
   sX = savgol_filter(X,SMOOTH_RANGE,ORDER)
   return sX
 
-def euclideanNorm(V):
+
+def getVelocity(V):
   """
-  Calculate the Euclidean Norm
+  Calculate the velocity
   :Parameters:
   V : list
   :Return:
   nV : list
   """
-  nV = np.sqrt(np.sum([np.power(x, 2) for x in V], axis = 0))
+  nV = np.sqrt(np.sum(np.power(V, 2), axis = 0))
   return nV
 
 
-def getCurveData( animal_obj ):
+def getCurvature(d1, d2, V):
+  """
+  Given a list of first and second derivatives, return curvature.
+  Note: Currently only works for up to 2 / 3 dimensions.
+
+  :Parameters:
+  d1: numpy array
+  d2: numpy array
+  V: numpy array
+  :Return:
+  C : numpy array
+  """
+  if d1.shape != d2.shape:
+    raise Exception("d1 and d2 should be of the same shape.")
+  n_dims = d1.shape[0]
+  if n_dims == 2:
+    mats = np.transpose(np.array([d1,d2]), (2,0,1))
+  elif n_dims == 3:
+    d0 = np.ones_like(d1)
+    mats = np.transpose(np.array([d0,d1,d2]), (2,0,1))
+  numer = np.absolute(np.linalg.det(mats))
+  denom = np.power(V,3)
+  C = []
+  for i in range(len(numer)):
+    if denom[i] < 0.000125:
+      c = 0
+    else:
+      c = numer[i]/denom[i]
+    C.append(c)
+  return C
+
+
+def getCurveData( animal_obj , col_names = ['X', 'Y']):
   """ Computes the behavioural curve data such as Velocity and Curvature .
    Note that we could take in the varnames here and only compute V and C
    if they are called. However, since velocity and curvature data usually
    aren't too big, we'll blanket compute for now
 
+   Works only 2 or 3 dimensions.
+
    :Parameter:
     animal_obj : animal object, initialized
+    col_names : list, names of data columns.
   """
-  X = smooth(animal_obj.getRawVals('X'))
-  Y = smooth(animal_obj.getRawVals('Y'))
-  dX = getDerivatives(X)
-  dY = getDerivatives(Y)
-  dX2 = getDerivatives(dX)
-  dY2 = getDerivatives(dY)
-  V = euclideanNorm( [dX, dY])
-  numer = np.absolute(np.subtract(np.multiply(dX, dY2), np.multiply(dY,dX2))) # Curvature numerator
-  denom = np.power(V,3) # Curvature denominator
-  C = []
-  for i in range(len(numer)):
-    if denom[i] < 0.000125:
-    #This causes the computation to spike, but in reality, the animal 
-    #has not really moved, so we set the curvature to 0
-      c = 0 
-    else: #if denom[i] > 0:
-      c = numer[i]/denom[i]
-    C.append(c)
+  n_dims = len(col_names)
+  if n_dims < 2 or n_dims > 3:
+    raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+  coords = []
+  for col in col_names:
+    try:
+      coords.append(smooth(animal_obj.getRawVals(col)))
+    except KeyError:
+      raise Exception("column name {} does not exist in animal dataset".format(col))
+  d1 = np.gradient(coords, axis = 1)
+  d2 = np.gradient(d1, axis = 1)
+  V = getVelocity(d1)
+  C = getCurvature(d1, d2, V)
 
   st, et = animal_obj.getBaselineTimes()
   animal_obj.addRawVals('Velocity', V)
   animal_obj.addStats('Velocity', 'baseline', st, et)
   animal_obj.addRawVals('Curvature', C)
   animal_obj.addStats('Curvature', 'baseline', st, et)
+  return d1, d2, V, C
 
 
 def computeOneBDD(animal_obj_0, animal_obj_1, varnames, seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1, norm_mode, fullmode=False, outdir=None):
