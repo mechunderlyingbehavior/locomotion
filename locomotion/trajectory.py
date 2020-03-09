@@ -35,11 +35,11 @@ ORDER = 5 #order of smoothing curve used in smooth()
 
 #############################
 
-def getDerivatives(X):
+def getDerivatives(X, axis = 1):
   """
   Computes the derivative of the series X. Returns a numpy array
   """
-  dX = np.gradient(X)
+  dX = np.gradient(X, axis = axis)
   return dX
 
 
@@ -119,8 +119,8 @@ def getCurveData( animal_obj , col_names = ['X', 'Y']):
       coords.append(smooth(animal_obj.getRawVals(col)))
     except KeyError:
       raise Exception("column name {} does not exist in animal dataset".format(col))
-  d1 = np.gradient(coords, axis = 1)
-  d2 = np.gradient(d1, axis = 1)
+  d1 = getDerivatives(coords)
+  d2 = getDerivatives(d1)
   V = getVelocity(d1)
   C = getCurvature(d1, d2, V)
 
@@ -242,7 +242,7 @@ def computeAllBDD(animal_list, varnames, seg_start_time, seg_end_time, norm_mode
   return BDD
 
 
-def runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_length=None, start_time=None, end_time=None):
+def computeOneIIBDD(animal_obj, varnames, norm_mode, interval_length=None, start_time=None, end_time=None):
   """ Computes Behavioural Distortion Distance (BDD) from an animal's
     trajectory to itself over a random pair of non-overlapping intervals. 
 
@@ -289,7 +289,7 @@ def runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_le
   return [interval_length, bdd]
 
 
-def runIndividualVariabilityTests(animal_list, varnames, norm_mode, num_exps, interval_lengths=None, outdir=None, outfilename=None, start_time=None, end_time=None):
+def computeAllIIBDD(animal_list, varnames, norm_mode, num_exps, interval_lengths=None, outdir=None, outfilename=None, start_time=None, end_time=None):
   """ Computes the intra-individual Behavioural Distortion Distance (IIBDD) for
    each trajectory in animal_list, all starting and ending at the respective 
    time frame given in the function call.
@@ -342,7 +342,7 @@ def runIndividualVariabilityTests(animal_list, varnames, norm_mode, num_exps, in
     for animal_obj in animal_list:
       exp_list = []
       for i in range(num_exps):
-        res = runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, None, start_time, end_time)  
+        res = computeOneIIBDD(animal_obj, varnames, norm_mode, None, start_time, end_time)  
         exp_list.append(res)
       exp_table.append(exp_list)
     if outdir:
@@ -372,7 +372,7 @@ def runIndividualVariabilityTests(animal_list, varnames, norm_mode, num_exps, in
         interval_length = interval_lengths[j]
         num_slice_exps = num_exps_per_slice[j]
         for i in range(num_slice_exps):
-          res = runOneIndividualVariabilityTest(animal_obj, varnames, norm_mode, interval_length, start_time, end_time)  
+          res = computeOneIIBDD(animal_obj, varnames, norm_mode, interval_length, start_time, end_time)  
           exp_list.append(res)
         m = np.mean(map(lambda x:x[1], exp_list[cum_exps_per_slice[j]:cum_exps_per_slice[j+1]]))
         s = np.std(map(lambda x:x[1], exp_list[cum_exps_per_slice[j]:cum_exps_per_slice[j+1]]))
