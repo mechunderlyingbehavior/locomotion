@@ -35,7 +35,7 @@ ORDER = 5 #order of smoothing curve used in smooth()
 
 #############################
 
-def getDerivatives(X, axis = 1):
+def getDerivatives(X, axis = 0):
   """
   Computes the derivative of the series X. Returns a numpy array
   """
@@ -119,8 +119,8 @@ def getCurveData( animal_obj , col_names = ['X', 'Y']):
       coords.append(smooth(animal_obj.getRawVals(col)))
     except KeyError:
       raise Exception("column name {} does not exist in animal dataset".format(col))
-  d1 = getDerivatives(coords)
-  d2 = getDerivatives(d1)
+  d1 = getDerivatives(coords, axis = 1)
+  d2 = getDerivatives(d1, axis = 1)
   V = getVelocity(d1)
   C = getCurvature(d1, d2, V)
 

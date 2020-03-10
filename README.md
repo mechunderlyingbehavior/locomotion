@@ -64,6 +64,14 @@ After these steps, you can now copy the `extendDTW.so` generated in the
 goes well, you should be able to run `import extendDTW` in your Python shell
 now.
 
+#### Step 3: Check if the installation worked
+
+To ensure that the package was installed properly, run the jupyer notebook
+`installation_check.ipynb`, which is located in the main folder. Follow through
+the notebook, which will run through the basic functions of the package. If the
+package is installed properly, it should be able to generate a small sample
+dataset and run the BDD on it.
+
 ## Data format
 
 ### File Format
