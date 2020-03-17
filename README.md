@@ -26,12 +26,10 @@ be manually installed in your system.
 To access the `locomotion` package, you could either copy the `locomotion`
 folder into your working directory, or add the package to your environment. To
 do the latter, you may use the following methods in your terminal, replacing
-`/PATH/TO/DIRECTORY` with the directory containing the package:
+`/PATH/TO/PACKAGE` with the directory containing the package:
 
 ```shell
-export PYTHONPATH=$PYTHONPATH:/PATH/TO/DIRECTORY
-export PYTHONPATH=$PYTHONPATH:/PATH/TO/DIRECTORY/locomotion
-
+export PYTHONPATH=$PYTHONPATH:/PATH/TO/PACKAGE
 ```
 
 Note that this method will have to be repeated every time a new terminal window
@@ -40,8 +38,7 @@ directly to the top of your python script, before any other imports:
 
 ```python
 import sys
-sys.path.append('/PATH/TO/DIRECTORY')
-sys.path.append('/PATH/TO/DIRECTORY/locomotion')
+sys.path.append('/PATH/TO/PACKAGE')
 ```
 
 You should now be able to `import locomotion` from your python shell.
@@ -51,18 +48,23 @@ You should now be able to `import locomotion` from your python shell.
 If `import extendedDTW` results in an `ImportError`, you will need to rebuild
 the package to make it compatible to your system. To do so, perform the following
 steps:
-1. Delete (or move to another folder) the `extendedDTW.so` file in the `locomotion` directory.
-1. Move to the `extendedDTW` directory.
-1. If a previous version of `extendedDTW.c` exists, remove it.
+1. First, `cd` into the `locomotion` directory. Note that this is the
+   `locomotion` folder in the package, not the package itself.
+1. If there is an `extendedDTW.so` file in the directory, remove it.
+1. Now, run `cd ../extendedDTW`
+1. If there exists an `extendedDTW.so` file, remove it.
+1. If there exists an `extendedDTW.c` file, remove it.
 1. Run `setup.py` with the following command on terminal.
 ```
 python setup.py build_ext --inplace
 ```
+1. The terminal log might show some warnings, but if it runs successfully, there
+   should be a `extendedDTW.cpython ... .so` file in your current directory.
+1. Rename this `.so` file to `extendedDTW.so`, and move it into the `locomotion`
+   directory.
 
-After these steps, you can now copy the `extendDTW.so` generated in the
-`extendedDTW` directory and paste it into the `locomotion` directory. If all
-goes well, you should be able to run `import extendDTW` in your Python shell
-now.
+If all goes well, you should be able to run `import extendedDTW` in your Python
+shell now.
 
 #### Step 3: Check if the installation worked
 

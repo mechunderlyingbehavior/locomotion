@@ -3,7 +3,7 @@
         "name": "SS_01",
         "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_01.dat",
         "animal_attributes": {
-            "species": "merdaka",
+            "species": "medaka",
             "exp_type": "SS",
             "ID": "01",
             "control_group": "False"
@@ -23,7 +23,7 @@
         "name": "SS_02",
         "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_02.dat",
         "animal_attributes": {
-            "species": "merdaka",
+            "species": "medaka",
             "exp_type": "SS",
             "ID": "02",
             "control_group": "False"
@@ -43,7 +43,7 @@
         "name": "NSS_01",
         "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/NSS_01.dat",
         "animal_attributes": {
-            "species": "merdaka",
+            "species": "medaka",
             "exp_type": "SS",
             "ID": "01",
             "control_group": "True"
@@ -63,7 +63,7 @@
         "name": "NSS_02",
         "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/NSS_02.dat",
         "animal_attributes": {
-            "species": "merdaka",
+            "species": "medaka",
             "exp_type": "SS",
             "ID": "02",
             "control_group": "True"
