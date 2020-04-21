@@ -198,7 +198,7 @@ def getVertexCoordinates(animal_obj, freqs):
   z_dim = getZDim(animal_obj)
   for i in range(len(freqs)):
     freqs[i] = animal.normalize(freqs[i],m,s)
-    freqs[i] = map(lambda x : z_dim*x, freqs[i])
+    freqs[i] = list(map(lambda x : z_dim*x, freqs[i]))
 
   #initialize list of coordinates to return
   coordinates = []
@@ -920,7 +920,7 @@ def area(p, q, r):
     r.append(0)
   x = []
   y = []
-  for i in xrange(3):
+  for i in range(3):
     x.append(q[i]-p[i])
     y.append(r[i]-p[i])
   return 0.5*((x[1]*y[2]-x[2]*y[1])**2+(x[2]*y[0]-x[0]*y[2])**2+(x[0]*y[1]-x[1]*y[0])**2)**0.5
