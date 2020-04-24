@@ -1,7 +1,5 @@
 # Locomotion Python Package
 
-One Paragraph of project description goes here
-
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your
@@ -263,6 +261,8 @@ Do you want to sort the output? [y/n] n
 Do you want the distance table to be square instead of upper triangular? [y/n] n
 ```
 
+<!--
+
 ## Deployment
 
 Add additional notes about how to deploy this on a live system
@@ -293,3 +293,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 * Hat tip to anyone whose code was used
 * Inspiration
 * etc
+
+--!>
