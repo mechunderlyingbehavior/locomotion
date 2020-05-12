@@ -99,33 +99,33 @@ class Animal(object):
   def addRawVals(self, varname, valList):
     self.rawvals.update({varname:valList})
 
-  def getRawVals(self, varname, start=None, end=None):
+  def getRawVals(self, varname, start_frame=None, end_frame=None):
     """
     Return the raw vals stored in animal object.
     :Parameters:
-     varname : hashable key pointing to variables in animal object
-     start   : starting frame of portion to extract
-     end     : ending frame of portion to extract
+     varname       : hashable key pointing to variables in animal object
+     start_frame   : starting frame of portion to extract
+     end_frame     : ending frame of portion to extract
     """
-    if start == None:
-      start =self.start*60*self.frame_rate
-    if end == None:
-      end = self.end*60*self.frame_rate
+    if start_frame == None:
+      start_frame =self.start*60*self.frame_rate
+    if end_frame == None:
+      end_frame = self.end*60*self.frame_rate
     # logic check
     try:
       values = self.rawvals[varname]
     except KeyError:
       raise KeyError("getRawVals: {} not found in animal object.".format(varname))
-    if start > end:
+    if start_frame > end_frame:
       raise ValueError("getRawVals: Start frame is after End frame.")
-    if start > len(values):
+    if start_frame > len(values):
       raise ValueError("getRawVals: Start frame comes after existing frames.")
-    if end > len(values):
+    if end_frame > len(values):
       warnings.warn("getRawVals: End frame comes after existing frames. Defaulting to the final frame stored.")
-    return values[start:end]
+    return values[start_frame:end_frame]
 
-  def getMultRawVals(self, varnames, start=None, end=None):
-    return [self.getRawVals(v,start,end) for v in varnames]
+  def getMultRawVals(self, varnames, start_frame=None, end_frame=None):
+    return [self.getRawVals(v,start_frame,end_frame) for v in varnames]
 
   def initStats(self, varname):
     self.means.update({varname:{}})
