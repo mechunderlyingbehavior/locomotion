@@ -5,6 +5,7 @@ import re
 import math
 import numpy as np
 import json
+import warnings
 from math import ceil, exp, log, sin, asin, pi, acosh, cosh, sinh, cos, acos, atanh, tanh
 from numpy import min, mean, std, array, linalg, dot, cross
 from scipy.optimize import minimize_scalar
@@ -25,14 +26,14 @@ class Animal(object):
     self.exp_type = json_item["animal_attributes"]["exp_type"]
     self.ID = json_item["animal_attributes"]["ID"]
     self.isControl = eval(json_item["animal_attributes"]["control_group"])
-    self.dim_x = json_item["capture_attributes"]["dim_x"]
-    self.dim_y = json_item["capture_attributes"]["dim_y"]
-    self.pix = json_item["capture_attributes"]["pixels_per_mm"]
-    self.frame_rate = json_item["capture_attributes"]["frames_per_sec"]
-    self.start = json_item["capture_attributes"]["start_time"]
-    self.end = json_item["capture_attributes"]["end_time"]
-    self.baseline_start = json_item["capture_attributes"]["baseline_start_time"]
-    self.baseline_end = json_item["capture_attributes"]["baseline_end_time"]
+    self.dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
+    self.dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
+    self.pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
+    self.frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
+    self.start = json_item["capture_attributes"]["start_time"] # In Minutes
+    self.end = json_item["capture_attributes"]["end_time"]     # In Minutes
+    self.baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
+    self.baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Minutes
     self.rawvals = {}
     #self.vals = {}
     self.means = {}
@@ -99,12 +100,29 @@ class Animal(object):
     self.rawvals.update({varname:valList})
 
   def getRawVals(self, varname, start=None, end=None):
-  #Note that start and end are in frames
+    """
+    Return the raw vals stored in animal object.
+    :Parameters:
+     varname : hashable key pointing to variables in animal object
+     start   : starting frame of portion to extract
+     end     : ending frame of portion to extract
+    """
     if start == None:
       start =self.start*60*self.frame_rate
     if end == None:
       end = self.end*60*self.frame_rate
-    return self.rawvals[varname][start:end]
+    # logic check
+    try:
+      values = self.rawvals[varname]
+    except KeyError:
+      raise KeyError("getRawVals: {} not found in animal object.".format(varname))
+    if start > end:
+      raise ValueError("getRawVals: Start frame is after End frame.")
+    if start > len(values):
+      raise ValueError("getRawVals: Start frame comes after existing frames.")
+    if end > len(values):
+      warnings.warn("getRawVals: End frame comes after existing frames. Defaulting to the final frame stored.")
+    return values[start:end]
 
   def getMultRawVals(self, varnames, start=None, end=None):
     return [self.getRawVals(v,start,end) for v in varnames]
