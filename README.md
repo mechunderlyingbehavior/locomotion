@@ -205,7 +205,7 @@ norm_mode = 'spec'
 number_of_comparisons_per_animal, specified_durations = 100, None
 output_directory, outfile_name = "/path/to/outdir", "results"
 start_time, end_time = 0, 1
-locomotion.trajectory.runIndividualVariabilityTests( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
+locomotion.trajectory.computeAllBDD( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
 ```
 
 Alternately, you can use the `computeIndVar.py` script and follow prompts to run
