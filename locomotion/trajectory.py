@@ -121,7 +121,7 @@ def getCurveData( animal_obj , col_names = ['X', 'Y']):
       coords.append(smooth(animal_obj.getRawVals(col), animal_obj.getFrameRate()))
     except KeyError:
       raise Exception("column name {} does not exist in animal dataset".format(col))
-  coords = np.array(coords) / animal_obj.getPixelDensity() # MM
+  coords = np.array(coords) # MM
   d1 = getDerivatives(coords, axis = 1) # MM per frame
   d1 = d1 * animal_obj.getFrameRate() # MM per second
   d2 = getDerivatives(d1, axis = 1) # MM per second per frame
