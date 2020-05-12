@@ -13,6 +13,10 @@ Python 3.7.3. This module also requires the following python packages:
 * Numpy (>= 1.16.2)
 * Scipy (>= 1.2.1)
 * Plotly (>= 4.4.1)
+* Libigl (beta version, under development)
+
+Libigl can be installed with conda:
+`conda install -c conda-forge igl`
 
 ### Installing
 
