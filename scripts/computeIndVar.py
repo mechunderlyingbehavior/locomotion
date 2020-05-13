@@ -57,9 +57,9 @@ def main():
   for a in animals:
     locomotion.trajectory.getCurveData(a)
   if output == 'y':
-    locomotion.trajectory.runIndividualVariabilityTests(animals, variable_names, norm_mode, num_exps, interval_lengths, outdir, outfilename, start_time, end_time)
+    locomotion.trajectory.computeAllIIBDD(animals, variable_names, norm_mode, num_exps, interval_lengths, outdir, outfilename, start_time, end_time)
   else:
-    locomotion.trajectory.runIndividualVariabilityTests(animals, variable_names, norm_mode, num_exps, interval_lengths, None, None, start_time, end_time)
+    locomotion.trajectory.computeAllIIBDD(animals, variable_names, norm_mode, num_exps, interval_lengths, None, None, start_time, end_time)
   
 if __name__=="__main__":
   main()
