@@ -191,7 +191,7 @@ Do you want to sort the output? [y/n] n
 Do you want the distance table to be square instead of upper triangular? [y/n] n
 ```
 
-To calculate the intra-individual variation in BDD for each animal in a
+To calculate the Intra-Individual Behavioral Distortion Distance (IIBDD) for each animal in a
 specified info sheet, one can run a script like the following:
 
 ```python
@@ -205,12 +205,12 @@ norm_mode = 'spec'
 number_of_comparisons_per_animal, specified_durations = 100, None
 output_directory, outfile_name = "/path/to/outdir", "results"
 start_time, end_time = 0, 1
-locomotion.trajectory.computeAllBDD( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
+locomotion.trajectory.computeAllIIBDD( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
 ```
 
-Alternately, you can use the `computeIndVar.py` script and follow prompts to run
+Alternately, you can use the `computeIIBDD.py` script and follow prompts to run
 comparisons among animals in a given info file by running `python
-computeIndVar.py` in your terminal, which should run similar to this sample
+computeIIBDD.py` in your terminal, which should run similar to this sample
 snippet.
 
 ```
