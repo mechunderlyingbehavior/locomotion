@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Locomotion Analysis</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+        <h1>{{ headline }}</h1>
+              <p>1. Choose the First Animal:</p>
+
+            <select class="form-control" name="animal1">
+                {% for calc in calculations %}
+                    <option value="{{ calc }}">{{ calc }}</option>
+                {% endfor %}
+            </select>
+
+            <p>2. Choose the Second Animal:</p>
+            <select class="form-control" name="animal2">
+                {% for calc in calculations %}
+                    <option value="{{ calc }}">{{ calc }}</option>
+                {% endfor %}
+            </select>
+
+
+              <form method=post enctype=multipart/form-data>
+
+                  <p> Norm Mode (Type 'spec' or 'baseline')</p>
+                  <p><input type="text" name="norm_mode" value="spec"/></p>
+                  <p><input type="submit" value="submit"/></p>
+              </form>
+
+          </ul>
+        </nav></strong>
+      </div>
+    </header>
+    {% endblock %}
+  </body>
+</html>

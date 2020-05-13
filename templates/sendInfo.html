@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Locomotion Analysis</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+
+{#              <p>4. Where should the information go?</p>#}
+{#                <p> <form>#}
+{#                    <input type="checkbox" id="3" name="addToJson" value="AddJson">#}
+{#                    <label for="addToJson">   a. Add to existing JSON </label><br>#}
+{#                 </form>#}
+{#                </p>#}
+{#                    <script>#}
+{#                        function myFunction() {#}
+{#                            var x = document.getElementById("myFile");#}
+{#                            x.disabled = true;#}
+{#                         }#}
+{#                    </script>#}
+{#                    <input type="file" id="myFile">#}
+{##}
+{#                <p>  <p> <form>#}
+{#                    <input type="checkbox" id="4" name="createJson" value="createJson" checked>#}
+{#                    <label for="createJson">   b. Create new JSON </label><br>#}
+{##}
+{#                    <form method=post enctype=multipart/form-data>#}
+{#                        <p> Enter the name of the json file (eg. sample.json).</p>#}
+{#                        <p><input type="text" name="fileName" value="sample.json"/></p>#}
+{#                        <p><input type="submit" value="submit"/></p>#}
+{#                     </form>#}
+{#                 </form>#}
+{#                </p>#}
+{#                    </p>#}
+{##}
+{##}
+
+        <p>4. Send Experiment Information:</p>
+
+              <form method=post enctype=multipart/form-data>
+                  <p>Name of file</p>
+                  <p><input type="text" name="fileName" value="sample.json"></p>
+                  <p><input type="submit" value="submit"/></p>
+              </form>
+
+
+
+
+    {% endblock %}
+  </body>
+</html>
