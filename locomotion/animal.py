@@ -100,7 +100,7 @@ class Animal(object):
     self.rawvals.update({varname:valList})
 
   def getRawVals(self, varname, start_frame=None, end_frame=None):
-    """
+        """
     Return the raw vals stored in animal object.
     :Parameters:
      varname       : hashable key pointing to variables in animal object
