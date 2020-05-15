@@ -43,7 +43,7 @@ def getDerivatives(X, axis = 0):
   return dX
 
 
-def smooth(X, frame_rate = 24):
+def smooth(X, frame_rate):
   """ Smoothes the sequence X by applying Savitzky-Golay smoothing
     :Parameters:
      X : list
