@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>About Flask</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+
+        <br>
+        <p>  Button for Compute all CSD </p>
+        <form method=post enctype=multipart/form-data>
+                  <button type="submit" name="submit_button"  value="allCSD">Compute All CSD</button>
+              </form>
+        <br>
+
+        <p> Button for Compute CSD from 2 animals </p>
+        <form method=post enctype=multipart/form-data>
+                  <button type="submit" name="submit_button"  value="twoCSD">Compute CSD from 2 amimals</button>
+              </form>
+        <br>
+
+        <p> Compute All BDD </p>
+        <form method=post enctype=multipart/form-data>
+                  <button type="submit" name="submit_button"  value="allBDD">Compute all BDD</button>
+              </form>
+        <br>
+        <p> Compute One BDD </p>
+        <form method=post enctype=multipart/form-data>
+                  <button type="submit" name="submit_button" value="twoBDD">Compute one BDD</button>
+              </form>
+        <br>
+
+</p>
+    {% endblock %}
+  </body>
+</html>

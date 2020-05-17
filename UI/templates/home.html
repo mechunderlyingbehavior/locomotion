@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>About Flask</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+
+    <h1> About  </h1>
+    <p> Locomotion</p>
+         <p>
+            A fundamental challenge for behavioral neuroscientists is to accurately
+            quantify (dis)similarities in animal behavior without excluding inherent
+            variability present between individuals. We explored two new applications of
+            curve and shape alignment techniques to address this issue.
+            As a proof-of-concept we applied these methods to compare normal or alarmed behavior in
+            pairs of medaka (Oryzias latipes). The curve alignment method we call
+            Behavioral Distortion Distance (BDD) revealed that alarmed fish display less
+            predictable swimming over time, even if individuals incorporate the same action
+            patterns like immobility, sudden changes in swimming trajectory, or changing their
+            position in the water column. The Conformal Spatiotemporal Distance (CSD) technique on
+            the other hand revealed that, in spite of the unpredictability, alarmed individuals exhibit
+            lower variability in overall swim patterns, possibly accounting for the widely held notion
+            of “stereotypy” in alarm responses. More generally, we propose that these new applications of
+            established computational geometric techniques are useful in combination to represent, compare,
+            and quantify complex behaviors consisting of common action patterns that differ in duration, sequence,
+            or frequency.
+
+         <p><a href="https://www.nature.com/articles/s41598-019-52300-8?fbclid=IwAR2rHMRoBaL7SvMKSjckjsaaaj7M2RRgQeXMFgx9jR8HqQh-2xUbEaZ7moo">Find out more</a></p>
+
+
+         <li><a href="{{ url_for('chooseFile') }}">Lets Get Started</a></li>
+
+</p>
+
+    {% endblock %}
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{#<!DOCTYPE html>#}
+{#<html lang="en" dir="ltr">#}
+{#  <head>#}
+{#    <meta charset="utf-8">#}
+{#    <title>Locomotion Analysis</title>#}
+{#  </head>#}
+{#  <body>#}
+{#    {% extends "template.html" %}#}
+{#    {% block content %}#}
+{#        <p>1. Upload data about your records:</p>#}
+{#              <script>#}
+{#                function myFunction() {#}
+{#                    var x = document.getElementById("myFile");#}
+{#                    x.disabled = true;#}
+{#                }#}
+{#              </script>#}
+{##}
+{#              <input type="file" id="myFile">#}
+{##}
+{#              <p>2. What are:</p>#}
+{##}
+{#              <form action="http://127.0.0.1:5000/api/lahman2019clean/People" method="POST">#}
+{#                  <p>Framerate</p>#}
+{#                  <p><input type="text" name="Framerate" value=""/></p>#}
+{#                  <p>Resolution</p>#}
+{#                  <p><input type="text" name="Resolution" value=""/></p>#}
+{#                  <p>X Dim</p>#}
+{#                  <p><input type="text" name="X dim" value=""/></p>#}
+{#                  <p>Y Dim</p>#}
+{#                  <p><input type="text" name="X dim" value=""/></p>#}
+{##}
+{#                 <form>#}
+{#                    <input type="checkbox" id="Apply" name="vehicle1" value="Bike">#}
+{#                    <label for="Apply"> Apply To All</label><br>#}
+{#                 </form>#}
+{#              </form>#}
+{##}
+{#              <p>3. Experiment Information:</p>#}
+{##}
+{#              <form action="http://127.0.0.1:5000/api/lahman2019clean/People" method="POST">#}
+{#                  <p> Species</p>#}
+{#                  <p><input type="text" name="Species" value=""/></p>#}
+{#                  <p>Identifier</p>#}
+{#                  <p><input type="text" name="Identifier" value=""/></p>#}
+{#                  <p>Control/Experiment</p>#}
+{#                  <p><input type="text" name="Control/Experiment" value=""/></p>#}
+{#              </form>#}
+{##}
+{#              <p>4. Where should the information go?</p>#}
+{#                <p> <form>#}
+{#                    <input type="checkbox" id="addJson" name="addJson" value="AddJson">#}
+{#                    <label for="addJson">   a. Add to existing JSON </label><br>#}
+{#                 </form>#}
+{#                </p>#}
+{#                    <script>#}
+{#                        function myFunction() {#}
+{#                            var x = document.getElementById("myFile");#}
+{#                            x.disabled = true;#}
+{#                         }#}
+{#                    </script>#}
+{#                    <input type="file" id="myFile">#}
+{##}
+{#                <p>  <p> <form>#}
+{#                    <input type="checkbox" id="createJson" name="createJson" value="createJson">#}
+{#                    <label for="createJson">   b. Create new JSON </label><br>#}
+{#                 </form>#}
+{#                </p>#}
+{#                    </p>#}
+{##}
+{#              <p><input type="submit" value="submit"/></p>#}
+{##}
+{##}
+{##}
+{##}
+{#          </ul>#}
+{#        </nav></strong>#}
+{#      </div>#}
+{#    </header>#}
+{##}
+{##}
+{#    {% endblock %}#}
+{#  </body>#}
+{#</html>#}
