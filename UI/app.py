@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 import json
 import pandas as pd
 
-from locomotion import locomotion
+import locomotion
 
 app = Flask(__name__)
 _key_delimiter = "_"
@@ -13,8 +13,9 @@ _port = 5002
 _api_base = "/api"
 
 
-# Set this to the directory where "webAppLocomotion/locomotion/" is present
-PATH_TO_DIRECTORY = "/Users/alaukik/code/webAppLocomotion/locomotion/"
+# Set this to the directory where "locomotion" is present, i.e. the first locomotion folder
+#example: "/Users/alaukik/code/webAppLocomotion/locomotion/UI"
+PATH_TO_DIRECTORY = "/path/to/locomotion/UI"
 
 # Folder where data will be stored
 UPLOAD_FOLDER = PATH_TO_DIRECTORY + "/dataStorage/"
