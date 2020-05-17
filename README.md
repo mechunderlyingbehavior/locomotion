@@ -75,11 +75,8 @@ dataset and run the BDD on it.
 ## Running the Web Application
 
 1. Navigate to the UI folder inside the locomotion directory. You will see a file named `app.py`
-1. Type the following in the terminal
-```
-python3 app.py
-```
-1. You will see a message like ```Running on http://127.0.0.1:5000/```. Copy ```http://127.0.0.1:5000/``` and run it in your browser.
+2. Type the following in the terminal ``` python3 app.py```
+3. You will see a message like ```Running on http://127.0.0.1:5000/```. Copy ```http://127.0.0.1:5000/``` and run it in your browser.
 
 
 ## Data format
