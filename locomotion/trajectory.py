@@ -30,7 +30,7 @@ from scipy.signal import savgol_filter
 from collections import defaultdict
 
 #Static Variables
-SMOOTH_RANGE = 53 #length of smoothing window in smooth()
+SMOOTH_RANGE_MIN = 5 #length of smoothing window in smooth()
 ORDER = 5 #order of smoothing curve used in smooth()
 
 #############################
@@ -43,13 +43,15 @@ def getDerivatives(X, axis = 0):
   return dX
 
 
-def smooth(X):
+def smooth(X, frame_rate):
   """ Smoothes the sequence X by applying Savitzky-Golay smoothing
     :Parameters:
      X : list
     :Return:
      sX : list
   """
+  r = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * 2.5)))
+  SMOOTH_RANGE = r + 1 if r % 2 == 0 else r
   sX = savgol_filter(X,SMOOTH_RANGE,ORDER)
   return sX
 
@@ -116,11 +118,14 @@ def getCurveData( animal_obj , col_names = ['X', 'Y']):
   coords = []
   for col in col_names:
     try:
-      coords.append(smooth(animal_obj.getRawVals(col)))
+      coords.append(smooth(animal_obj.getRawVals(col), animal_obj.getFrameRate()))
     except KeyError:
       raise Exception("column name {} does not exist in animal dataset".format(col))
-  d1 = getDerivatives(coords, axis = 1)
-  d2 = getDerivatives(d1, axis = 1)
+  coords = np.array(coords) # MM
+  d1 = getDerivatives(coords, axis = 1) # MM per frame
+  d1 = d1 * animal_obj.getFrameRate() # MM per second
+  d2 = getDerivatives(d1, axis = 1) # MM per second per frame
+  d2 = d2 * animal_obj.getFrameRate() # MM per second per second
   V = getVelocity(d1)
   C = getCurvature(d1, d2, V)
 
