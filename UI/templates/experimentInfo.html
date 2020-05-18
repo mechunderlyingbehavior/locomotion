@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Locomotion Analysis</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+        <h1>{{ headline }}</h1>
+              <p>3. Experiment Information:</p>
+
+              <form method=post enctype=multipart/form-data>
+                  <p>A. Species</p>
+                  <p><input type="text" name="species" value="medaka"/></p>
+                  <p>B. Experiment Type </p>
+                  <p><input type="text" name="exp_type" value="SS"/></p>
+                  <p>C. ID</p>
+                  <p><input type="text" name= "ID" value="10"/></p>
+                  <p>D. Control Group</p>
+                  <p><input type="text" name="control_group" value="False"/></p>
+                  <input type="checkbox" id="Apply" name="checkbox" value="checked">
+                  <label for="Apply"> Apply To All</label><br>
+                  <p><input type="submit" value="submit"/></p>
+              </form>
+
+
+          </ul>
+        </nav></strong>
+      </div>
+    </header>
+
+
+    {% endblock %}
+  </body>
+</html>

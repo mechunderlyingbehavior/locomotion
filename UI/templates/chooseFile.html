@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Locomotion Analysis</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+        <p>1. Upload the files with the revelavent records:</p>
+
+        <form method=post enctype=multipart/form-data>
+            <input type="file" name="file" multiple><br><br>
+            <input type=submit value=Submit>
+        </form>
+
+    {% endblock %}
+  </body>
+</html>
+
+

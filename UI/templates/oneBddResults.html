@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Locomotion Analysis</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+        <br>
+        <p> The distance between the two chosen animals is: {{ value }}</p>
+
+
+        <br>
+        <li><a href="{{ url_for('getActions', outfileName='sample.json') }}">Go back to methods</a></li>
+
+    {% endblock %}
+  </body>
+</html>

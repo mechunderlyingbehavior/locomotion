@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Locomotion Analysis</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+        <h1>{{ headline }}</h1>
+              <p>2. What are:</p>
+
+
+              <form method=post enctype=multipart/form-data>
+                  <p>A. Seg_start_time </p>
+                  <p><input type="text" name="seg_start_time" value="0"/></p>
+                  <p>B. Seg_end_time</p>
+                  <p><input type="text" name="seg_end_time" value="1"/></p>
+                  <p>C. Norm Mode (Check if 'spec' and otherwise if 'baseline')</p>
+                  <p><input type="text" name="norm_mode" value="spec"/></p>
+                  <p><input type="submit" value="submit"/></p>
+              </form>
+
+          </ul>
+        </nav></strong>
+      </div>
+    </header>
+    {% endblock %}
+  </body>
+</html>
