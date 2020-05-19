@@ -665,7 +665,7 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
           print(root_triangle)
           result = is_in_triangle
           if DEBUG:
-            successes += 1
+                successes += 1
           break
 
         #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
@@ -673,7 +673,7 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
           print("Vertex is on a boundary edge.")
 
       if result is []:
-        print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
+            print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
         result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
 
       #append aligned coordinates to return list
@@ -681,7 +681,7 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
     
     else:
       if DEBUG:
-        print("Current root triangle: " + str(root_triangle))
+            print("Current root triangle: " + str(root_triangle))
       #Q: Do we need an outer while loop since we have a for loop for all the vertices already?
 
       #initialize traversed triangles and the current list of triangles whose neighbours we want to search
@@ -695,7 +695,7 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
       #outer loop: keep searching for a triangle while this vertex is not mapped to one
       while (aligned_coordinates_1[vertex] == array([-1., -1., -1.])).all():
         if DEBUG:
-          print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
+              print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
           print("Current neighbour triangles: ")
           print(*neighbour_triangle_indices)
           print("Current traversed triangles: ")
@@ -710,7 +710,7 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
           #find the root triangle to start our bfs-like search
           if is_in_triangle is not None:
             if DEBUG:
-              print(" SUCCESS: FOUND a triangle for vertex " + str(vertex))
+                  print(" SUCCESS: FOUND a triangle for vertex " + str(vertex))
               print(" ")
             aligned_coordinates_1[vertex] = is_in_triangle
             # Update root triangle
@@ -734,7 +734,7 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
         #terminate the while loop if we have searched all triangles
         if len(traversed_triangles) == len(triangles_0):
           if DEBUG:
-            print("Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
+                print("Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
           aligned_coordinates_1[vertex] = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
           if DEBUG:
               non_successes += 1
