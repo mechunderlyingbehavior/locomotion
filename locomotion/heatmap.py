@@ -16,17 +16,22 @@
 ## symmetric distortion energy of such an alignment.
 
 from math import ceil, exp, log, sin, asin, pi, acosh, cosh, sinh, cos, acos, atanh, tanh
-from numpy import min, mean, std, array, linalg, dot, cross
+from numpy import min, mean, std, array, linalg, dot, cross, hstack, zeros
 from scipy.optimize import minimize_scalar
 import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import throwError
+from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, adjacency_matrix, bfs, triangle_triangle_adjacency, barycentric_coordinates_tri
 
 #Static Variables
 PERTURBATION = 0.000000001
-CONFORMAL_FACTOR = 1.45
 TOLERANCE = 0.00001
 
+<<<<<<< HEAD
+=======
+#Debugging/printing functions
+DEBUG = False
+>>>>>>> e74c966... Most recent version of heatmap
 
 ################################################################################  
 ### METHOD FOR INITIALIZING HEAT MAP AND SURFACE DATA FOR EACH ANIMAL OBJECT ###
@@ -59,7 +64,6 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   #store given parameters
   animal_obj.setGridSize(grid_size)
   animal_obj.setPerturbation(PERTURBATION)
-  animal_obj.setConformalFactor(CONFORMAL_FACTOR)
   animal_obj.setTolerance(TOLERANCE)
   
   print("Calculating heatmap for %s..." % animal_obj.getName())
@@ -74,13 +78,8 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   animal_obj.setNumVerts(len(original_coordinates))
   animal_obj.setRegularCoordinates(original_coordinates)
   
-  #record boundary vertices
-  boundary_vertices = getBoundaryVertices(animal_obj)
-  
   #get and record triangles
   triangles = getTriangles(animal_obj)
-  while hasHoles(animal_obj, triangles, boundary_vertices): #check for and patch any holes
-    triangles = patchHoles(animal_obj, triangles, boundary_vertices)
   animal_obj.setTriangulation(triangles)
 
   #calculate and store colors for output file
@@ -89,15 +88,17 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
 
   print("Calculating flattened coordinates for %s..." % animal_obj.getName())
   
-  #calculate conformal flattening of triangulation to unit disk
-  flowers = getFlowers(animal_obj, boundary_vertices) #find the neighbors of each vertex and arrange them in counterclockwise order
-  initial_radii = initializeRadii(animal_obj, boundary_vertices) #initialize circle packing of triangulation
-  radii = getCirclePacking(animal_obj, initial_radii, flowers, boundary_vertices) #calculate maximal circle packing of triangulation in unit disk
-  
   #calculate and record flattened coordinates of triangulation
+<<<<<<< HEAD
   center_vertex = getCenterVertex(animal_obj) #identify center vertex of triangulation
   flattened_coordinates = getFlatCoordinates(animal_obj, radii, flowers, center_vertex, boundary_vertices) 
+=======
+  flattened_coordinates = getFlatCoordinates(animal_obj)[0]
+  flattened_boundary = getFlatCoordinates(animal_obj)[1]
+
+>>>>>>> e74c966... Most recent version of heatmap
   animal_obj.setFlattenedCoordinates(flattened_coordinates)
+  animal_obj.setFlattenedBoundaryVertices(flattened_boundary)
 
   
 #######################################################################################  
@@ -189,8 +190,7 @@ def getVertexCoordinates(animal_obj, freqs):
   #gather relevant parameters
   grid_size = animal_obj.getGridSize()
   x_dim, y_dim = animal_obj.getDims()
-  num_x_grid,num_y_grid = animal_obj.getNumGrids()
-  conformal_factor = animal_obj.getConformalFactor()
+  num_x_grid, num_y_grid = animal_obj.getNumGrids()
 
   #normalize the values to floats between 0 and a specified z-dimension
   m = mean(freqs)
@@ -208,45 +208,10 @@ def getVertexCoordinates(animal_obj, freqs):
     for j in range(num_y_grid):
       coordinates.append([i*grid_size, j*grid_size, freqs[i][j]])
 
-  #check edge lengths in the induced triangulation and subdivide as necessary
-  for i in range(num_x_grid-1): #all vertices except those on the right and upper boundaries
-    for j in range(num_y_grid-1):
-      dist = linalg.norm(array([i*grid_size, j*grid_size, freqs[i][j]])-array([i*grid_size, (j+1)*grid_size, freqs[i][j+1]])) #vertical edges
-      if dist > conformal_factor*grid_size:
-        num_segments = int(ceil(dist/grid_size))
-        for k in range(1,num_segments):
-          coordinates.append([i*grid_size, (j+float(k)/num_segments)*grid_size, freqs[i][j] + float(k)/num_segments*(freqs[i][j+1]-freqs[i][j])])
-      dist = linalg.norm(array([i*grid_size,j*grid_size,freqs[i][j]])-array([(i+1)*grid_size, j*grid_size, freqs[i+1][j]])) #horizontal edges
-      if dist > conformal_factor*grid_size:
-        num_segments = int(ceil(dist/grid_size))
-        for k in range(1,num_segments):
-          coordinates.append([(i+float(k)/num_segments)*grid_size,j*grid_size,freqs[i][j]+float(k)/num_segments*(freqs[i+1][j]-freqs[i][j])])
-      dist = linalg.norm(array([i*grid_size, j*grid_size,freqs[i][j]])-array([(i+1)*grid_size,(j+1)*grid_size, freqs[i+1][j+1]])) #diagonal edges
-      if dist > conformal_factor*grid_size:
-        num_segments = int(ceil(dist/grid_size))
-        for k in range(1,num_segments):
-          coordinates.append([(i+float(k)/num_segments)*grid_size,(j+float(k)/num_segments)*grid_size,freqs[i][j]+float(k)/num_segments*(freqs[i+1][j+1]-freqs[i][j])])  
-  for i in range(num_x_grid-1): #upper boundary vertices
-    j = num_y_grid-1
-    dist = linalg.norm(array([i*grid_size, j*grid_size, freqs[i][j]])-array([(i+1)*grid_size, j*grid_size, freqs[i+1][j]])) #horizontal edges
-    if dist > conformal_factor*grid_size:
-      num_segments = int(ceil(dist/grid_size))
-      for k in range(1,num_segments):
-        coordinates.append([(i+float(k)/num_segments)*grid_size,j*grid_size,freqs[i][j]+float(k)/num_segments*(freqs[i+1][j]-freqs[i][j])])
-  for j in range (num_y_grid-1): #right boundary vertices
-    i = num_x_grid-1
-    dist = linalg.norm(array([i*grid_size, j*grid_size, freqs[i][j]])-array([i*grid_size, (j+1)*grid_size, freqs[i][j+1]])) #vertical edges
-    if dist > conformal_factor*grid_size:
-      num_segments = int(ceil(dist/grid_size))
-      for k in range(1,num_segments):
-        coordinates.append([i*grid_size,(j+float(k)/num_segments)*grid_size,freqs[i][j]+float(k)/num_segments*(freqs[i][j+1]-freqs[i][j])])
-
-  # sort the coordinates by z-value (third entry)
-  coordinates.sort(key=lambda c: -c[2]) 
-
   return coordinates
 
 
+<<<<<<< HEAD
 def getBoundaryVertices(animal_obj):
   """ Returns the subset of boundary vertices from a list of vertex coordinates
 
@@ -322,9 +287,10 @@ def getCircumcircle(a, b, c, tolerance):
   return center, radius
 
 
+=======
+>>>>>>> e74c966... Most recent version of heatmap
 def getTriangles(animal_obj):
-  """ Computes a Delaunay triangulation on the regular coordinates of an animal using a version 
-    of the Bowyer-Watson algorithm
+  """ Computes a basic triangulation on the regular coordinates of an animal
 
     :Parameters:
       animal_obj : animal object, initialized with regular coordinates set/updated
@@ -334,6 +300,7 @@ def getTriangles(animal_obj):
       in the triangulation of a surface
   """
   #store relevant parameters
+<<<<<<< HEAD
   x_dim, y_dim = animal_obj.getDims()
   coordinates = animal_obj.getRegularCoordinates()
   tolerance = animal_obj.getTolerance()
@@ -460,33 +427,19 @@ def patchHoles(animal_obj, triangles, boundary_vertices):
   num_verts = animal_obj.getNumVerts()
   coordinates = animal_obj.getRegularCoordinates()
   tolerance = animal_obj.getTolerance()
+=======
+  num_x_grid, num_y_grid = animal_obj.getNumGrids()
 
-  #calculate incidence matrix between edges and triangles in input
-  check_matrix = [[0 for j in range(i)] for i in range(num_verts)]
-  for triangle in triangles:
-    sorted_triangle = sorted(triangle)
-    check_matrix[sorted_triangle[2]][sorted_triangle[1]] += 1
-    check_matrix[sorted_triangle[2]][sorted_triangle[0]] += 1
-    check_matrix[sorted_triangle[1]][sorted_triangle[0]] += 1
+  #initialize triangle list
+  triangles = []
+ 
+  #iterate through lower left corners of grid and append canonical triangles
+  for i in range(num_x_grid-1):
+    for j in range(num_y_grid-1):
+      triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+j, (i+1)*num_y_grid+(j+1)])
+      triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+(j+1), i*num_y_grid+(j+1)])
+>>>>>>> e74c966... Most recent version of heatmap
 
-  #gather the interior edges that belong to exactly one triangle
-  bad_edges = []
-  for w in range(num_verts-1):
-    for v in range(w+1,num_verts):
-      if check_matrix[v][w] == 1 and v not in boundary_vertices and w not in boundary_vertices:
-        bad_edges.append([w,v])
-        
-  #if there are more than two "bad" edges, append a new triangle with the first pair of adjacent "bad" edges using the correct orientation
-  if len(bad_edges) > 1:
-    if cross(array(coordinates[bad_edges[0][1]])-array(coordinates[bad_edges[0][0]]),array(coordinates[bad_edges[1][1]])-array(coordinates[bad_edges[0][0]]))[2] > -tolerance:
-      new_triangle = [bad_edges[0][0],bad_edges[0][1],bad_edges[1][1]]
-    else:
-      new_triangle = [bad_edges[0][0],bad_edges[1][1],bad_edges[0][1]]
-    triangles.append(new_triangle)
-
-    #notify user that a patch was made
-    print("Added patch: %s" % str(new_triangle))
-    
   return triangles
   
 
@@ -537,90 +490,77 @@ def getColors(animal_obj):
 #################################################################################### 
 
 
-def getFlowers(animal_obj, boundary_vertices):
-  """ Calculuates the flower (list of neighbors), in counter-clockwise order, of each vertex in the triangulation of an animal
+def mobius(u, v, a, b):
+  #this is a helper method for the getFlatCoordinates method below
+  return [((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2), ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
+
+def getFlatCoordinates(animal_obj):
+  """ Calculates the vertex coordinates for the triangulation of an animal from its corresponding circle packing in the unit disk
 
     :Parameters:
       animal_obj : animal object, initialized with regular coordinates and triangulation set/updated
-      boundary_vertices : list of ints whose values are between 0 and one less than the number of regular vertices stored in the animal object
 
     :Returns:
-      list of lists of ints, specifying the indices of the vertices neighboring each vertex, in counter-clockwise order, of the triangulation
-      associated to an animal
+      list of pairs of floats, specifying the x- and y-coordinates of the vertices of a triangulation that has been conformally flattened
+      to the unit disk
   """
 
-  #gather relevant parameters
-  num_verts = animal_obj.getNumVerts()
-  triangles = animal_obj.getTriangulation()
+  # store relevant parameters and convert to arrays
+  tolerance = animal_obj.getTolerance()
+  v, f = array(animal_obj.getRegularCoordinates()), array(animal_obj.getTriangulation())
+    
+  # get boundary vertices
+  boundary_vertices = boundary_loop(f)
 
-  #initialize return list
-  flowers = [[] for vertex in range(num_verts)]
+  # map boundary vertices to unit circle, preserving edge proportions
+  flattened_boundary = map_vertices_to_circle(v, boundary_vertices)
 
-  #iterate through the vertices of the animal object. Flowers of interior vertices will be cycles while
-  #flowers of boundary vertices will be ordered lists with distinct start/end vertices.
-  for vertex in range(num_verts):
+  # map internal vertices to unit circle
+  flat_coordinates = harmonic_weights(v, f, boundary_vertices, flattened_boundary, 1)
+  # TODO: Eventually, leave this as an array
+  flat_coordinates = list(flat_coordinates)
 
+<<<<<<< HEAD
     #initialize first and last neighbors of the current vertex
     first_neighbor, last_neighbor = 0, 0
+=======
+  # apply a conformal automorphism (Mobius transformation) of the unit disk that moves the center of mass of the flattened coordinates to the origin
+  p = mean([c[0] for c in flat_coordinates])
+  q = mean([c[1] for c in flat_coordinates])
+  if DEBUG:
+    print("Current centre of mass is (%d, %d), with p**2 + q**2 = %d." % (p, q, p**2+q**2))
+>>>>>>> e74c966... Most recent version of heatmap
 
-    #the first and last neighbors of each boundary_vertex is already known since the boundary_vertices are stored in counter-clockwise order
-    if vertex in boundary_vertices: 
-      first_neighbor = boundary_vertices[(boundary_vertices.index(vertex)+1) % len(boundary_vertices)]
-      last_neighbor = boundary_vertices[(boundary_vertices.index(vertex)-1) % len(boundary_vertices)]
+  # temporary counter
+  centre_of_mass_moves = 0
 
-    #for interior vertices, set an arbitrary first neighbor by finding a triangle that contains the current vertex
-    else:
-      for triangle in triangles:
-        if vertex in triangle:
-          first_neighbor = triangle[(triangle.index(vertex)+2) % 3]
-          last_neighbor = triangle[(triangle.index(vertex)+1) % 3]
-          flowers[vertex].append(last_neighbor) #the last vertex is listed at the beginning and end of the return list for each interior vertex
-          break 
+  while p**2+q**2 > tolerance:
+    centre_of_mass_moves += 1
 
-    #append neighbors to return list sequentially starting with the first neighbor found above
-    flowers[vertex].append(first_neighbor)
+<<<<<<< HEAD
+=======
+    for i in range(len(flat_coordinates)):
+      x = flat_coordinates[i][0]
+      y = flat_coordinates[i][1]
+      flat_coordinates[i] = mobius(x,y,p,q)
+      flat_coordinates[i].append(0)
+    p = mean([c[0] for c in flat_coordinates])
+    q = mean([c[1] for c in flat_coordinates])
+    
+  if DEBUG:
+    print("Centre of mass has moved %d times." % centre_of_mass_moves )
+    print("New centre of mass is (%d, %d), with p**2 + q**2 = %d." % (p, q, p**2+q**2))
+>>>>>>> e74c966... Most recent version of heatmap
 
-    #search for all the neighbors in counter-clockwise order by searching through the triangles
-    #that contain the current vertex and the most recent "next" neighbor.  Keep going until the
-    #next neighbor is the last neighbor.
-    empty_search = False
-    next_neighbor = first_neighbor #initialize next neighbor 
-    while next_neighbor != last_neighbor and empty_search == False: 
-      empty_search = True
-      
-      #search for a triangle that contains the current vertex and the next vertex
-      for t in range(len(triangles)):
-        if vertex in triangles[t] and next_neighbor in triangles[t]: 
-          for k in range(3):
-            
-            #if the third vertex of the triangle has not already by appended to the return list, add it and update the next neighbor
-            if triangles[t][k] != vertex and triangles[t][k] not in flowers[vertex]: 
-              flowers[vertex].append(triangles[t][k])
-              next_neighbor = triangles[t][k] #update the next neighbor to the most recent neighbor added
-              empty_search = False
-              
-    #append the last neighbor to the return list
-    if vertex not in boundary_vertices: 
-      flowers[vertex].append(last_neighbor)
-      
-  return flowers
+  return (flat_coordinates, flattened_boundary)
 
 
-def initializeRadii(animal_obj,boundary_vertices):
-  """ Initializes the radii for the circle packing of the triangulation associated to an animal.
-    Different radii are assigned to interior and boundary vertices.
+#########################################################################  
+### METHODS FOR ALIGNING TWO SURFACES VIA THEIR CONFORMAL FLATTENINGS ###
+######################################################################### 
 
-    :Parameters:
-      animal_obj : animal object, initialized with regular coordinates and triangulation set/updated
-      boundary_vertices : list of ints whose values are between 0 and one less than the number of regular vertices stored in the animal object
 
-    :Returns:
-      list of floats, specifying the initial radii to begin the circle packing algorithm for the triangulation associated to an animal 
-  """
-
-  #store relevant parameters
-  num_verts = animal_obj.getNumVerts()
-
+<<<<<<< HEAD
   #initialize return list
   radii = []
 
@@ -655,22 +595,177 @@ def getTheta(i , flower, radii):
   for k in range(len(flower)-1):
     theta += getAlpha(i , flower[k], flower[k+1], radii)
   return theta
+=======
+# Given a point and a theta, map the point to the rotation by theta
+def rotation(p, theta):
+  #this is a helper method for the method getAlignedCoordinates below.  It rotates a given point in the plane about the origin by a given angle.
+  return [cos(theta)*p[0]-sin(theta)*p[1],sin(theta)*p[0]+cos(theta)*p[1]]
 
+# old version -- remove eventually. Use for testing.
+def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
+  """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
+    through their respective conformal flattenings and applyling a rotation of angle theta.
+    :Parameters:
+      animal_obj_0/1 : animal objects, initialized with regular/flattened coordinates and triangulation set/updated
+      theta : float with value between 0 and pi, an angle of rotation
+    :Returns:
+      list of triples of floats, specifying the x-, y-, and z-coordinates of the vertices of the triangulation of Animal 1 aligned to
+      the triangulation of Animal 0
+  """
+  if DEBUG:
+    successes = 0
+    non_successes = 0
 
+  #store relevant parameters
+  num_verts_0 = animal_obj_0.getNumVerts()
+  regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
+  flat_coordinates_0 = animal_obj_0.getFlattenedCoordinates()
+  flat_coordinates_0 = [f[:2] for f in flat_coordinates_0]
+  triangles_0 = animal_obj_0.getTriangulation()
+  num_verts_1 = animal_obj_1.getNumVerts()
+  flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
+  flat_coordinates_1 = [f[:2] for f in flat_coordinates_1]
+
+  #initialize return list
+  aligned_coordinates_1 = []
+
+  #iterate through the vertices of the triangulation of Animal 1
+  for vertex in range(num_verts_1):
+
+    #rotate the flattened coordinates of each such vertex by theta
+    rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
+
+    #initialize individual return values
+    x, y, z = 0, 0, 0
+    success = False
+
+    #search through all the triangles in the triangulation of Animal 0 for one whose flattened coordinates contain
+    #the rotated flattened coordinates of the current vertex in the triangulation of Animal 1
+    for triangle in triangles_0:
+
+      #extract flattened coordinates of the vertices of the given triangle
+      x_0 = flat_coordinates_0[triangle[0]][0]
+      x_1 = flat_coordinates_0[triangle[1]][0]
+      x_2 = flat_coordinates_0[triangle[2]][0]
+      y_0 = flat_coordinates_0[triangle[0]][1]
+      y_1 = flat_coordinates_0[triangle[1]][1]
+      y_2 = flat_coordinates_0[triangle[2]][1]
+
+      #calculate barycentric coordinates for current vertex in current triangle
+      lambda_0 = ((y_1-y_2)*(rotated_coordinate[0]-x_2)+(x_2-x_1)*(rotated_coordinate[1]-y_2)) / \
+                ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
+      lambda_1 = ((y_2-y_0)*(rotated_coordinate[0]-x_2)+(x_0-x_2)*(rotated_coordinate[1]-y_2)) / \
+                ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
+      lambda_2 = 1 - lambda_0 - lambda_1
+
+      #if current triangle contains rotated flattened coordinates of current vertex, update return values using the barycentric
+      #coordinates above and the regular coordinates of Animal 0
+      if lambda_0 >= 0 and lambda_0 <= 1 and lambda_1 >=0 and lambda_1 <=1 and lambda_2 >= 0 and lambda_2 <= 1:
+        location = triangle
+        success = True
+        x = lambda_0*regular_coordinates_0[location[0]][0] + \
+            lambda_1*regular_coordinates_0[location[1]][0] + \
+            lambda_2*regular_coordinates_0[location[2]][0]
+        y = lambda_0*regular_coordinates_0[location[0]][1] + \
+            lambda_1*regular_coordinates_0[location[1]][1] + \
+            lambda_2*regular_coordinates_0[location[2]][1]
+        z = lambda_0*regular_coordinates_0[location[0]][2] + \
+            lambda_1*regular_coordinates_0[location[1]][2] + \
+            lambda_2*regular_coordinates_0[location[2]][2]
+
+        if DEBUG:
+          successes += 1
+        break
+
+    #if no such triangle is found, update the return values with the coordinates of the closest vertex in Animal 0 to the current vertex
+    if not success:
+      closest_vertex = 0
+      for candidate_vertex in range(num_verts_0):
+        if linalg.norm(array(rotated_coordinate)-array(flat_coordinates_0[candidate_vertex])) < linalg.norm(array(rotated_coordinate)-array(flat_coordinates_0[closest_vertex])):
+          closest_vertex = candidate_vertex
+      x = regular_coordinates_0[closest_vertex][0]
+      y = regular_coordinates_0[closest_vertex][1]
+      z = regular_coordinates_0[closest_vertex][2]
+
+      if DEBUG:
+        non_successes += 1  
+    
+
+    #append aligned coordinates to return list
+    aligned_coordinates_1.append([x,y,z])
+
+  if DEBUG:
+    print("Number of successes: " +  str(successes))
+    print("Number of non-successes: " +  str(non_successes))
+    print("Number of vertices checked for animal 1: " + str(num_verts_1))
+
+  return aligned_coordinates_1
+
+def getCentralVertexTest(animal_obj):
+  """ 
+  Finds the index of the vertex coordinate for the triangulation of an animal that is closest to its topological centre.
+
+    :Parameters:
+      animal_obj : animal objects, initialized with regular/flattened coordinates and triangulation set/updated
+
+    :Returns:
+      integer index of the vertex closest to the centroid
+  """
+  #because of the rectangular grid and triangulation method, the topological centre is the the middle index
+  return animal_obj.getNumVerts() // 2
+
+def getCentralVertex(animal_obj):
+  """ 
+  Finds the index of the vertex coordinate for the triangulation of an animal that is closest to its centroid.
+>>>>>>> e74c966... Most recent version of heatmap
+
+    :Parameters:
+      animal_obj_0/1 : animal objects, initialized with regular/flattened coordinates and triangulation set/updated
+
+<<<<<<< HEAD
 def getCirclePacking(animal_obj, radii, flowers, boundary_vertices):
   """ Calculuates a maximal circle packing of the triangulation associated to an animal in the hyperbolic disk
     according to the algorithm presented in "A Circle Packing Algorithm" by Collins and Stephenson
+=======
+    :Returns:
+      integer index of the vertex closest to the centroid
+  """
+ 
+  # get relevant parameters
+  regular_coordinates = animal_obj.getRegularCoordinates()
+  num_verts = animal_obj.getNumVerts() 
+
+  # get centroid of vertices
+  mid_x = sorted([coord[0] for coord in regular_coordinates])[num_verts // 2]
+  mid_y = sorted([coord[1] for coord in regular_coordinates])[num_verts // 2]
+  mid_z = sorted([coord[2] for coord in regular_coordinates])[num_verts // 2]
+
+  # take the norm of the difference between each vertex and the centroid, and take the index of the minimum
+  coordwise_distances = [linalg.norm(array([mid_x, mid_y, mid_z]) - coord) for coord in regular_coordinates]
+  centroid = coordwise_distances.index(min(coordwise_distances))
+
+  return centroid
+
+def inUnitInterval(x):
+  return x >= 0 and x <= 1
+
+def isInTriangle(barycentric_coords):
+  """ Given a list of three barycentric triangles, check if this point is inside the triangle.
+      I.e check if each lambda is between 0 and 1.
+>>>>>>> e74c966... Most recent version of heatmap
 
     :Parameters:
-      animal_obj : animal object, initialized with regular coordinates and triangulation set/updated
-      radii : list of floats containing the initial radii for the circle packing algorithm
-      flowers : list of lists of ints specifying the flower (neighbors in counter-clockwise order) of each vertex
-      boundary_vertices : list of ints whose values are between 0 and one less than the number of regular vertices stored in the animal object
+      barycentric_coords: list of 3 lambda values for this point in barycentric coordinates.
 
     :Returns:
-      list of floats specifying the radii of the circles in a maximal circle packing of the triangulation associated to an animal
+      boolean: true only if each lambda is between 0 and 1
   """
+  a, b, c = barycentric_coords[0], barycentric_coords[1], barycentric_coords[2]
+  return inUnitInterval(a) and inUnitInterval(b) and inUnitInterval(c)
+  # if true, return a, b, c
+  # else return None 
 
+<<<<<<< HEAD
   #store relevant parameters
   tolerance = animal_obj.getTolerance()
   perturb = animal_obj.getPerturbation()
@@ -692,39 +787,110 @@ def getCirclePacking(animal_obj, radii, flowers, boundary_vertices):
         error += abs(theta-2*pi)
         
   return radii
-
-
-def getCenterVertex(animal_obj):
-  #this is a helper method for the getFlatCoordinates method below
-  center_vertex = -1
-  x_dim, y_dim = animal_obj.getDims()
-  coordinates = animal_obj.getRegularCoordinates()
-  for c in coordinates:
-    if c[0] == x_dim/2.0 and c[1] == y_dim/2.0:
-      center_vertex = coordinates.index(c)
-  return center_vertex
-
-
-def mobius(u, v, a, b):
-  #this is a helper method for the getFlatCoordinates method below
-  return [((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2), ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
-
-
-def getFlatCoordinates(animal_obj, radii, flowers, center, boundary_vertices):
-  """ Calculates the vertex coordinates for the triangulation of an animal from its corresponding circle packing in the unit disk
+=======
+def isVertexInTriangle(vertex_1, triangle_0, flat_coords_0, reg_coords_0):
+  """ Given a vertex in the flattened coordinates of Animal 1 and a triangle (indices),
+      regular coordinates and flattened coordinates of Animal 0, check if the flattened vertex in Animal 1
+      is in the flattened triangle of Animal 0.
+>>>>>>> e74c966... Most recent version of heatmap
 
     :Parameters:
-      animal_obj : animal object, initialized with regular coordinates and triangulation set/updated
-      radii : list of floats containing the initial radii for the circle packing algorithm
-      flowers : list of lists of ints specifying the flower (neighbors in counter-clockwise order) of each vertex
-      center : int, index of the most central vertex of the triangulation
-      boundary_vertices : list of ints whose values are between 0 and one less than the number of regular vertices stored in the animal object
+      vertex_1: list of float pairs. The 2D coordinates of the flattened vertex of Animal 1
+      triangle_0: int triple list. The indices corresponding to vertices making up the triangle in Animal 0.
+      flat_coords_0: list of float pairs. The flattened coordinates of Animal 0.
+      reg_coords_0: list of float triples. The regular coordinates of Animal 0.
 
     :Returns:
-      list of pairs of floats, specifying the x- and y-coordinates of the vertices of a triangulation that has been conformally flattened
-      to the unit disk
+      if the vertex is in the triangle: 
+        (x, y, z): triple of floats corresponding to the regular coordinates of the vertex in Animal 0.
+      if the vertex is not in the triangle:
+        None
   """
+  #add 0 value in the z dimension for igl functions
+  vertex_z = array([ hstack((vertex_1, 0)) ])
 
+  #extract flattened coordinates of the vertices of the given triangle
+  #x, y are euclidean coordinates, triangle[i] are indices
+  x_0 = flat_coords_0[triangle_0[0]][0]
+  x_1 = flat_coords_0[triangle_0[1]][0]
+  x_2 = flat_coords_0[triangle_0[2]][0]
+  y_0 = flat_coords_0[triangle_0[0]][1]
+  y_1 = flat_coords_0[triangle_0[1]][1]
+  y_2 = flat_coords_0[triangle_0[2]][1]
+
+  #calculate barycentric coordinates for current vertex in current triangle
+  a, b, c = array([[x_0, y_0, 0]]), array([[x_1, y_1, 0]]), array([[x_2, y_2, 0]])
+  bary_coords = barycentric_coordinates_tri(vertex_z, a, b, c)
+
+  #if current triangle contains rotated flattened coordinates of current vertex, update return values using the barycentric
+  #coordinates above and the regular coordinates of Animal 0
+  if isInTriangle(bary_coords):
+    x = bary_coords[0]*reg_coords_0[triangle_0[0]][0] + \
+        bary_coords[1]*reg_coords_0[triangle_0[1]][0] + \
+        bary_coords[2]*reg_coords_0[triangle_0[2]][0]
+    y = bary_coords[0]*reg_coords_0[triangle_0[0]][1] + \
+        bary_coords[1]*reg_coords_0[triangle_0[1]][1] + \
+        bary_coords[2]*reg_coords_0[triangle_0[2]][1]
+    z = bary_coords[0]*reg_coords_0[triangle_0[0]][2] + \
+        bary_coords[1]*reg_coords_0[triangle_0[1]][2] + \
+        bary_coords[2]*reg_coords_0[triangle_0[2]][2]
+    return array([x, y, z])
+  else:
+    return None
+
+# TODO: Remove eventually, shouldn't need this
+def findClosestVertex(vertex_1, num_verts_0, flat_coordinates_0, regular_coordinates_0):
+  """ Given a vertex in the flattened coordinates of Animal 1 and a triangle (indices),
+      regular coordinates and flattened coordinates of Animal 0, check if the flattened vertex in Animal 1
+      is in the flattened triangle of Animal 0.
+
+    :Parameters:
+      vertex_1: list of float pairs. The 2D coordinates of the flattened vertex of Animal 1
+      num_verts_0, flat_coordinates_0, regular_coordinates_0: number of vertices, flattened coordinates and
+            regular coordinates of Animal 0.
+
+<<<<<<< HEAD
+def getFlatCoordinates(animal_obj, radii, flowers, center, boundary_vertices):
+  """ Calculates the vertex coordinates for the triangulation of an animal from its corresponding circle packing in the unit disk
+=======
+    :Returns:
+      [x, y, z]: float list corresponding to regular coordinates closest to this vertex in Animal 0.
+  """
+  closest_vertex = 0
+  for candidate_vertex in range(num_verts_0):
+    if linalg.norm(array(vertex_1)-array(flat_coordinates_0[candidate_vertex])) < linalg.norm(array(vertex_1)-array(flat_coordinates_0[closest_vertex])):
+      closest_vertex = candidate_vertex
+  x = regular_coordinates_0[closest_vertex][0]
+  y = regular_coordinates_0[closest_vertex][1]
+  z = regular_coordinates_0[closest_vertex][2]
+  return [x, y, z]
+
+
+# TODO: Check if a vertex is on the flattened boundary of an animal
+def isInBoundary(vertex, animal_obj):
+  if DEBUG:
+    print("isInBoundary not implemented yet!")
+  return False 
+
+def getNextNeighbourhood(tri_adj, tri_list, tri_traversed_list):
+  """ Given a triangle-triangle adjacency matrix and a list of indices of triangles, find the triangles
+    adjacent to these triangles going outwards (don't include inner ones)
+>>>>>>> e74c966... Most recent version of heatmap
+
+    :Parameters:
+      tri_adj: 3 * #total triangles array. The triangle-triangle adjacency matrix.
+      tri_list: int list. a list of triangles from which we want to find their outer neighbourhood
+
+    :Returns:
+      list of all triangles that are in the outer neighbourhood
+  """
+  all_adjacent_triangles = []
+  for tri_i in tri_list:
+    adjacent_triangles = tri_adj[tri_i]
+    adjacent_triangles = [elem for elem in adjacent_triangles if elem != -1]
+    all_adjacent_triangles.append(adjacent_triangles)
+
+<<<<<<< HEAD
   #store relevant parameters
   triangles = animal_obj.getTriangulation()
   tolerance = animal_obj.getTolerance()
@@ -822,46 +988,74 @@ def getFlatCoordinates(animal_obj, radii, flowers, center, boundary_vertices):
 def rotation(p, theta):
   #this is a helper method for the method getAlignedCoordinates below.  It rotates a given point in the plane about the origin by a given angle.
   return [cos(theta)*p[0]-sin(theta)*p[1],sin(theta)*p[0]+cos(theta)*p[1]]
+=======
+  all_adjacent_triangles = [item for sublist in all_adjacent_triangles for item in sublist]
+  new_adjacent_triangles = [elem for elem in all_adjacent_triangles if elem not in tri_list]
+  new_adjacent_triangles = [elem for elem in new_adjacent_triangles if elem not in tri_traversed_list]
+  new_adjacent_triangles = list(set(new_adjacent_triangles))
+>>>>>>> e74c966... Most recent version of heatmap
 
+  return new_adjacent_triangles
 
+<<<<<<< HEAD
 def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
+=======
+# TODO: New version with BFS, still in progress
+def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
+>>>>>>> e74c966... Most recent version of heatmap
   """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
     through their respective conformal flattenings and applyling a rotation of angle theta.
 
     :Parameters:
-      animal_obj_0/1 : animal objects, initialized with regular/flattened coordinates and triangulation set/updated
+      animal_obj : animal object, initialized with regular/flattened coordinates and triangulation set/updated
       theta : float with value between 0 and pi, an angle of rotation
 
     :Returns:
       list of triples of floats, specifying the x-, y-, and z-coordinates of the vertices of the triangulation of Animal 1 aligned to
       the triangulation of Animal 0
   """
+<<<<<<< HEAD
+=======
+  if DEBUG:
+    successes = 0
+    non_successes = 0
+>>>>>>> e74c966... Most recent version of heatmap
 
   #store relevant parameters
   num_verts_0 = animal_obj_0.getNumVerts()
+  num_verts_1 = animal_obj_1.getNumVerts()
   regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
   flat_coordinates_0 = animal_obj_0.getFlattenedCoordinates()
   flat_coordinates_0 = [f[:2] for f in flat_coordinates_0]
   triangles_0 = animal_obj_0.getTriangulation()
-  num_verts_1 = animal_obj_1.getNumVerts()
+  triangles_1 = animal_obj_1.getTriangulation()
   flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
   flat_coordinates_1 = [f[:2] for f in flat_coordinates_1]
 
-  #initialize return list
-  aligned_coordinates_1 = []
+  #initialize vertex traversal order from the centroid for Animal 1
+  central_vertex_1 = getCentralVertex(animal_obj_1)
+  v_adj_1 = adjacency_matrix(array(triangles_1))
+  v_traversal_1 = bfs(v_adj_1, central_vertex_1)[0]
+
+  #initialize triangle to triangle adjacency matrix
+  tri_adj = triangle_triangle_adjacency(array(triangles_0))[0]
+
+  #initialize return array with triples of -1
+  aligned_coordinates_1 = zeros((num_verts_1, 3)) - 1
+
+  #initialize root triangle to begin our bfs-like search
+  root_triangle = []
 
   #iterate through the vertices of the triangulation of Animal 1
-  for vertex in range(num_verts_1):
+  # The three triangle vertices are INDICES
+  for vertex in v_traversal_1:
 
     #rotate the flattened coordinates of each such vertex by theta
     rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
 
-    #initialize individual return values
-    x, y, z = 0, 0, 0
-    success = False
-
     #search through all the triangles in the triangulation of Animal 0 for one whose flattened coordinates contain
     #the rotated flattened coordinates of the current vertex in the triangulation of Animal 1
+<<<<<<< HEAD
     for triangle in triangles_0:
 
       #extract flattened coordinates of the vertices of the given triangle
@@ -907,8 +1101,104 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
 
     #append aligned coordinates to return list
     aligned_coordinates_1.append([x,y,z])
+=======
+    #only do the brute force method the FIRST time to get our init triangle
+    if not root_triangle:
+      for triangle_i, triangle in enumerate(triangles_0): 
+        
+        result = []
+        is_in_triangle = isVertexInTriangle(rotated_coordinate, triangle, flat_coordinates_0, regular_coordinates_0)
 
-  return aligned_coordinates_1
+        #find the root triangle to start our bfs-like search
+        if is_in_triangle is not None:
+          root_triangle = triangle_i
+          print("Found initial root triangle:")
+          print(root_triangle)
+          result = is_in_triangle
+          if DEBUG:
+            successes += 1
+          break
+
+        #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
+        elif isInBoundary(rotated_coordinate, animal_obj_1):
+          print("Vertex is on a boundary edge.")
+
+      if result is []:
+        print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
+        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+
+      #append aligned coordinates to return list
+      aligned_coordinates_1[vertex] = result
+    
+    else:
+      if DEBUG:
+        print("Current root triangle: " + str(root_triangle))
+      #Q: Do we need an outer while loop since we have a for loop for all the vertices already?
+
+      #initialize traversed triangles and the current list of triangles whose neighbours we want to search
+      traversed_triangles = []
+      current_tri_list = [root_triangle]    
+              
+      #initialize neighbour triangles
+      neighbour_triangle_indices = getNextNeighbourhood(tri_adj, current_tri_list, traversed_triangles)
+      neighbour_triangles = [triangles_0[i] for i in neighbour_triangle_indices]
+
+      #outer loop: keep searching for a triangle while this vertex is not mapped to one
+      while (aligned_coordinates_1[vertex] == array([-1., -1., -1.])).all():
+        if DEBUG:
+          print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
+          print("Current neighbour triangles: ")
+          print(*neighbour_triangle_indices)
+          print("Current traversed triangles: ")
+          print(*traversed_triangles)
+
+        #check this layer of neighbours
+        for triangle_i, triangle in zip(neighbour_triangle_indices, neighbour_triangles):
+          #check if it's in a triangle or edge (eventually...)
+          result = [] 
+          is_in_triangle = isVertexInTriangle(rotated_coordinate, triangle, flat_coordinates_0, regular_coordinates_0)
+
+          #find the root triangle to start our bfs-like search
+          if is_in_triangle is not None:
+            if DEBUG:
+              print(" SUCCESS: FOUND a triangle for vertex " + str(vertex))
+              print(" ")
+            aligned_coordinates_1[vertex] = is_in_triangle
+            # Update root triangle
+            root_triangle = triangle_i
+
+            if DEBUG:
+              successes += 1
+            #end the for loop, go back to the while loop
+            break
+
+          #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
+          elif isInBoundary(rotated_coordinate, animal_obj_1):
+            print("Vertex is on a boundary edge.")
+
+        #vertex is not in this layer of neighbours - update neighbours and keep going
+        traversed_triangles = traversed_triangles + current_tri_list
+        current_tri_list = neighbour_triangle_indices
+        neighbour_triangle_indices = getNextNeighbourhood(tri_adj, current_tri_list, traversed_triangles)
+        neighbour_triangles = [triangles_0[i] for i in neighbour_triangle_indices]
+
+        #terminate the while loop if we have searched all triangles
+        if len(traversed_triangles) == len(triangles_0):
+          if DEBUG:
+            print("Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
+          aligned_coordinates_1[vertex] = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+          if DEBUG:
+              non_successes += 1
+          break
+
+  if DEBUG:
+    print("Number of successes: " +  str(successes))
+    print("Number of non-successes: " +  str(non_successes))
+    print("Number of vertices checked for animal 1: " + str(num_verts_1))
+>>>>>>> e74c966... Most recent version of heatmap
+
+  #TODO: Leave it as array eventually
+  return [list(coord) for coord in aligned_coordinates_1]
 
 
 def area(p, q, r):
@@ -1024,7 +1314,10 @@ def optimalRotation(animal_obj_0,animal_obj_1):
 ### METHODS FOR CALCULATING CONFORMAL SPATIOTEMPORAL DISTANCES BETWEEN HEAT MAPS ###
 #################################################################################### 
   
+<<<<<<< HEAD
 
+=======
+>>>>>>> e74c966... Most recent version of heatmap
 def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
   """ Computes the Conformal Spatiotemporal Distance between the heatmaps of two animals
 
@@ -1093,7 +1386,10 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
 
   return distance
 
+<<<<<<< HEAD
   
+=======
+>>>>>>> e74c966... Most recent version of heatmap
 def computeAllCSD(animal_list):
   """ Computes the Conformal Spatiotemporal Distances between the heatmaps of all pairs in list of animals
 
