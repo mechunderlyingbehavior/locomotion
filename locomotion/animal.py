@@ -204,6 +204,31 @@ class Animal(object):
 
   def getTriangulation(self):
     return self.triangulation
+
+  def setFlattenedBoundaryVertices(self, vertices):
+    self.flattenedBoundaryVertices = vertices
+
+  def getFlattenedBoundaryVertices(self):
+    return self.flattenedBoundaryVertices
+
+  def setCentralVertex(self, central_vertex):
+    self.centralVertex = central_vertex
+
+  def getCentralVertex(self, central_vertex):
+    return self.centralVertex
+
+  def setVertexBFS(self, vertex_bfs):
+    self.vertexBFS = vertex_bfs
+
+  def getVertexBFS(self):
+    return self.vertexBFS
+
+  def setTriangleTriangleAdjacency(self, triangle_triangle_adjacency):
+    self.triangleTriangleAdjacency = triangle_triangle_adjacency
+  
+  def getTriangleTriangleAdjacency(self):
+    return self.triangleTriangleAdjacency
+
   
 ################################################################################
 ### Basic Functions
