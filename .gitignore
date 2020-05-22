@@ -10,6 +10,12 @@ results/
 locomotion/__pycache__/
 
 # Git Ignore taken from https://github.com/github/gitignore/blob/master/Python.gitignore
+# Local files/ specific IDEs
+.vscode/
+*.DS_Store
+.DS_Store
+line_profiler
+>>>>>>> 451b5d5... Fixed neighbour logic for BFS
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

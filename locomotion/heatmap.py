@@ -27,6 +27,11 @@ from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, adjacen
 PERTURBATION = 0.000000001
 TOLERANCE = 0.00001
 
+<<<<<<< HEAD
+=======
+#Debugging/printing functions
+DEBUG = True
+>>>>>>> 451b5d5... Fixed neighbour logic for BFS
 
 import time
 
@@ -392,7 +397,7 @@ def rotation(p, theta):
   return [cos(theta)*p[0]-sin(theta)*p[1],sin(theta)*p[0]+cos(theta)*p[1]]
 
 # old version -- remove eventually. Use for testing.
-def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
+def getAlignedCoordinatesOld(animal_obj_0, animal_obj_1, theta):
   """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
     through their respective conformal flattenings and applyling a rotation of angle theta.
     :Parameters:
@@ -427,71 +432,32 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
 
     #rotate the flattened coordinates of each such vertex by theta
     rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
+    result = []
 
-    #initialize individual return values
-    x, y, z = 0, 0, 0
-    success = False
-    triangle_counter = 0
+    for triangle_i, triangle in enumerate(triangles_0):
+    
+      is_in_triangle = isVertexInTriangle(rotated_coordinate, triangle, flat_coordinates_0, regular_coordinates_0)
 
-    #search through all the triangles in the triangulation of Animal 0 for one whose flattened coordinates contain
-    #the rotated flattened coordinates of the current vertex in the triangulation of Animal 1
-    for triangle in triangles_0:
-      triangle_counter += 1
-
-      #extract flattened coordinates of the vertices of the given triangle
-      x_0 = flat_coordinates_0[triangle[0]][0]
-      x_1 = flat_coordinates_0[triangle[1]][0]
-      x_2 = flat_coordinates_0[triangle[2]][0]
-      y_0 = flat_coordinates_0[triangle[0]][1]
-      y_1 = flat_coordinates_0[triangle[1]][1]
-      y_2 = flat_coordinates_0[triangle[2]][1]
-
-      #calculate barycentric coordinates for current vertex in current triangle
-      lambda_0 = ((y_1-y_2)*(rotated_coordinate[0]-x_2)+(x_2-x_1)*(rotated_coordinate[1]-y_2)) / \
-                ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
-      lambda_1 = ((y_2-y_0)*(rotated_coordinate[0]-x_2)+(x_0-x_2)*(rotated_coordinate[1]-y_2)) / \
-                ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
-      lambda_2 = 1 - lambda_0 - lambda_1
-
-      #if current triangle contains rotated flattened coordinates of current vertex, update return values using the barycentric
-      #coordinates above and the regular coordinates of Animal 0
-      if lambda_0 >= 0 and lambda_0 <= 1 and lambda_1 >=0 and lambda_1 <=1 and lambda_2 >= 0 and lambda_2 <= 1:
-        location = triangle
-        success = True
-
-        triangle_count_all[vertex] = triangle_counter
-
-        x = lambda_0*regular_coordinates_0[location[0]][0] + \
-            lambda_1*regular_coordinates_0[location[1]][0] + \
-            lambda_2*regular_coordinates_0[location[2]][0]
-        y = lambda_0*regular_coordinates_0[location[0]][1] + \
-            lambda_1*regular_coordinates_0[location[1]][1] + \
-            lambda_2*regular_coordinates_0[location[2]][1]
-        z = lambda_0*regular_coordinates_0[location[0]][2] + \
-            lambda_1*regular_coordinates_0[location[1]][2] + \
-            lambda_2*regular_coordinates_0[location[2]][2]
-
+      #find the root triangle to start our bfs-like search
+      if is_in_triangle is not None:
+        result = is_in_triangle
         if DEBUG:
+          print("SUCCESS: FOUND triangle " + str(triangle_i) + " for vertex " + str(vertex))
           successes += 1
         break
 
-    
-    #if no such triangle is found, update the return values with the coordinates of the closest vertex in Animal 0 to the current vertex
-    if not success:
-      closest_vertex = 0
-      for candidate_vertex in range(num_verts_0):
-        if linalg.norm(array(rotated_coordinate)-array(flat_coordinates_0[candidate_vertex])) < linalg.norm(array(rotated_coordinate)-array(flat_coordinates_0[closest_vertex])):
-          closest_vertex = candidate_vertex
-      x = regular_coordinates_0[closest_vertex][0]
-      y = regular_coordinates_0[closest_vertex][1]
-      z = regular_coordinates_0[closest_vertex][2]
+      #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
+      # elif isInBoundary(rotated_coordinate, animal_obj_1):
+      #   print("Vertex is on a boundary edge.")
 
+    if result == []:
       if DEBUG:
-        non_successes += 1  
-    
+        non_successes += 1
+        print("Could not find a triangle for 190. Assigning closest vertex instead.")
+      result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
 
     #append aligned coordinates to return list
-    aligned_coordinates_1.append([x,y,z])
+    aligned_coordinates_1.append(result)
 
   if DEBUG:
     print("Number of successes: " +  str(successes))
@@ -666,15 +632,18 @@ def getNextNeighbourhood(animal_obj, tri_list, tri_traversed_list):
 
   all_adjacent_triangles = set()
   for tri_i in tri_list:
+    #get the list of the three triangles adjacent to this one
     adjacent_triangles = list(tri_adj[tri_i])
     for triangle_i in adjacent_triangles:
+      #for each triangle in this list, only add it to our output if it is completely new
       if triangle_i != -1 and triangle_i not in tri_list and triangle_i not in tri_traversed_list:
         all_adjacent_triangles.add(triangle_i)
 
   return all_adjacent_triangles
 
 # TODO: New version with BFS, still in progress
-def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
+# @profile
+def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
   """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
     through their respective conformal flattenings and applyling a rotation of angle theta.
 
@@ -699,121 +668,120 @@ def getAlignedCoordinatesNew(animal_obj_0, animal_obj_1, theta):
   triangles_0 = animal_obj_0.getTriangulation()
   flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
   flat_coordinates_1 = [f[:2] for f in flat_coordinates_1]
-  v_traversal_1 = animal_obj_1.getVertexBFS()
+  first_vertex, *v_traversal_1 = animal_obj_1.getVertexBFS()
 
   #initialize return array with triples of -1
-  aligned_coordinates_1 = zeros((num_verts_1, 3)) - 1
+  aligned_coordinates_1 = zeros((num_verts_1, 3))
 
   #initialize root triangle to begin our bfs-like search
   root_triangle = None
 
   triangle_count_all = zeros(num_verts_1)
+  triangle_counter = 0
 
+  # =============== FIND THE FIRST TRIANGLE VIA BRUTE FORCE ======================== 
+
+  #rotate the flattened coordinates of each such vertex by theta
+  first_rotated_coordinate = rotation(flat_coordinates_1[first_vertex], theta)
+
+  #search through all the triangles in the triangulation of Animal 0 for one whose flattened coordinates contain
+  #the rotated flattened coordinates of the current vertex in the triangulation of Animal 1
+  #only do the brute force method the FIRST time to get our init triangle
+
+  #triangle_i is the index of the triangle, whereas triangle is the list of vertices
+  for triangle_i, triangle in enumerate(triangles_0): 
+
+    result = []
+    is_in_triangle = isVertexInTriangle(first_rotated_coordinate, triangle, flat_coordinates_0, regular_coordinates_0)
+
+    #find the root triangle to start our bfs-like search
+    if is_in_triangle is not None:
+      root_triangle = triangle_i
+      if DEBUG:
+        print("Found initial root triangle " + str(root_triangle) + " for vertex "  + str(first_vertex))
+        print(root_triangle)
+      result = is_in_triangle
+      if DEBUG:
+        successes += 1
+      break
+
+    #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
+    # elif isInBoundary(rotated_coordinate, animal_obj_1):
+    #   print("Vertex is on a boundary edge.")
+
+  if result == []:
+    print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
+    result = findClosestVertex(first_rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+
+  #append aligned coordinates to return list
+  aligned_coordinates_1[first_vertex] = result
+
+  # =============== FIND THE REST OF THE TRIANGLES VIA BFS ======================== 
   #iterate through the vertices of the triangulation of Animal 1
   # The three triangle vertices are INDICES
   for vertex in v_traversal_1:
-        
-    triangle_counter = 0
-
     #rotate the flattened coordinates of each such vertex by theta
-    rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
+    rotated_coordinate = rotation(flat_coordinates_1[vertex], theta)
+    result = []
 
-    #search through all the triangles in the triangulation of Animal 0 for one whose flattened coordinates contain
-    #the rotated flattened coordinates of the current vertex in the triangulation of Animal 1
-    #only do the brute force method the FIRST time to get our init triangle
-    if root_triangle is None:
-       
-       #triangle_i is the index of the triangle, whereas triangle is the list of vertices
-      for triangle_i, triangle in enumerate(triangles_0): 
+    #initialize traversed triangles and the current list of triangles whose neighbours we want to search
+    traversed_triangles = set()
+    current_triangle_indices = {root_triangle}
+    current_triangles = [triangles_0[i] for i in current_triangle_indices]
 
-        result = []
+    #outer loop: keep searching for a triangle while this vertex is not mapped to one.
+    while result == []:
+      if DEBUG:
+        print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
+        print("Currently traversing the following triangles: ")
+        print(*current_triangle_indices)
+        print("Current traversed triangles: ")
+        print(*traversed_triangles)
+
+      #check current triangles
+      for triangle_i, triangle in zip(current_triangle_indices, current_triangles):
+        #check if it's in a triangle or edge (eventually...)
         is_in_triangle = isVertexInTriangle(rotated_coordinate, triangle, flat_coordinates_0, regular_coordinates_0)
+        triangle_counter += 1
 
         #find the root triangle to start our bfs-like search
         if is_in_triangle is not None:
-          root_triangle = triangle_i
+          triangle_count_all[vertex] = triangle_counter
+
           if DEBUG:
-            print("Found initial root triangle:")
-            print(root_triangle)
+            print(" SUCCESS: FOUND the triangle " +  str(triangle_i) + " for vertex " + str(vertex))
+            # print(" ")
           result = is_in_triangle
+          # Update root triangle
+          root_triangle = triangle_i
+
           if DEBUG:
-                successes += 1
+            successes += 1
+          #end the for loop, go back to the while loop
           break
 
         #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
-        elif isInBoundary(rotated_coordinate, animal_obj_1):
-          print("Vertex is on a boundary edge.")
+        # elif isInBoundary(rotated_coordinate, animal_obj_1):
+        #   print("Vertex is on a boundary edge.")
 
-      if result is []:
-            print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
-        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+      #vertex is not in this layer of neighbours - update and keep searching
+      #update the traversed triangles with the triangles we just traversed
+      traversed_triangles = traversed_triangles.union(current_triangle_indices)
+      #update the current triangle set we want to search to its neighbours
+      current_triangle_indices = getNextNeighbourhood(animal_obj_0, current_triangle_indices, traversed_triangles)
+      current_triangles = [triangles_0[i] for i in current_triangle_indices]
 
-      #append aligned coordinates to return list
-      aligned_coordinates_1[vertex] = result
-    
-    else:
-      if DEBUG:
-        print("Current root triangle: " + str(root_triangle))
-
-      #initialize traversed triangles and the current list of triangles whose neighbours we want to search
-      traversed_triangles = set()
-      current_tri_set = {root_triangle}
-              
-      #initialize neighbour triangles
-      neighbour_triangle_indices = getNextNeighbourhood(animal_obj_0, current_tri_set, traversed_triangles)
-      neighbour_triangles = [triangles_0[i] for i in neighbour_triangle_indices]
-
-      #outer loop: keep searching for a triangle while this vertex is not mapped to one
-      while (aligned_coordinates_1[vertex] == array([-1., -1., -1.])).all():
+      #terminate the while loop if we have searched all triangles
+      if len(traversed_triangles) == len(triangles_0):
         if DEBUG:
-              print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
-          print("Current neighbour triangles: ")
-          print(*neighbour_triangle_indices)
-          print("Current traversed triangles: ")
-          print(*traversed_triangles)
+          print("Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
+        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+        if DEBUG:
+            non_successes += 1
+        break
 
-        #check this layer of neighbours
-        for triangle_i, triangle in zip(neighbour_triangle_indices, neighbour_triangles):
-          #check if it's in a triangle or edge (eventually...)
-          result = [] 
-          is_in_triangle = isVertexInTriangle(rotated_coordinate, triangle, flat_coordinates_0, regular_coordinates_0)
-          triangle_counter += 1
-
-          #find the root triangle to start our bfs-like search
-          if is_in_triangle is not None:
-            triangle_count_all[vertex] = triangle_counter
-
-            if DEBUG:
-              print(" SUCCESS: FOUND the triangle " +  str(triangle_i) + " for vertex " + str(vertex))
-              print(" ")
-            aligned_coordinates_1[vertex] = is_in_triangle
-            # Update root triangle
-            root_triangle = triangle_i
-
-            if DEBUG:
-              successes += 1
-            #end the for loop, go back to the while loop
-            break
-
-          #if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
-          elif isInBoundary(rotated_coordinate, animal_obj_1):
-            print("Vertex is on a boundary edge.")
-
-
-        #vertex is not in this layer of neighbours - update neighbours and keep going
-        traversed_triangles = traversed_triangles.union(current_tri_set)
-        current_tri_set = neighbour_triangle_indices
-        neighbour_triangle_indices = getNextNeighbourhood(animal_obj_0, current_tri_set, traversed_triangles)
-        neighbour_triangles = [triangles_0[i] for i in neighbour_triangle_indices]
-
-        #terminate the while loop if we have searched all triangles
-        if len(traversed_triangles) == len(triangles_0):
-          if DEBUG:
-                print("Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
-          aligned_coordinates_1[vertex] = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-          if DEBUG:
-              non_successes += 1
-          break
+    #assign the result for this vertex
+    aligned_coordinates_1[vertex] = result
 
   if DEBUG:
     print("Number of successes: " +  str(successes))
