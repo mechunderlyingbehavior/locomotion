@@ -24,9 +24,9 @@ except FileExistsError:
 
 
 # Constants
-NUM_CURVES = 11 # This must match the number of curves.
+NUM_CURVES = 50 # This must match the number of curves.
 ZFILL_LEN = int(np.ceil(np.log10(NUM_CURVES)))
-NUM_SAMPLES = 100 # Number of samples being tested
+NUM_SAMPLES = 50 # Number of samples being tested
 SAMP_FILL = int(np.ceil(np.log10(NUM_SAMPLES)))
 DEFAULT_START = 0 # Start Time in Minutes
 DEFAULT_STOP = 1 # Stop Time in Minutes
@@ -244,7 +244,8 @@ def captureAllCurves(test_key):
 
 
 def runRobustnessTest(test_key, variables, norm_mode, start_min, end_min):
-    results = np.zeros([NUM_CURVES, NUM_SAMPLES])
+    NUM_TESTS = len(testData[test_key]["framerates"]) * len(testData[test_key]["densities"])
+    results = np.zeros([NUM_CURVES, NUM_TESTS])
     for curve_no in range(NUM_CURVES):
         curve_str = str(curve_no).zfill(ZFILL_LEN)
         json_path = PATH_TO_RES_DIRECTORY + "/{}/CRV_{}.json".format(test_key, curve_str)
@@ -275,7 +276,7 @@ testData = {
         "control" : (24, 2)
     },
     "FR_test_higher" : {
-        "framerates" : genVariables(24, 120, NUM_SAMPLES),
+        "framerates" : list(range(24,120,2)),
         "densities" : [2],
         "control" : (24, 2)
     },
@@ -292,7 +293,7 @@ testData = {
 }
 
 # Change these variables
-test_name = "FR_test_lower"
+test_name = "FR_test_higher"
 variables = ['Velocity', 'Curvature']
 norm_mode = 'spec'
 

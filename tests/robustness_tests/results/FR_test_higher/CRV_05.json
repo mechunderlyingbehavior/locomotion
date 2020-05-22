@@ -1,0 +1,982 @@
+[
+    {
+        "name": "CRV_05_TEST_CTRL",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_CTRL.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "True"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 24,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 24,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 26,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 28,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 30,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 32,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 34,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 36,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 38,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 40,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 42,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 44,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 46,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 48,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 50,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 52,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 54,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 56,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 58,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 60,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 62,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 64,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 66,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 68,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 70,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 72,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 74,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 76,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 78,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 80,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 82,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 84,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 86,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 88,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 90,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 92,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 94,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 96,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 98,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 100,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 102,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 104,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 106,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 108,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 110,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 112,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 114,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 116,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    },
+    {
+        "name": "CRV_05_TEST_00",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/tests/robustness_tests/results/FR_test_higher/CRV_05_TEST_00.dat",
+        "animal_attributes": {
+            "species": "Magic Scoliosis Fish",
+            "exp_type": "MCS",
+            "ID": "05",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 100,
+            "dim_y": 100,
+            "pixels_per_mm": 2,
+            "frames_per_sec": 118,
+            "start_time": 0,
+            "end_time": 1,
+            "baseline_start_time": 0,
+            "baseline_end_time": 1
+        }
+    }
+]
