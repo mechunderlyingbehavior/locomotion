@@ -1,0 +1,7 @@
+test.py
+extendedDTW/extendedDTW.c
+extendedDTW/extendedDTW.so
+extendedDTW/build/
+samples/info_med.json
+samples/info_med_data/*
+locomotion/extendedDTW.so
