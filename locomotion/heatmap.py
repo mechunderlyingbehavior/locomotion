@@ -121,7 +121,7 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
 
   #since edges between the vertex IDs are stored in the faces, we pass triangles to get the vertex adjacency
   vertex_adjacency_matrix = adjacency_matrix(array(triangles))
-  vertex_bfs = bfs(vertex_adjacency_matrix, central_vertex)[0]
+  vertex_bfs = bfs(vertex_adjacency_matrix, central_vertex)
   animal_obj.setVertexBFS(vertex_bfs)
 
   #calculate and record triangle-triangle adjacency matrix
@@ -409,6 +409,7 @@ def rotation(p, theta):
   return [cos(theta)*p[0]-sin(theta)*p[1],sin(theta)*p[0]+cos(theta)*p[1]]
 
 # old version -- remove eventually. Use for testing.
+@timeit
 def getAlignedCoordinatesOld(animal_obj_0, animal_obj_1, theta):
   """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
     through their respective conformal flattenings and applyling a rotation of angle theta.
@@ -620,6 +621,7 @@ def getNextNeighbourhood(animal_obj, current_triangles, traversed_triangles):
 
 # TODO: New version with BFS, still in progress
 # @profile
+@timeit
 def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
   """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
     through their respective conformal flattenings and applyling a rotation of angle theta.
@@ -647,10 +649,14 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
   flat_coordinates_1 = [f[:2] for f in flat_coordinates_1]
   
   #given the bfs ordering of vertices, store the first vertex and the rest of the list separately
-  first_vertex, *v_traversal_1 = animal_obj_1.getVertexBFS()
+  bfs_ordering, bfs_ancestors = animal_obj_1.getVertexBFS()
+  first_vertex, *v_traversal_1 = bfs_ordering
 
-  #initialize return array with triples of 0
-  aligned_coordinates_1 = [[0,0,0]] * num_verts_1
+  #initialize return array with triples of -1
+  aligned_coordinates_1 = [[-1,-1,-1]] * num_verts_1
+
+  #initialise dictionary that maps each vertex index of Animal 1 to the triangle index of Animal 0
+  vertex_to_triangle_map = {}
 
   #initialize root triangle 
   root_triangle = None
@@ -676,11 +682,16 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
     #if we have found a triangle for our first vertex, set it as our root triangle
     if barycentric_coords is not None:
       root_triangle = triangle_i
+
+      #add it to our vertex-to-triangle dictionary
+      vertex_to_triangle_map[first_vertex] = triangle_i
       if DEBUG:
         print("Found initial root triangle " + str(root_triangle) + " for vertex "  + str(first_vertex))
         print(root_triangle)
+
       #set the result as the regular coordinates corresponding to the barycentric coordinates
       result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)
+      
       if DEBUG:
         successes += 1
       break
@@ -730,13 +741,17 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
           #triangle count - for debugging
           triangle_count_all[vertex] = triangle_counter
 
-          if DEBUG:
-            print(" SUCCESS: FOUND the triangle " +  str(triangle_i) + " for vertex " + str(vertex))
-            # print(" ")
-          result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)
-          #TODO: Update root triangle with the parent of this triangle rather than this triangle
-          root_triangle = triangle_i
+          #update vertex_to_triangle_map with this vertex and this triangle
+          vertex_to_triangle_map[vertex] = triangle_i
 
+          if DEBUG:
+            print(" TRIANGLE SUCCESS: FOUND the triangle " +  str(triangle_i) + " for vertex " + str(vertex))
+            # print(" ")
+          result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)          
+          
+          #assign the triangle corresponding to the parent of this vertex as the new root
+          parent_vertex = bfs_ancestors[vertex]
+          root_triangle = vertex_to_triangle_map[parent_vertex]
           if DEBUG:
             successes += 1
           #since we found a triangle for this vertex, end this for loop and go back to the while loop
@@ -757,7 +772,7 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
       #if we still haven't found any triangles at this point, assign the closest vertex instead
       if len(traversed_triangles) == len(triangles_0):
         if DEBUG:
-          print("Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
+          print("TRIANGLE FAILURE: Could not find a triangle for " + str(vertex) + ". Assigning closest vertex instead.")
         result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
         if DEBUG:
             non_successes += 1
