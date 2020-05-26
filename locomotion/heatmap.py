@@ -550,8 +550,6 @@ def fromBarycentricToCoordinates(bary_coords, triangle, coords):
       bary_coords[2]*coords[triangle[2]][2]
   return [x, y, z]
 
-
-# Use a separate method to get the coordinates given the barycentric coordinates
 # TODO: Remove eventually, shouldn't need this
 def findClosestVertex(vertex_1, num_verts_0, flat_coordinates_0, regular_coordinates_0):
   """ Given a vertex in the flattened coordinates of Animal 1 and a triangle (indices),
@@ -579,31 +577,30 @@ def isInBoundary(vertex, animal_obj):
     # print("isInBoundary not implemented yet!")
   return False 
 
-def getNextNeighbourhood(animal_obj, tri_list, tri_traversed_list):
-  """ Given a triangle-triangle adjacency matrix and a list of indices of triangles, find the triangles
-    adjacent to these triangles going outwards (don't include inner ones)
+def getNextNeighbourhood(animal_obj, current_triangles, traversed_triangles):
+  """ Given an animal object, a set of triangles (in indices) whose neighbours we want to get and a set of 
+    inner triangles we have already traversed, find the next layer of neighbours that we have not yet traversed.
 
     :Parameters:
-      tri_adj: 3 * #total triangles array. The triangle-triangle adjacency matrix.
-      tri_list: int list. a list of triangles from which we want to find their outer neighbourhood
+      animal_obj: the animal object we are looking at.
+      current_triangles: int set. The set of the indices of triangles whose neighbours we want to find.
+      traversed_triangles: int set. The set of indices of triangles which we have already traversed.
 
     :Returns:
-      list of all triangles that are in the outer neighbourhood
+      the set of all triangles that are in the outer neighbourhood
   """
-  tri_adj = animal_obj.getTriangleTriangleAdjacency()
-
+  triangle_triangle_adjacency_array = animal_obj.getTriangleTriangleAdjacency()
   all_adjacent_triangles = set()
-  for tri_i in tri_list:
-    #get the list of the three triangles adjacent to this one
 
-    # Use set update here for a single for loop
-    adjacent_triangles = list(tri_adj[tri_i])
-    for triangle_i in adjacent_triangles:
-      #for each triangle in this list, only add it to our output if it is completely new
-      if triangle_i != -1 and triangle_i not in tri_list and triangle_i not in tri_traversed_list:
-        all_adjacent_triangles.add(triangle_i)
-    
-    # Use another for loop to do all adjacent triangles discard traversed list 
+  for triangle_i in current_triangles:
+    #update all adjacent triangles with the triangles adjacent to each triangle
+    adjacent_triangles = triangle_triangle_adjacency_array[triangle_i]
+    all_adjacent_triangles.update(adjacent_triangles)
+
+  #remove -1, current triangles and traversed triangles from all the adjacent triangles we've found
+  all_adjacent_triangles.difference_update(current_triangles)
+  all_adjacent_triangles.difference_update(traversed_triangles)
+  all_adjacent_triangles.discard(-1)
 
   return all_adjacent_triangles
 
