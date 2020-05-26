@@ -104,12 +104,14 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   animal_obj.setColors(colors)
 
   print("Calculating flattened coordinates for %s..." % animal_obj.getName())
+
+  #calculate and record boundary vertices
+  boundary_vertices = getBoundaryLoop(animal_obj)
+  animal_obj.setBoundaryVertices(boundary_vertices)
   
   #calculate and record flattened coordinates of triangulation
-  flattened_coordinates, flattened_boundary = getFlatCoordinates(animal_obj)
-
+  flattened_coordinates = getFlatCoordinates(animal_obj)
   animal_obj.setFlattenedCoordinates(flattened_coordinates)
-  animal_obj.setFlattenedBoundaryVertices(flattened_boundary)
 
   print("Calculating vertex BFS and triangle adjacency for %s..." % animal_obj.getName())
 
@@ -261,6 +263,18 @@ def getTriangles(animal_obj):
 
   return triangles
   
+def getBoundaryLoop(animal_obj):
+  """ Given an animal object, get its ordered boundary vertices. This method is a wrapper for the corresponding IGL function.
+
+    :Parameters:
+        animal_obj : animal object, initialized with regular coordinates and triangulation set/updated
+
+      :Returns:
+        array of ints. The indices of the vertices that are on the boundary of this animal.
+  """
+  #convert triangulation to array for IGL 
+  f = array(animal_obj.getTriangulation())
+  return boundary_loop(f)
 
 def getColors(animal_obj):
   """ Calculates color for rendering each triangle in the triangulation of an animal according 
@@ -351,10 +365,10 @@ def getFlatCoordinates(animal_obj):
   tolerance = animal_obj.getTolerance()
   v, f = array(animal_obj.getRegularCoordinates()), array(animal_obj.getTriangulation())
     
-  # get boundary vertices
-  boundary_vertices = boundary_loop(f)
+  # get boundary vertice indices (already an array) from the animal
+  boundary_vertices = animal_obj.getBoundaryVertices()
 
-  # map boundary vertices to unit circle, preserving edge proportions
+  # map boundary vertices to unit circle, preserving edge proportions. These are the actual flattened coordinates.
   flattened_boundary = map_vertices_to_circle(v, boundary_vertices)
 
   # map internal vertices to unit circle
@@ -381,7 +395,7 @@ def getFlatCoordinates(animal_obj):
     p = mean([c[0] for c in flat_coordinates])
     q = mean([c[1] for c in flat_coordinates])
 
-  return (flat_coordinates, flattened_boundary)
+  return flat_coordinates
 
 
 #########################################################################  

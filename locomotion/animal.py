@@ -205,11 +205,11 @@ class Animal(object):
   def getTriangulation(self):
     return self.triangulation
 
-  def setFlattenedBoundaryVertices(self, vertices):
-    self.flattenedBoundaryVertices = vertices
+  def setBoundaryVertices(self, vertices):
+    self.boundaryVertices = vertices
 
-  def getFlattenedBoundaryVertices(self):
-    return self.flattenedBoundaryVertices
+  def getBoundaryVertices(self):
+    return self.boundaryVertices
 
   def setCentralVertex(self, central_vertex):
     self.centralVertex = central_vertex
