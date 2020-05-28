@@ -28,13 +28,8 @@ from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, adjacen
 PERTURBATION = 0.000000001
 TOLERANCE = 0.00001
 
-<<<<<<< HEAD
-#Debugging/printing functions
-DEBUG = True
-=======
 #debug printer - prints triangles and successes/failures
 DEBUG = False
->>>>>>> b07a357... Added boundary edge checks
 
 #counts the number of triangles traversed in both old and new functions
 ACCURACY_CHECK = False
