@@ -181,6 +181,12 @@ class Animal(object):
   def getNumVerts(self):
     return self.numVerts
 
+  def setNumTriangles(self, n):
+        self.numTriangles = n
+
+  def getNumTriangles(self):
+    return self.numTriangles
+
   def setColors(self, colors):
     self.colors=colors
 
@@ -217,10 +223,10 @@ class Animal(object):
   def getCentralVertex(self, central_vertex):
     return self.centralVertex
 
-  def setVertexBFS(self, vertex_bfs):
+  def setInteriorVertexBFS(self, vertex_bfs):
     self.vertexBFS = vertex_bfs
 
-  def getVertexBFS(self):
+  def getInteriorVertexBFS(self):
     return self.vertexBFS
 
   def setTriangleTriangleAdjacency(self, triangle_triangle_adjacency):

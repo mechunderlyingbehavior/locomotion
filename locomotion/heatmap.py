@@ -16,23 +16,28 @@
 ## symmetric distortion energy of such an alignment.
 
 from math import ceil, exp, log, sin, asin, pi, acosh, cosh, sinh, cos, acos, atanh, tanh
-from numpy import min, mean, std, array, linalg, dot, cross, hstack, zeros
-from collections import deque
+from numpy import mean, std, array, linalg, zeros
 from scipy.optimize import minimize_scalar
 import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import throwError
-from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, adjacency_matrix, bfs, triangle_triangle_adjacency, barycentric_coordinates_tri
+from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, adjacency_matrix, bfs, triangle_triangle_adjacency
 
 #Static Variables
 PERTURBATION = 0.000000001
 TOLERANCE = 0.00001
 
-#debug printer - prints triangles and successes/failures
+#debug printer - prints triangle/boundary successes/failures and results summary
 DEBUG = False
+
+#detailed debugger - prints the actual triangle/boundary traversal
+TRAVERSAL_DEBUG = False
 
 #counts the number of triangles traversed in both old and new functions
 ACCURACY_CHECK = False
+
+#using boundary checks or closest vertex - for comparison to the original results from the paper
+USE_CLOSEST_VERTEX = False
 
 import time
 
@@ -100,6 +105,7 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   
   #get and record triangles
   triangles = getTriangles(animal_obj)
+  animal_obj.setNumTriangles(len(triangles))
   animal_obj.setTriangulation(triangles)
 
   #calculate and store colors for output file
@@ -122,10 +128,15 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   central_vertex = getCentralVertex(animal_obj)
   animal_obj.setCentralVertex(central_vertex)
 
-  #since edges between the vertex IDs are stored in the faces, we pass triangles to get the vertex adjacency
-  vertex_adjacency_matrix = adjacency_matrix(array(triangles))
-  vertex_bfs = bfs(vertex_adjacency_matrix, central_vertex)
-  animal_obj.setVertexBFS(vertex_bfs)
+  #for each animal, we want a BFS of just the interior vertices, not the boundary vertices
+  #as a first step, we need to get all triangles that do not contain a boundary vertex (No-Boundary-Vertex/NBV triangles)
+  #this is because the edge information between interior vertices is stored within the NBV-triangles
+  nbv_triangles = getNBVTriangles(animal_obj)
+
+  #find the adjacency matrix of the interior vertices using NBV triangles to calculate and record the BFS
+  interior_vertex_adjacency_matrix = adjacency_matrix(array(nbv_triangles))
+  interior_vertex_bfs = bfs(interior_vertex_adjacency_matrix, central_vertex)
+  animal_obj.setInteriorVertexBFS(interior_vertex_bfs)
 
   #calculate and record triangle-triangle adjacency matrix
   triangle_adjacency_matrix = triangle_triangle_adjacency(array(triangles))[0]
@@ -344,6 +355,34 @@ def getCentralVertex(animal_obj):
 
   return central_vert
 
+def getNBVTriangles(animal_obj):
+  """ 
+  Finds all triangles in an animal that do not include its boundary vertices.
+
+    :Parameters:
+      animal_obj : animal objects, initialized with regular/flattened coordinates and triangulation set/updated
+
+    :Returns:
+      list of list triples. list of all triangles in the animal that do not contain boundary vertices.
+  """
+  #get relevant parameters
+  triangles = animal_obj.getTriangulation()
+  boundary_vertices = set(animal_obj.getBoundaryVertices())
+  interior_triangles = []
+  
+  #for each triangle, check if each vertex is a boundary vertex. If it does not contain a boundary vertex, add it to interior_triangles
+  for triangle in triangles:
+    contains_boundary_vertex = False
+    for vertex in triangle:
+      if vertex in boundary_vertices:
+        contains_boundary_vertex = True
+        break
+    #either all vertices in this triangle are not boundary vertices, or we found a boundary vertex at this point
+    if not contains_boundary_vertex:
+      interior_triangles.append(triangle)
+
+  return interior_triangles
+
 ####################################################################################  
 ### METHODS FOR CALCULATING CONFORMAL FLATTENINGS OF TRIANGULATIONS TO UNIT DISK ###
 #################################################################################### 
@@ -366,35 +405,30 @@ def getFlatCoordinates(animal_obj):
 
   # store relevant parameters and convert to arrays
   tolerance = animal_obj.getTolerance()
-  v, f = array(animal_obj.getRegularCoordinates()), array(animal_obj.getTriangulation())
+  regular_coordinates, triangles = array(animal_obj.getRegularCoordinates()), array(animal_obj.getTriangulation())
     
   # get boundary vertice indices (already an array) from the animal
   boundary_vertices = animal_obj.getBoundaryVertices()
 
-  # map boundary vertices to unit circle, preserving edge proportions. These are the actual flattened coordinates.
-  flattened_boundary = map_vertices_to_circle(v, boundary_vertices)
+  # map boundary vertices to unit circle, preserving edge proportions, to get the flattened boundary coordinates
+  flattened_boundary_coordinates = map_vertices_to_circle(regular_coordinates, boundary_vertices)
 
   # map internal vertices to unit circle
-  flat_coordinates = harmonic_weights(v, f, boundary_vertices, flattened_boundary, 1)
+  flat_coordinates = harmonic_weights(regular_coordinates, triangles, boundary_vertices, flattened_boundary_coordinates, 1)
   # TODO: Eventually, leave this as an array
   flat_coordinates = list(flat_coordinates)
 
   # apply a conformal automorphism (Mobius transformation) of the unit disk that moves the center of mass of the flattened coordinates to the origin
   p = mean([c[0] for c in flat_coordinates])
   q = mean([c[1] for c in flat_coordinates])
-  print("LOG: Distance of original centroid to origin is %f. " % (p**2+q**2))
-
-  # temporary counter
-  centre_of_mass_moves = 0
 
   while p**2+q**2 > tolerance:
-    centre_of_mass_moves += 1
-
+    print("LOG: Distance of original centroid to origin is %f. Moving closer to origin." % (p**2+q**2))
     for i in range(len(flat_coordinates)):
           x = flat_coordinates[i][0]
       y = flat_coordinates[i][1]
       flat_coordinates[i] = mobius(x,y,p,q)
-      flat_coordinates[i].append(0)
+      # flat_coordinates[i].append(0)
     p = mean([c[0] for c in flat_coordinates])
     q = mean([c[1] for c in flat_coordinates])
 
@@ -409,7 +443,7 @@ def getFlatCoordinates(animal_obj):
 # Given a point and a theta, map the point to the rotation by theta
 def rotation(p, theta):
   #this is a helper method for the method getAlignedCoordinates below.  It rotates a given point in the plane about the origin by a given angle.
-  return [cos(theta)*p[0]-sin(theta)*p[1],sin(theta)*p[0]+cos(theta)*p[1]]
+  return [cos(theta)*p[0]-sin(theta)*p[1], sin(theta)*p[0]+cos(theta)*p[1]]
 
 # old version -- remove eventually. Use for testing.
 # @profile
@@ -432,83 +466,101 @@ def getAlignedCoordinatesOld(animal_obj_0, animal_obj_1, theta):
   num_verts_0 = animal_obj_0.getNumVerts()
   regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
   flat_coordinates_0 = animal_obj_0.getFlattenedCoordinates()
-  flat_coordinates_0 = [f[:2] for f in flat_coordinates_0]
   triangles_0 = animal_obj_0.getTriangulation()
   num_verts_1 = animal_obj_1.getNumVerts()
   flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
-  flat_coordinates_1 = [f[:2] for f in flat_coordinates_1]
-  #store boundary vertices of Animal 1 as a set for faster membership checking
-  boundary_vertices_1 = set(animal_obj_1.getBoundaryVertices())
-  boundary_vertices_0 = animal_obj_0.getBoundaryVertices()
+  #store boundary vertices as lists for faster iteration
+  boundary_vertices_1 = list(animal_obj_1.getBoundaryVertices())
+  boundary_vertices_0 = list(animal_obj_0.getBoundaryVertices())
+  interior_vertices_1 = set(range(num_verts_1)) - set(boundary_vertices_1)
 
-  #initialize return list
-  aligned_coordinates_1 = []
+  #initialize return list with fixed size
+  aligned_coordinates_1 = [[-1,-1,-1]] * num_verts_1
 
   #triangle counter for each vertex
   if ACCURACY_CHECK:
     triangle_count_all = zeros(num_verts_1)
 
+  # ========================= 2. FIND THE THE CORRESPONDING COORDINATES FOR INTERIOR VERTICES ==============================
+
   #iterate through the vertices of the triangulation of Animal 1
-  for vertex in range(num_verts_1):
+  for vertex in interior_vertices_1:
 
     #rotate the flattened coordinates of each such vertex by theta
     rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
     result = []
 
-    # DEBUG: Initialise triangle count
-    triangle_counter = 0
+    if ACCURACY_CHECK:
+      triangle_counter = 0
 
-    #if vertex is on the boundary, find the closest vertex instead
-    if vertex in boundary_vertices_1:
-      #cycle through all boundary vertices in Animal 0 and check which two they lie between 
+    for triangle_i, triangle in enumerate(triangles_0):
+      if ACCURACY_CHECK:
+        triangle_counter += 1
 
-      #to iterate over all edges, zip the boundary vertices with itself with an offset of 1 and its head appended at the back (so it goes full circle)
-      boundary_edges = zip(boundary_vertices_0, boundary_vertices_0[1:] + [boundary_vertices_0[0]])
-      for curr_vertex, next_vertex in boundary_edges:
-        line_segment_coords = getLineSegmentCoordinates(rotated_coordinate, [curr_vertex, next_vertex], flat_coordinates_0)
+      #find the barycentric coordinates for the rotated vertex in the current triangle with respect to the flattened coordinates.
+      #if the vertex is not in the triangle, barycentric_coords will be assigned None.
+      barycentric_coords = getBarycentricCoordinates(rotated_coordinate, triangle, flat_coordinates_0)
 
-        if line_segment_coords is not None:
-          if DEBUG:
-            print("BOUNDARY SUCCESS: FOUND boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
-            in_boundary += 1
-          result = fromLineSegmentToCoordinates(line_segment_coords, [curr_vertex, next_vertex], regular_coordinates_0)
-          break
-
-      if result == []:    
+      #if the vertex is in the current triangle, assign the result to the corresponding regular coordinates
+      if isInside(barycentric_coords):
+        result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)
         if DEBUG:
-          print("BOUNDARY FAILURE: Could not find line segment for vertex " + str(vertex) + ". Assigning closest vertex instead. ")
-          non_successes += 1
-        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-            
-    #if it's not in the boundary, it must be in a triangle - check through all triangles
-    else:
-      for triangle_i, triangle in enumerate(triangles_0):
-        if ACCURACY_CHECK:
-          triangle_counter += 1
+          print("TRIANGLE SUCCESS: FOUND triangle " + str(triangle_i) + " for vertex " + str(vertex))
+          successes += 1
+        break
 
-        #find the barycentric coordinates for the rotated vertex in the current triangle with respect to the flattened coordinates.
-        #if the vertex is not in the triangle, barycentric_coords will be assigned None.
-        barycentric_coords = getBarycentricCoordinates(rotated_coordinate, triangle, flat_coordinates_0)
-
-        #if the vertex is in the current triangle, assign the result to the corresponding regular coordinates
-        if barycentric_coords is not None:
-          result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)
-          if DEBUG:
-            print("TRIANGLE SUCCESS: FOUND triangle " + str(triangle_i) + " for vertex " + str(vertex))
-            successes += 1
-          break
-
-      if result == []:
-        if DEBUG:
-          non_successes += 1
-          print("WARNING: " + str(vertex) + " not on a boundary, and no triangle found for it. Assigning closest vertex instead.")
-        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+    if result == []:
+      if DEBUG:
+        non_successes += 1
+      print("WARNING: TRIANGLE FAILURE: no triangle found for the interior vertex " + str(vertex) + ". Assigning closest vertex instead.")
+      result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
 
     #append aligned coordinates to return list
-    aligned_coordinates_1.append(result)
+    aligned_coordinates_1[vertex] = result
 
     if ACCURACY_CHECK:
       triangle_count_all[vertex] = triangle_counter
+
+  # ========================= 2. FIND THE THE CORRESPONDING COORDINATES FOR BOUNDARY VERTICES ==============================
+
+  #if vertex is on the boundary, either find the closest vertex or the corresponding boundary edge
+  for vertex in boundary_vertices_1:
+        
+    #rotate the flattened coordinates of each such vertex by theta
+    rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
+    result = []
+
+    if USE_CLOSEST_VERTEX:
+      result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+    else:
+      #cycle through all boundary vertices in Animal 0 and check which two they lie between 
+      #to iterate over all edges, zip the boundary vertices with itself with an offset of 1 and its head appended at the back (so it goes full circle)
+      boundary_edges = zip(boundary_vertices_0, boundary_vertices_0[1:] + [boundary_vertices_0[0]])
+      for curr_vertex, next_vertex in boundary_edges:
+            
+        #get the barycentric coordinates of the rotated coordinate with respect to the edge between the two current vertices being checked
+        barycentric_coords = getBarycentricCoordinates(rotated_coordinate, [curr_vertex, next_vertex], flat_coordinates_0)
+
+        if TRAVERSAL_DEBUG:
+          print(" Currently checking the boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
+
+        if isInside(barycentric_coords):
+          if DEBUG:
+            print("BOUNDARY SUCCESS: FOUND boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
+            in_boundary += 1
+          result = fromBarycentricToCoordinates(barycentric_coords, [curr_vertex, next_vertex], regular_coordinates_0)
+          break
+
+      #if we couldn't find a boundary edge for this boundary vertex, assign the closest vertex instead
+      if result == []:
+        print("WARNING: BOUNDARY FAILURE: Could not find line segment for vertex " + str(vertex) + ". Assigning closest vertex instead. ")    
+        if DEBUG:
+          non_successes += 1
+        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+
+    #assign aligned coordinates to return list  
+    aligned_coordinates_1[vertex] = result
+
 
   if DEBUG:
     print("Number of triangle successes: " +  str(successes))
@@ -524,144 +576,116 @@ def getAlignedCoordinatesOld(animal_obj_0, animal_obj_1, theta):
 def inUnitInterval(x):
   return x >= 0 and x <= 1
 
-def isInTriangle(barycentric_coords):
-  """ Given a list of three barycentric coordinates check if this point is inside the triangle.
-      I.e check if each lambda is between 0 and 1.
+def isInside(barycentric_coords):
+  """ Given a list of any number of barycentric coordinates, check if each value is between 0 and 1.
 
     :Parameters:
-      barycentric_coords: list of 3 lambda values for this point in barycentric coordinates.
+      barycentric_coords: list of n lambda values for this point in barycentric coordinates.
 
     :Returns:
-      boolean: true only if each lambda is between 0 and 1
-  """
-  a, b, c = barycentric_coords[0], barycentric_coords[1], barycentric_coords[2]
-  return inUnitInterval(a) and inUnitInterval(b) and inUnitInterval(c)
-  # if true, return a, b, c
-  # else return None 
+      boolean: true only if all lambda values are between 0 and 1
+  """    
+  return all(map(inUnitInterval, barycentric_coords))
 
-def getBarycentricCoordinates(vertex_1, triangle_0, flat_coords_0):
-      """ Given a vertex in the flattened coordinates of Animal 1, a triangle (in indices), and
-      flattened coordinates of Animal 0, check if the flattened vertex in Animal 1
-      is in the flattened triangle of Animal 0.
+def getBarycentricCoordinates(point, simplex, coordinates):
+  """ Given a 2D point inside a simplex (a line segment or a triangle), find out its barycentric coordinates.
+      In the case of the line (1-simplex), this would be the point expressed as a linear combination of the two endpoints.
+      In the case of the triangle (2-simplex), this would be the point expressed as a linear combination of three corner coordinates.
+
+      NOTE: This method will not work when finding barycentric coordinates of points within a triangle or line segment in R^3!
+      It is only meant for finding barycentric coordinates of 2D points within 2D line segments or triangles.
 
     :Parameters:
-      vertex_1: list of float pairs. The 2D coordinates of the flattened vertex of Animal 1.
-      triangle_0: int triple list. The indices corresponding to vertices making up the triangle in Animal 0.
-      flat_coords_0: list of float pairs. The flattened coordinates of Animal 0.
+      point: float pair list. The 2D coordinates of the flattened vertex of Animal 1. The z-component should be 0.
+      simplex: int pair or triple list. The indices corresponding to coordinates making up the line segment/triangle.
+      coordinates: list of float pairs. The 2D coordinates.
 
     :Returns:
-      if the vertex is in the triangle: 
-        [x, y, z]: list triple of floats corresponding to the barycentric coordinates of the vertex in Animal 0.
-      if the vertex is not in the triangle:
-        None
+        list pair/triple of floats corresponding to the barycentric coordinates of the point in the simplex.
+        These are the lambda values i.e the weights used in the linear combination.
+
+        If all these values are between 0 and 1, the point is in the shape. Otherwise, it is not.
   """
+  #initialise result
+  result = []
 
-  #extract flattened coordinates of the vertices of the given triangle
-  #x, y are euclidean coordinates, triangle[i] are indices
-  x_0 = flat_coords_0[triangle_0[0]][0]
-  x_1 = flat_coords_0[triangle_0[1]][0]
-  x_2 = flat_coords_0[triangle_0[2]][0]
-  y_0 = flat_coords_0[triangle_0[0]][1]
-  y_1 = flat_coords_0[triangle_0[1]][1]
-  y_2 = flat_coords_0[triangle_0[2]][1]
+  #if the simplex is a triangle, calculate the barycentric coordinates of the point in the triangle
+  if len(simplex) == 3:
+    #get coordinates from vertices of simplex
+    triangle_coordinates = [coordinates[i] for i in simplex]
+    (x_0, y_0), (x_1, y_1), (x_2, y_2) = triangle_coordinates
+  
+    #find each of the three weights
+    lambda_0 = ((y_1-y_2)*(point[0]-x_2)+(x_2-x_1)*(point[1]-y_2)) / \
+              ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
+    lambda_1 = ((y_2-y_0)*(point[0]-x_2)+(x_0-x_2)*(point[1]-y_2)) / \
+              ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
+    lambda_2 = 1 - lambda_0 - lambda_1
+    result = [lambda_0, lambda_1, lambda_2]
 
-  #calculate barycentric coordinates for current vertex in current triangle
-  lambda_0 = ((y_1-y_2)*(vertex_1[0]-x_2)+(x_2-x_1)*(vertex_1[1]-y_2)) / \
-            ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
-  lambda_1 = ((y_2-y_0)*(vertex_1[0]-x_2)+(x_0-x_2)*(vertex_1[1]-y_2)) / \
-            ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
-  lambda_2 = 1 - lambda_0 - lambda_1
-
-  bary_coords = [lambda_0, lambda_1, lambda_2]
-
-  #if the vertex is contained in the triangle, return the barycentric coordinates. Otherwise, return None.
-  if isInTriangle(bary_coords):
-    return bary_coords
+  #if the simplex is a line segment, find the proportions of each point in the line segment
   else:
-    return None
+    #since it's linear interpolation, the proportions are the same for both x and y components, so we just use one of them
+    x_0, x_1 = coordinates[simplex[0]] [0], coordinates[simplex[1]] [0]
 
-def fromBarycentricToCoordinates(bary_coords, triangle, coords):
-  """ Given barycentric coordinates, a list of coordinates (either flattened or regular) and a triangle, return the
-      coordinates corresponding to the barycentric coordinates.
+    #find the two weights
+    lambda_1 = (point[0] - x_0) / (x_1 - x_0)
+    lambda_0 = 1 - lambda_1
+    result = [lambda_0, lambda_1]
 
-    :Parameters:
-      bary_coords: float list. The barycentric coordinates of a point in the triangle.
-      triangle: int triple list. The indices corresponding to vertices making up the triangle.
-      coords: list of float triples. If they are flattened coordinates, the third element should be 0.
+  return result
 
-    :Returns:
-      list of float triples. The corresponding converted coordinates in the given coordinate system.
-  """
-  x = bary_coords[0]*coords[triangle[0]][0] + \
-      bary_coords[1]*coords[triangle[1]][0] + \
-      bary_coords[2]*coords[triangle[2]][0]
-  y = bary_coords[0]*coords[triangle[0]][1] + \
-      bary_coords[1]*coords[triangle[1]][1] + \
-      bary_coords[2]*coords[triangle[2]][1]
-  z = bary_coords[0]*coords[triangle[0]][2] + \
-      bary_coords[1]*coords[triangle[1]][2] + \
-      bary_coords[2]*coords[triangle[2]][2]
-  return [x, y, z]
+def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
+  """ Given barycentric coordinates, a list of coordinates and a simplex (triangle or line segment), return the
+      actual coordinates in R^3 corresponding to the barycentric coordinates. 
 
-def getLineSegmentCoordinates(vertex_1, line_segment_0, flat_coords_0):
-  """ Given a vertex in the flattened coordinates of Animal 1, a line segment (in indices), and
-      flattened coordinates of Animal 0, check if the flattened vertex in Animal 1
-      is in the flattened line segment (on the boundary) of Animal 0.
+      NOTE: This method will not work when finding the corresponding coordinates in R^2! We will be trying to access
+      the z-component, which will cause an index error. In such a case, assign 0 as the third coordinate.
 
     :Parameters:
-      vertex_1: float pair list. The 2D coordinates of the flattened vertex of Animal 1.
-      line_segment_0: int pair list. The indices corresponding to vertices making up the line segment on the boundary of Animal 0.
-      flat_coords_0: list of float pairs. The flattened coordinates of Animal 0.
+      barycentric_coords: float triple or pair list. The barycentric coordinates of a point in the triangle or line segment.
+      simplex: int triple or pair list. The indices corresponding to vertices making up the triangle or line segment.
+      coordinates: list of float triples. If they are flattened coordinates, the third element should be 0.
 
     :Returns:
-      if the vertex is in the triangle: 
-        lambda: float between 0 and 1. Represents the proportion where the vertex lies on the edge - e.g for if lambda is 0.1, it is close to
-        the first vertex in the line segment and far from the second one. 
-      if the vertex is not in the triangle:
-        None
+      list of float triple. The corresponding converted coordinates in R^3.
   """
-  #extract flattened coordinates of the vertices of the given triangle
-  #x, y are euclidean coordinates, triangle[i] are indices
-  x_0 = flat_coords_0[line_segment_0[0]][0]
-  x_1 = flat_coords_0[line_segment_0[1]][0]
-  x_2 = 0
-  y_0 = flat_coords_0[line_segment_0[0]][1]
-  y_1 = flat_coords_0[line_segment_0[1]][1]
-  y_2 = 0
+  #initialise return value
+  result = []
 
-  #calculate barycentric coordinates for current vertex in current triangle
-  lambda_0 = 1 - (((y_1-y_2)*(vertex_1[0]-x_2)+(x_2-x_1)*(vertex_1[1]-y_2)) / \
-              ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2)))
+  #if the simplex is a triangle, get the values of the corresponding coordinates in R^3 componentwise
+  if len(simplex) == 3:   
+    x = barycentric_coords[0] * coordinates[simplex[0]] [0] + \
+        barycentric_coords[1] * coordinates[simplex[1]] [0] + \
+        barycentric_coords[2] * coordinates[simplex[2]] [0]
+    y = barycentric_coords[0] * coordinates[simplex[0]] [1] + \
+        barycentric_coords[1] * coordinates[simplex[1]] [1] + \
+        barycentric_coords[2] * coordinates[simplex[2]] [1]
+    z = barycentric_coords[0] * coordinates[simplex[0]] [2] + \
+        barycentric_coords[1] * coordinates[simplex[1]] [2] + \
+        barycentric_coords[2] * coordinates[simplex[2]] [2]
+    result = [x, y, z]
 
-  #if the vertex is contained in the triangle, return the "barycentric" coordinates. Otherwise, return None.
-  if inUnitInterval(lambda_0):
-    return lambda_0
+  #if the simplex is a line segment, get the values of the corresponding coordinates using the equation of a line
   else:
-    return None
+    #extract the two coordinates of the line segment and just one of the barycentric coordinate weights (the gradient of the line)
+    (x_0, y_0, z_0), (x_1, y_1, z_1) = coordinates[simplex[0]], coordinates[simplex[1]]
+    lambda_1 = barycentric_coords[1]
 
-def fromLineSegmentToCoordinates(lambda_0, line_segment, coords):
-  """ Given a lambda value indicating what ratio of the line the vertex is on, a list of coordinates (either flattened or regular) 
-      and a line segment (indices), return the coordinates corresponding to the proportion on the line.
+    x = x_0 + lambda_1 * (x_1 - x_0)
+    y = y_0 + lambda_1 * (y_1 - y_0)
+    z = z_0 + lambda_1 * (z_1 - z_0)
+    result = [x, y, z]
 
-    :Parameters:
-      lambda_0: float between 0 and 1. The proportion of the line segment the vertex is on.
-      line_segment: int pair list. The indices corresponding to vertices making up the line segment.
-      coords: list of float triples. If they are flattened coordinates, the third element should be 0.
+  return result
 
-    :Returns:
-      list of float triples. The corresponding converted coordinates in the given coordinate system.
-  """
-  p = array(coords[line_segment[0]])
-  q = array(coords[line_segment[1]])
-
-  result = p + lambda_0 * (q - p)
-  return list(result)
-
-# TODO: Remove eventually, shouldn't need this
 def findClosestVertex(vertex_1, num_verts_0, flat_coordinates_0, regular_coordinates_0):
   """ Given a vertex in the flattened coordinates of Animal 1 and a triangle (indices),
       regular coordinates and flattened coordinates of Animal 0, check if the flattened vertex in Animal 1
       is in the flattened triangle of Animal 0.
+
+      NOTE: This method is used only for emergencies when we cannot find a corresponding boundary edge or triangle when aligning vertices.
+      It should not be called often.
 
     :Parameters:
       vertex_1: list of float pairs. The 2D coordinates of the flattened vertex of Animal 1
@@ -699,7 +723,6 @@ def getNextNeighbourhood(animal_obj, current_triangles, traversed_triangles):
     all_adjacent_triangles.update(adjacent_triangles)
 
   #remove -1, current triangles and traversed triangles from all the adjacent triangles we've found
-  all_adjacent_triangles.difference_update(current_triangles)
   all_adjacent_triangles.difference_update(traversed_triangles)
   all_adjacent_triangles.discard(-1)
 
@@ -729,16 +752,15 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
   num_verts_1 = animal_obj_1.getNumVerts()
   regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
   flat_coordinates_0 = animal_obj_0.getFlattenedCoordinates()
-  flat_coordinates_0 = [f[:2] for f in flat_coordinates_0]
   triangles_0 = animal_obj_0.getTriangulation()
   flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
-  flat_coordinates_1 = [f[:2] for f in flat_coordinates_1]
-  #store boundary vertices as a set for faster membership checking
-  boundary_vertices_1 = set(animal_obj_1.getBoundaryVertices())
-  boundary_vertices_0 = animal_obj_1.getBoundaryVertices()
+  num_triangles_0 = animal_obj_0.getNumTriangles() 
+  #store boundary vertices as lists for faster iteration
+  boundary_vertices_1 = list(animal_obj_1.getBoundaryVertices())
+  boundary_vertices_0 = list(animal_obj_1.getBoundaryVertices())
   
   #given the bfs ordering of vertices, store the first vertex and the rest of the list separately
-  bfs_ordering, bfs_ancestors = animal_obj_1.getVertexBFS()
+  bfs_ordering, bfs_ancestors = animal_obj_1.getInteriorVertexBFS()
   first_vertex, *v_traversal_1 = bfs_ordering
 
   #initialize return array with triples of -1
@@ -746,9 +768,6 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
 
   #initialise dictionary that maps each vertex index of Animal 1 to the triangle index of Animal 0
   vertex_to_triangle_map = {}
-
-  #initialize root triangle 
-  root_triangle = None
 
   #triangle counter - for debugging
   if ACCURACY_CHECK:
@@ -773,14 +792,12 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
     barycentric_coords = getBarycentricCoordinates(first_rotated_coordinate, triangle, flat_coordinates_0)
 
     #if we have found a triangle for our first vertex, set it as our root triangle
-    if barycentric_coords is not None:
-      root_triangle = triangle_i
+    if isInside(barycentric_coords):
 
       #add it to our vertex-to-triangle dictionary
       vertex_to_triangle_map[first_vertex] = triangle_i
       if DEBUG:
-        print("Found initial root triangle " + str(root_triangle) + " for vertex "  + str(first_vertex))
-        print(root_triangle)
+        print("INITIAL SUCCESS: Found first triangle " + str(triangle_i) + " for the first vertex "  + str(first_vertex))
 
       #set the result as the regular coordinates corresponding to the barycentric coordinates
       result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)
@@ -788,10 +805,6 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
       if DEBUG:
         successes += 1
       break
-
-    #TODO: if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
-    # elif isInBoundary(rotated_coordinate, animal_obj_1):
-    #   print("Vertex is on a boundary edge.")
 
   #if we could not find a triangle for the first vertex, set the result as the closest vertex
   if result == []:
@@ -816,101 +829,113 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
     #initialise result
     result = []
 
-    #if the current vertex is in the boundary, find the closest vertex - don't check triangles
-    if vertex in boundary_vertices_1: 
-      #cycle through all boundary vertices in Animal 0 and check which two they lie between 
+    #initialize traversed triangles and the current list of triangles whose neighbours we want to search
+    traversed_triangles = set()
 
-      #to iterate over all edges, zip the boundary vertices with itself with an offset of 1 and its head appended at the back (so it goes full circle)
-      boundary_edges = zip(boundary_vertices_0, boundary_vertices_0[1:] + [boundary_vertices_0[0]])
-      for curr_vertex, next_vertex in boundary_edges:
-        line_segment_coords = getLineSegmentCoordinates(rotated_coordinate, [curr_vertex, next_vertex], flat_coordinates_0)
+    #get the parent of this vertex from our BFS of interior vertices
+    parent_vertex = bfs_ancestors[vertex]
+    if parent_vertex not in vertex_to_triangle_map:
+      print("WARNING: Parent vertex's triangle has not been found yet! Program will crash! ")
 
-        if line_segment_coords is not None:
+    #set the first triangle for this vertex as the triangle corresponding to its parent
+    current_triangle_indices = {vertex_to_triangle_map[parent_vertex]}
+    current_triangles = [triangles_0[vertex_to_triangle_map[parent_vertex]]]
+
+    #outer loop: keep searching for a triangle while this vertex is not mapped to one
+    while result == []:
+      
+      if TRAVERSAL_DEBUG:
+        print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
+        print("Currently traversing the following triangles: ")
+        print(*current_triangle_indices)
+        print("Current traversed triangles: ")
+        print(*traversed_triangles)
+
+      #check through all the current triangles
+      for triangle_i, triangle in zip(current_triangle_indices, current_triangles):
+
+        #get the barycentric coordinates of the vertex within this triangle
+        barycentric_coords = getBarycentricCoordinates(rotated_coordinate, triangle, flat_coordinates_0)
+
+        if ACCURACY_CHECK:
+          triangle_counter += 1
+
+        #check if our point is inside the triangle
+        if isInside(barycentric_coords):
+          #update vertex_to_triangle_map with this vertex and this triangle
+          vertex_to_triangle_map[vertex] = triangle_i
+
           if DEBUG:
-            print("BOUNDARY SUCCESS: FOUND boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
-            in_boundary += 1
-          result = fromLineSegmentToCoordinates(line_segment_coords, [curr_vertex, next_vertex], regular_coordinates_0)
+            successes += 1
+            print(" TRIANGLE SUCCESS: FOUND the triangle " +  str(triangle_i) + " for vertex " + str(vertex))
+          result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)          
+
+          #since we found a triangle for this vertex, end this for loop and go back to the while loop, which will break
+          #at the next iteration since we have assigned the result
           break
 
-      if result == []:    
-        if DEBUG:
-          print("BOUNDARY FAILURE: Could not find line segment for vertex " + str(vertex) + ". Assigning closest vertex instead. ")
-          non_successes += 1
-        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-
-    #otherwise, it must be in a triangle
-    else:
-      #initialize traversed triangles and the current list of triangles whose neighbours we want to search
-      traversed_triangles = set()
-      current_triangle_indices = {root_triangle}
+      #since we've searched through this layer of triangles and found nothing, keep searching
+      #update the traversed triangles with the triangles we just traversed
+      traversed_triangles = traversed_triangles.union(current_triangle_indices)
+      #update the current triangle and indices set we want to search to its neighbours
+      current_triangle_indices = getNextNeighbourhood(animal_obj_0, current_triangle_indices, traversed_triangles)
       current_triangles = [triangles_0[i] for i in current_triangle_indices]
 
-      #outer loop: keep searching for a triangle while this vertex is not mapped to one
-      while result == []:
+      #terminate the while loop if we have searched all triangles
+      #this shouldn't happen! BUT if we still haven't found any triangles at this point, assign the closest vertex instead
+      if len(traversed_triangles) == num_triangles_0:
         if DEBUG:
-          print("SEARCHING for a triangle for VERTEX " + str(vertex) + "...")
-          print("Currently traversing the following triangles: ")
-          print(*current_triangle_indices)
-          print("Current traversed triangles: ")
-          print(*traversed_triangles)
-
-        #check through all the current triangles
-        for triangle_i, triangle in zip(current_triangle_indices, current_triangles):
-          #check if it's in the triangle - barycentric_coords will be set to None if the vertex is not in this triangle
-          barycentric_coords = getBarycentricCoordinates(rotated_coordinate, triangle, flat_coordinates_0)
-
-          if ACCURACY_CHECK:
-            triangle_counter += 1
-
-          #find the root triangle to start our bfs-like search
-          if barycentric_coords is not None:
-
-            #update vertex_to_triangle_map with this vertex and this triangle
-            vertex_to_triangle_map[vertex] = triangle_i
-
-            if DEBUG:
-              print(" TRIANGLE SUCCESS: FOUND the triangle " +  str(triangle_i) + " for vertex " + str(vertex))
-              # print(" ")
-            result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)          
-            
-            #assign the triangle corresponding to the parent of this vertex as the new root
-            parent_vertex = bfs_ancestors[vertex]
-            if parent_vertex in vertex_to_triangle_map:
-              root_triangle = vertex_to_triangle_map[parent_vertex]
-            else:
-              if DEBUG:
-                print("WARNING: Parent vertex's triangle has not been found yet! Not updating root triangle.")
-
-            if DEBUG:
-              successes += 1
-            #since we found a triangle for this vertex, end this for loop and go back to the while loop
-            break
-
-          #TODO: if the vertex is on an edge on the boundary of Animal 1 instead, return the vertex closest to it
-          # elif isInBoundary(rotated_coordinate, animal_obj_1):
-          #   print("Vertex is on a boundary edge.")
-
-        #since we've searched through this layer of triangles and found nothing, update and keep searching
-        #update the traversed triangles with the triangles we just traversed
-        traversed_triangles = traversed_triangles.union(current_triangle_indices)
-        #update the current triangle and indices set we want to search to its neighbours
-        current_triangle_indices = getNextNeighbourhood(animal_obj_0, current_triangle_indices, traversed_triangles)
-        current_triangles = [triangles_0[i] for i in current_triangle_indices]
-
-        #terminate the while loop if we have searched all triangles
-        #this shouldn't happen! BUT if we still haven't found any triangles at this point, assign the closest vertex instead
-        if len(traversed_triangles) == len(triangles_0):
-          if DEBUG:
-            print("WARNING: " + str(vertex) + " not on a boundary, and no triangle found for it. Assigning closest vertex instead.")
-          result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-          if DEBUG:
-              non_successes += 1
-          break
+          print("WARNING: " + str(vertex) + " not on a boundary, and no triangle found for it. Assigning closest vertex instead.")
+        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+        if DEBUG:
+            non_successes += 1
+        break
 
     if ACCURACY_CHECK:
       triangle_count_all[vertex] = triangle_counter
 
     #assign the result for this vertex
+    aligned_coordinates_1[vertex] = result
+
+  # ========================= 3. FIND THE THE CORRESPONDING COORDINATES FOR BOUNDARY VERTICES ==============================
+
+  #if vertex is on the boundary, either find the corresponding edge it is in or the closest vertex
+  for vertex in boundary_vertices_1:
+        
+    #rotate the flattened coordinates of each vertex by theta
+    rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
+    result = []
+
+    if USE_CLOSEST_VERTEX:
+      result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+    else:
+      #cycle through all boundary vertices in Animal 0 and check which two they lie between 
+      #to iterate over all edges, zip the boundary vertices with itself with an offset of 1 and its head appended at the back (so it goes full circle)
+      boundary_edges = zip(boundary_vertices_0, boundary_vertices_0[1:] + [boundary_vertices_0[0]])
+      for curr_vertex, next_vertex in boundary_edges:
+            
+        #get the barycentric coordinates of the rotated coordinate with respect to the edge between the two current vertices being checked
+        barycentric_coords = getBarycentricCoordinates(rotated_coordinate, [curr_vertex, next_vertex], flat_coordinates_0)
+
+        if TRAVERSAL_DEBUG:
+          print(" Currently checking the boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
+          # print(" Actual coordinates of vertex are " + str(rotated_coordinate))
+          # print("   Edge coordinates are (" + str(flat_coordinates_0[curr_vertex]) + ", " + str(flat_coordinates_0[next_vertex]) + ")")
+        
+        if isInside(barycentric_coords):
+          if DEBUG:
+            print("BOUNDARY SUCCESS: FOUND boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
+            in_boundary += 1
+          result = fromBarycentricToCoordinates(barycentric_coords, [curr_vertex, next_vertex], regular_coordinates_0)
+          break
+
+      if result == []:
+        print("WARNING: BOUNDARY FAILURE: Could not find line segment for vertex " + str(vertex) + ". Assigning closest vertex instead. ")    
+        if DEBUG:
+          non_successes += 1
+        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
+
+    #append aligned coordinates to return list  
     aligned_coordinates_1[vertex] = result
 
   if DEBUG:
@@ -919,7 +944,6 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
     print("Number of non-successes: " +  str(non_successes))
     print("Number of vertices checked for animal 1: " + str(num_verts_1))
 
-  #TODO: Leave it as array eventually
   if ACCURACY_CHECK:
     return ([list(coord) for coord in aligned_coordinates_1], triangle_count_all )
   else:
