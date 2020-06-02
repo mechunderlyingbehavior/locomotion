@@ -163,12 +163,6 @@ class Animal(object):
   def getPerturbation(self):
     return self.perturbation
 
-  def setConformalFactor(self, conformal_factor):
-    self.conformal_factor = conformal_factor
-
-  def getConformalFactor(self):
-    return self.conformal_factor
-
   def setTolerance(self, tolerance):
     self.tolerance = tolerance
 

@@ -593,7 +593,7 @@ def getBarycentricCoordinates(point, simplex, coordinates):
       In the case of the triangle (2-simplex), this would be the point expressed as a linear combination of three corner coordinates.
 
       NOTE: This method will not work when finding barycentric coordinates of points within a triangle or line segment in R^3!
-      It is only meant for finding barycentric coordinates of 2D points within 2D line segments or triangles.
+      It is only meant for finding barycentric coordinates of 2D points within 2D line segments or triangles. 
 
     :Parameters:
       point: float pair list. The 2D coordinates of the flattened vertex of Animal 1. The z-component should be 0.
@@ -601,11 +601,19 @@ def getBarycentricCoordinates(point, simplex, coordinates):
       coordinates: list of float pairs. The 2D coordinates.
 
     :Returns:
-        list pair/triple of floats corresponding to the barycentric coordinates of the point in the simplex.
-        These are the lambda values i.e the weights used in the linear combination.
-
-        If all these values are between 0 and 1, the point is in the shape. Otherwise, it is not.
+        if input point and coordinates are both in R^2 and simplex is valid:
+          list pair/triple of floats corresponding to the barycentric coordinates of the point in the simplex.
+          These are the lambda values i.e the weights used in the linear combination.
+          If all these values are between 0 and 1, the point is in the simplex. Otherwise, it is not.
+        else:
+          empty list.
   """
+
+  if not (len(point) == len(coordinates[0]) == 2):
+    print("WARNING: Invalid coordinate dimensions. This method is only defined to get the barycentric coordinates of a 2D point within a 2D simplex.")
+    #return empty list to standardise output and avoid computation. Otherwise, the code may still run without throwing an error.
+    return []
+
   #initialise result
   result = []
 
@@ -624,7 +632,7 @@ def getBarycentricCoordinates(point, simplex, coordinates):
     result = [lambda_0, lambda_1, lambda_2]
 
   #if the simplex is a line segment, find the proportions of each point in the line segment
-  else:
+  elif len(simplex) == 2:
     #since it's linear interpolation, the proportions are the same for both x and y components, so we just use one of them
     x_0, x_1 = coordinates[simplex[0]] [0], coordinates[simplex[1]] [0]
 
@@ -633,6 +641,8 @@ def getBarycentricCoordinates(point, simplex, coordinates):
     lambda_0 = 1 - lambda_1
     result = [lambda_0, lambda_1]
 
+  else: 
+    print("WARNING: Invalid input simplex. This method is only defined for triangles and edges.")
   return result
 
 def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
@@ -640,7 +650,7 @@ def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
       actual coordinates in R^3 corresponding to the barycentric coordinates. 
 
       NOTE: This method will not work when finding the corresponding coordinates in R^2! We will be trying to access
-      the z-component, which will cause an index error. In such a case, assign 0 as the third coordinate.
+      the z-component, which will cause an index error. If this method is needed in such a case, assign 0 as the third coordinate.
 
     :Parameters:
       barycentric_coords: float triple or pair list. The barycentric coordinates of a point in the triangle or line segment.
@@ -648,13 +658,22 @@ def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
       coordinates: list of float triples. If they are flattened coordinates, the third element should be 0.
 
     :Returns:
-      list of float triple. The corresponding converted coordinates in R^3.
+       if input coordinates are in R^3 and the barycentric coordinates match up with the simplex:
+        list of float triple. The corresponding converted coordinates in R^3.
+      else:
+        empty list.
   """
+
+  if len(coordinates[0]) != 3:
+    print("WARNING: Invalid coordinate dimensions. This method is only defined to find the coordinates of a point in 3D.")
+    #return empty list to standardise output and avoid errors thrown later on
+    return []
+
   #initialise return value
   result = []
 
   #if the simplex is a triangle, get the values of the corresponding coordinates in R^3 componentwise
-  if len(simplex) == 3:   
+  if len(barycentric_coords) == len(simplex) == 3:   
     x = barycentric_coords[0] * coordinates[simplex[0]] [0] + \
         barycentric_coords[1] * coordinates[simplex[1]] [0] + \
         barycentric_coords[2] * coordinates[simplex[2]] [0]
@@ -667,7 +686,7 @@ def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
     result = [x, y, z]
 
   #if the simplex is a line segment, get the values of the corresponding coordinates using the equation of a line
-  else:
+  elif len(barycentric_coords) == len(simplex) == 2:
     #extract the two coordinates of the line segment and just one of the barycentric coordinate weights (the gradient of the line)
     (x_0, y_0, z_0), (x_1, y_1, z_1) = coordinates[simplex[0]], coordinates[simplex[1]]
     lambda_1 = barycentric_coords[1]
@@ -676,6 +695,9 @@ def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
     y = y_0 + lambda_1 * (y_1 - y_0)
     z = z_0 + lambda_1 * (z_1 - z_0)
     result = [x, y, z]
+  
+  else:
+    print("WARNING: Invalid barycentric coordinates and/or simplex dimensions. They must both be of length 2 or 3, since this method is only defined for triangles and edges.")
 
   return result
 
@@ -714,22 +736,38 @@ def getNextNeighbourhood(animal_obj, current_triangles, traversed_triangles):
     :Returns:
       the set of all triangles that are in the outer neighbourhood
   """
-  triangle_triangle_adjacency_array = animal_obj.getTriangleTriangleAdjacency()
-  all_adjacent_triangles = set()
+  #initialise return set
+  all_adjacent_simplexes = set()
 
-  for triangle_i in current_triangles:
-    #update all adjacent triangles with the triangles adjacent to each triangle
-    adjacent_triangles = triangle_triangle_adjacency_array[triangle_i]
-    all_adjacent_triangles.update(adjacent_triangles)
+  #if we are finding neighbouring triangles, use the triangle-triangle adjacency
+  if simplex_type == "triangle":
+    triangle_triangle_adjacency_array = animal_obj.getTriangleTriangleAdjacency()
 
-  #remove -1, current triangles and traversed triangles from all the adjacent triangles we've found
-  all_adjacent_triangles.difference_update(traversed_triangles)
-  all_adjacent_triangles.discard(-1)
+    for triangle_i in current_simplexes:
+      #update all adjacent triangles with the triangles adjacent to each triangle
+      adjacent_triangles = triangle_triangle_adjacency_array[triangle_i]
+      all_adjacent_simplexes.update(adjacent_triangles)
 
-  return all_adjacent_triangles
+    #remove -1, current triangles and traversed triangles from all the adjacent triangles we've found
+    all_adjacent_simplexes.difference_update(traversed_simplexes)
+    all_adjacent_simplexes.discard(-1)
 
-# TODO: New version with BFS, still in progress
-# @profile
+  #if we are finding neighbouring triangles, return the neighbouring indices when it is within bounds
+  elif simplex_type == "edge":
+    num_edges = len(animal_obj.getBoundaryEdges())
+    left = min(current_simplexes)
+    right = max(current_simplexes)
+    
+    if left > 0:
+      all_adjacent_simplexes.add(left - 1)
+    if right < num_edges - 1:
+      all_adjacent_simplexes.add(right + 1)
+
+    #remove all traversed edges so far
+    all_adjacent_simplexes.difference_update(traversed_simplexes)
+
+  return all_adjacent_simplexes
+  
 def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
   """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
     through their respective conformal flattenings and applyling a rotation of angle theta.
@@ -938,16 +976,7 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
     #append aligned coordinates to return list  
     aligned_coordinates_1[vertex] = result
 
-  if DEBUG:
-    print("Number of successes: " +  str(successes))
-    print("Number of boundary vertices matched to closest vertex: " +  str(in_boundary))
-    print("Number of non-successes: " +  str(non_successes))
-    print("Number of vertices checked for animal 1: " + str(num_verts_1))
-
-  if ACCURACY_CHECK:
-    return ([list(coord) for coord in aligned_coordinates_1], triangle_count_all )
-  else:
-    return [list(coord) for coord in aligned_coordinates_1]
+  return aligned_coordinates_1
 
 
 def area(p, q, r):
@@ -1062,8 +1091,8 @@ def optimalRotation(animal_obj_0,animal_obj_1):
 ####################################################################################  
 ### METHODS FOR CALCULATING CONFORMAL SPATIOTEMPORAL DISTANCES BETWEEN HEAT MAPS ###
 #################################################################################### 
-  
-@timeit
+
+# @timeit
 def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
   """ Computes the Conformal Spatiotemporal Distance between the heatmaps of two animals
 
@@ -1132,7 +1161,7 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
 
   return distance
 
-@timeit
+# @timeit
 def computeAllCSD(animal_list):
   """ Computes the Conformal Spatiotemporal Distances between the heatmaps of all pairs in list of animals
 
