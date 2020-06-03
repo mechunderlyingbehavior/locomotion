@@ -88,7 +88,7 @@ def genCurve(k, p, size, file_no):
         :Returns:
             dataframe with columns [a_k, b_k, c_k, d_k, extras]
             The first 4 columns will have k rows - these are the the coefficients used to generate parametric plane curve. 
-            The extras column will have 5 rows corresponding to theta, x_min, x_max, y_min and y_max.
+            The extras column will have 6 rows corresponding to theta, size, x_min, x_max, y_min and y_max.
             This is extra data that will help with curve capturing in capture_and_compare.py.
 
             This dataframe will be written into the file coefficients_(file_number).csv in the curve_data folder.
