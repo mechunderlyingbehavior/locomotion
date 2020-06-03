@@ -25,7 +25,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
-# import locomotion
+import locomotion
 
 PATH_TO_DATA_DIRECTORY = os.getcwd() + "/data"
 try: # Safety check to ensure that data folder exists, and makes it otherwise.
