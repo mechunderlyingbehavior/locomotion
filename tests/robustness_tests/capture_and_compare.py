@@ -47,7 +47,7 @@ except FileExistsError:
 
 
 #static variables used for robustness testing
-NUM_CURVES = 2 # This must match the number of curves in the data/curve_data directory.
+NUM_CURVES = 50 # This must match the number of curves in the data/curve_data directory.
 ZFILL_LEN = int(np.ceil(np.log10(NUM_CURVES)))
 NUM_SAMPLES = 50 # Number of samples being tested
 SAMP_FILL = int(np.ceil(np.log10(NUM_SAMPLES)))
@@ -303,6 +303,7 @@ def captureAllCurves(test_key):
                 dat_path = resultPath + "/CRV_{}_TEST_{}.dat".format(curve_str, test_str)
                 jsonItem = captureOneCurve(dat_path, curve_str, test_str, coeff_path, fr, dens)
                 jsonItems.append(jsonItem)
+                i += 1
         outfilename = resultPath + "/CRV_{}.json".format(curve_str)
         jsonstr = json.dumps(jsonItems, indent = 4)
         with open(outfilename, "w") as outfile:
@@ -383,7 +384,7 @@ test_name = "FR_test_higher"
 test_variables = ['Velocity', 'Curvature']
 test_norm_mode = 'spec'
 
-# captureAllCurves(test_name) # Uncomment to recapture curves
+captureAllCurves(test_name) # Uncomment to recapture curves
 runRobustnessTest(test_name, test_variables, test_norm_mode, DEFAULT_START, DEFAULT_STOP)
 
 # df, _ = cameraFunc(PATH_TO_DATA_DIRECTORY + '/curve_data/coefficients_01.csv', DEFAULT_START * 60, DEFAULT_STOP * 60, 24, 2, True)
