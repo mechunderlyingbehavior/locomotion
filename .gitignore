@@ -9,6 +9,7 @@ locomotion/extendedDTW.so
 results/
 locomotion/__pycache__/
 tests/robustness_tests/results/
+tests/robustness_tests/figures/
 
 # Git Ignore taken from https://github.com/github/gitignore/blob/master/Python.gitignore
 
