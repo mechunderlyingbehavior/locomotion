@@ -16,6 +16,7 @@
 
 
 import os
+import re
 import sys
 import json
 import math
@@ -46,13 +47,12 @@ except FileExistsError:
 
 
 #static variables used for robustness testing
-NUM_CURVES = 50 # This must match the number of curves in the data/curve_data directory.
+NUM_CURVES = 2 # This must match the number of curves in the data/curve_data directory.
 ZFILL_LEN = int(np.ceil(np.log10(NUM_CURVES)))
 NUM_SAMPLES = 50 # Number of samples being tested
 SAMP_FILL = int(np.ceil(np.log10(NUM_SAMPLES)))
 DEFAULT_START = 0 # Start Time in Minutes
 DEFAULT_STOP = 1 # Stop Time in Minutes
-FILEPATH_PREFIX_LEN = len(os.getcwd()) + len("/data/curve_data/coefficients_")
 
 ########################################################################
 #### Functions for getting curve data  ####
@@ -137,7 +137,7 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
     data = pd.read_csv(coeff_path)
 
     #get curve number from the path
-    curve_no = coeff_path[FILEPATH_PREFIX_LEN : FILEPATH_PREFIX_LEN + 2]
+    curve_no = re.search('coefficients_(\d+)\.csv', coeff_path).group(1)
 
     #coefficients - each are sequences of length k
     #a_k, b_k are used for x(theta) and c_k, d_k are used for y(theta)
@@ -192,11 +192,12 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
 
     if plot:
         # Plots the X, Y coordinates and coefficients of each graph and saves it into the figures folder
+        newsize = changePixDensity(size, density)
         plt.subplots_adjust(left = None, bottom = None, right = None, top = None, wspace = 0.5, hspace = 0.5)
         plt.subplot(121)
         plt.plot(x, y)
         plt.title("Coordinate plot for Curve No. " + curve_no)
-        plt.axis([0, size, 0, size])
+        plt.axis([0, newsize, 0, newsize])
         plt.subplot(122)
         kSeq = np.arange(0, len(a_k), 1)
         plt.plot(kSeq, a_k)
@@ -384,3 +385,5 @@ test_norm_mode = 'spec'
 
 # captureAllCurves(test_name) # Uncomment to recapture curves
 runRobustnessTest(test_name, test_variables, test_norm_mode, DEFAULT_START, DEFAULT_STOP)
+
+# df, _ = cameraFunc(PATH_TO_DATA_DIRECTORY + '/curve_data/coefficients_01.csv', DEFAULT_START * 60, DEFAULT_STOP * 60, 24, 2, True)
