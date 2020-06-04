@@ -8,6 +8,7 @@ samples/info_med_data/*
 locomotion/extendedDTW.so
 results/
 locomotion/__pycache__/
+tests/robustness_tests/results/
 
 # Git Ignore taken from https://github.com/github/gitignore/blob/master/Python.gitignore
 
