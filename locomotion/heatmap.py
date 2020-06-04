@@ -1069,8 +1069,10 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
   if fullmode:
     write.writeOFF(animal_obj_0, regular_coordinates_0, outdir, "heatmap_%s_regular.off" % animal_obj_0.getName())
     write.writeOFF(animal_obj_1, regular_coordinates_1, outdir, "heatmap_%s_regular.off" % animal_obj_1.getName())
-    write.writeOFF(animal_obj_0, animal_obj_0.getFlattenedCoordinates(), outdir, "heatmap_%s_flat.off" % animal_obj_0.getName())
-    write.writeOFF(animal_obj_1, animal_obj_1.getFlattenedCoordinates(), outdir, "heatmap_%s_flat.off" % animal_obj_1.getName())
+    flattened_coordinates_0 = [coord + [0] for coord in animal_obj_0.getFlattenedCoordinates()]
+    flattened_coordinates_1 = [coord + [0] for coord in animal_obj_1.getFlattenedCoordinates()]
+    write.writeOFF(animal_obj_0, flattened_coordinates_0, outdir, "heatmap_%s_flat.off" % animal_obj_0.getName())
+    write.writeOFF(animal_obj_1, flattened_coordinates_1, outdir, "heatmap_%s_flat.off" % animal_obj_1.getName())
     write.writeOFF(animal_obj_0, aligned_coordinates_0, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_0.getName(),animal_obj_1.getName()))
     write.writeOFF(animal_obj_1, aligned_coordinates_1, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_1.getName(),animal_obj_0.getName()))
 
