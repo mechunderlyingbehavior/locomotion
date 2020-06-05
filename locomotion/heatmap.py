@@ -315,7 +315,7 @@ def getColors(animal_obj):
 #######################################################################################  
 
 def getCentralVertex(animal_obj):
-      """ 
+  """ 
   Finds the index of the vertex coordinate for the triangulation of an animal that is closest to its topological centre.
 
     :Parameters:
@@ -424,134 +424,6 @@ def getFlatCoordinates(animal_obj):
 def rotation(p, theta):
   #this is a helper method for the method getAlignedCoordinates below.  It rotates a given point in the plane about the origin by a given angle.
   return [cos(theta)*p[0]-sin(theta)*p[1], sin(theta)*p[0]+cos(theta)*p[1]]
-
-# old version -- remove eventually. Use for testing.
-# @profile
-def getAlignedCoordinatesOld(animal_obj_0, animal_obj_1, theta):
-  """ Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the triangulation of Animal 0 by factoring
-    through their respective conformal flattenings and applyling a rotation of angle theta.
-    :Parameters:
-      animal_obj_0/1 : animal objects, initialized with regular/flattened coordinates and triangulation set/updated
-      theta : float with value between 0 and pi, an angle of rotation
-    :Returns:
-      list of triples of floats, specifying the x-, y-, and z-coordinates of the vertices of the triangulation of Animal 1 aligned to
-      the triangulation of Animal 0
-  """
-  if DEBUG:
-    successes = 0
-    in_boundary = 0
-    non_successes = 0
-
-  #store relevant parameters
-  num_verts_0 = animal_obj_0.getNumVerts()
-  regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
-  flat_coordinates_0 = animal_obj_0.getFlattenedCoordinates()
-  triangles_0 = animal_obj_0.getTriangulation()
-  num_verts_1 = animal_obj_1.getNumVerts()
-  flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
-  #store boundary vertices as lists for faster iteration
-  boundary_vertices_1 = list(animal_obj_1.getBoundaryVertices())
-  boundary_vertices_0 = list(animal_obj_0.getBoundaryVertices())
-  interior_vertices_1 = set(range(num_verts_1)) - set(boundary_vertices_1)
-
-  #initialize return list with fixed size
-  aligned_coordinates_1 = [[-1,-1,-1]] * num_verts_1
-
-  #triangle counter for each vertex
-  if ACCURACY_CHECK:
-    triangle_count_all = zeros(num_verts_1)
-
-  # ========================= 2. FIND THE THE CORRESPONDING COORDINATES FOR INTERIOR VERTICES ==============================
-
-  #iterate through the vertices of the triangulation of Animal 1
-  for vertex in interior_vertices_1:
-
-    #rotate the flattened coordinates of each such vertex by theta
-    rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
-    result = []
-
-    if ACCURACY_CHECK:
-      triangle_counter = 0
-
-    for triangle_i, triangle in enumerate(triangles_0):
-      if ACCURACY_CHECK:
-        triangle_counter += 1
-
-      #find the barycentric coordinates for the rotated vertex in the current triangle with respect to the flattened coordinates.
-      #if the vertex is not in the triangle, barycentric_coords will be assigned None.
-      barycentric_coords = getBarycentricCoordinates(rotated_coordinate, triangle, flat_coordinates_0)
-
-      #if the vertex is in the current triangle, assign the result to the corresponding regular coordinates
-      if isInside(barycentric_coords):
-        result = fromBarycentricToCoordinates(barycentric_coords, triangle, regular_coordinates_0)
-        if DEBUG:
-          print("TRIANGLE SUCCESS: FOUND triangle " + str(triangle_i) + " for vertex " + str(vertex))
-          successes += 1
-        break
-
-    if result == []:
-      if DEBUG:
-        non_successes += 1
-      print("WARNING: TRIANGLE FAILURE: no triangle found for the interior vertex " + str(vertex) + ". Assigning closest vertex instead.")
-      result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-
-    #append aligned coordinates to return list
-    aligned_coordinates_1[vertex] = result
-
-    if ACCURACY_CHECK:
-      triangle_count_all[vertex] = triangle_counter
-
-  # ========================= 2. FIND THE THE CORRESPONDING COORDINATES FOR BOUNDARY VERTICES ==============================
-
-  #if vertex is on the boundary, either find the closest vertex or the corresponding boundary edge
-  for vertex in boundary_vertices_1:
-        
-    #rotate the flattened coordinates of each such vertex by theta
-    rotated_coordinate = rotation(flat_coordinates_1[vertex],theta)
-    result = []
-
-    if USE_CLOSEST_VERTEX:
-      result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-    else:
-      #cycle through all boundary vertices in Animal 0 and check which two they lie between 
-      #to iterate over all edges, zip the boundary vertices with itself with an offset of 1 and its head appended at the back (so it goes full circle)
-      boundary_edges = zip(boundary_vertices_0, boundary_vertices_0[1:] + [boundary_vertices_0[0]])
-      for curr_vertex, next_vertex in boundary_edges:
-            
-        #get the barycentric coordinates of the rotated coordinate with respect to the edge between the two current vertices being checked
-        barycentric_coords = getBarycentricCoordinates(rotated_coordinate, [curr_vertex, next_vertex], flat_coordinates_0)
-
-        if TRAVERSAL_DEBUG:
-          print(" Currently checking the boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
-
-        if isInside(barycentric_coords):
-          if DEBUG:
-            print("BOUNDARY SUCCESS: FOUND boundary (" + str(curr_vertex) + ", " + str(next_vertex) + ") for vertex " + str(vertex))
-            in_boundary += 1
-          result = fromBarycentricToCoordinates(barycentric_coords, [curr_vertex, next_vertex], regular_coordinates_0)
-          break
-
-      #if we couldn't find a boundary edge for this boundary vertex, assign the closest vertex instead
-      if result == []:
-        print("WARNING: BOUNDARY FAILURE: Could not find line segment for vertex " + str(vertex) + ". Assigning closest vertex instead. ")    
-        if DEBUG:
-          non_successes += 1
-        result = findClosestVertex(rotated_coordinate, num_verts_0, flat_coordinates_0, regular_coordinates_0)
-
-    #assign aligned coordinates to return list  
-    aligned_coordinates_1[vertex] = result
-
-
-  if DEBUG:
-    print("Number of triangle successes: " +  str(successes))
-    print("Number of boundary successes: " +  str(in_boundary))
-    print("Number of non-successes matched to closest vertex: " +  str(non_successes))
-    print("Number of vertices checked for animal 1: " + str(num_verts_1))
-
-  if ACCURACY_CHECK: 
-    return (aligned_coordinates_1, triangle_count_all)
-  else: 
-    return aligned_coordinates_1
 
 def inUnitInterval(x):
   return x >= 0 and x <= 1
@@ -795,11 +667,7 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
       list of triples of floats, specifying the x-, y-, and z-coordinates of the vertices of the triangulation of Animal 1 aligned to
       the triangulation of Animal 0
   """
-  if DEBUG:
-    successes = 0
-    in_boundary = 0
-    non_successes = 0
-
+  
   #store relevant parameters
   num_verts_0 = animal_obj_0.getNumVerts()
   num_verts_1 = animal_obj_1.getNumVerts()
