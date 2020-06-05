@@ -623,11 +623,17 @@ def getTriangleContainingVertex(vertex, triangles):
       triangles : list of list of int triples. The list of all triangles.
 
     :Returns:
-      int. The index of the triangle that contains the vertex.
+      if there exists a triangle containing this vertex:
+        int. The index of the first triangle that contains the vertex.
+      else:
+        None
   """
+  triangle_index = None
   for triangle_i, triangle in enumerate(triangles):
     if vertex in triangle:
-      return triangle_i
+      triangle_index = triangle_i
+  
+  return triangle_index
 
 def getNextNeighbourhood(animal_obj, current_triangles, traversed_triangles):
   """ Given an animal object, a set of triangles whose neighbours we want to get and a set of inner triangles or edges 
@@ -702,6 +708,8 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
     print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
     closest_vertex, closest_vertex_coordinate = findClosestVertex(first_rotated_coordinate, range(num_verts_0), flat_coordinates_0, regular_coordinates_0)
     triangle_i = getTriangleContainingVertex(closest_vertex, triangles_0)
+    if triangle_i is None:
+      print("WARNING: No triangle associated to the closest vertex " + str(closest_vertex) + ". Not updating vertex-to-triangle map for this vertex.")
     triangle_coordinate_pair = [triangle_i, closest_vertex_coordinate]
 
   #add the index of the triangle we found to our vertex-to-triangle map and add the aligned coordinate to return list
@@ -727,6 +735,8 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
         print("WARNING: no triangle found for interior vertex " + str(vertex) + ". Assigning closest vertex instead.")
         closest_vertex, closest_vertex_coordinate = findClosestVertex(rotated_coordinate, range(num_verts_0), flat_coordinates_0, regular_coordinates_0)
         triangle_i = getTriangleContainingVertex(closest_vertex, triangles_0)
+        if triangle_i is None:
+          print("WARNING: No triangle associated to the closest vertex " + str(closest_vertex) + ". Not updating vertex-to-triangle map for this vertex.")
         triangle_coordinate_pair = [triangle_i, closest_vertex_coordinate]
         break
 
@@ -902,7 +912,7 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
 
   #check that a directory is specified if fullmode is true
   if fullmode and outdir == None:
-    throwError("Full mode requiers the path to output direcotry")
+    throwError("Full mode requires the path to output direcotry")
 
   #notify user of progress
   print("Measuring conformal spatiotemporal distance between heat maps of %s and %s..." % (animal_obj_0.getName(),animal_obj_1.getName()))
