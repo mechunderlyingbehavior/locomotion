@@ -62,7 +62,7 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   
   print("Calculating heatmap for %s..." % animal_obj.getName())
   
-  #calculuate heatmap
+  #calculate heatmap
   frequencies = getFrequencies(animal_obj, start_time, end_time)
 
   print("Calculating triangulation for %s..." % animal_obj.getName())
@@ -86,6 +86,10 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   #calculate and record boundary vertices
   boundary_vertices = getBoundaryLoop(animal_obj)
   animal_obj.setBoundaryVertices(boundary_vertices)
+
+  #calculate and record boundary edges
+  boundary_edges = getBoundaryEdges(animal_obj)
+  animal_obj.setBoundaryEdges(boundary_edges)
   
   #calculate and record flattened coordinates of triangulation
   flattened_coordinates = getFlatCoordinates(animal_obj)
@@ -169,7 +173,7 @@ def getFrequencies(animal_obj, start_time, end_time):
   return freqency_matrix
 
 def getZDim(animal_obj):
-      """ Calculates the vertical bound for a heatmap surface
+  """ Calculates the vertical bound for a heatmap surface
     We set it to be the smaller of the two horizontal dimensions, but it
     can be set to specified value depending on the context.
 
@@ -405,10 +409,9 @@ def getFlatCoordinates(animal_obj):
   while p**2+q**2 > tolerance:
     print("LOG: Distance of original centroid to origin is %f. Moving closer to origin." % (p**2+q**2))
     for i in range(len(flat_coordinates)):
-          x = flat_coordinates[i][0]
+      x = flat_coordinates[i][0]
       y = flat_coordinates[i][1]
       flat_coordinates[i] = mobius(x,y,p,q)
-      # flat_coordinates[i].append(0)
     p = mean([c[0] for c in flat_coordinates])
     q = mean([c[1] for c in flat_coordinates])
 
@@ -554,7 +557,7 @@ def fromBarycentricToCoordinates(barycentric_coords, simplex, coordinates):
   return result
 
 def searchForAlignedCoordinate(point, simplices, simplex_indices, input_coordinates, output_coordinates):
-      """ Given a point in the 2D input coordinate system, search through the given simplices (either triangle or edges) in the 
+  """ Given a point in the 2D input coordinate system, search through the given simplices (either triangle or edges) in the 
       input coordinate system to check if it is inside one of them. If it is, convert the point into barycentric coordinates
       corresponding to the simplex, and use those barycentric coordinates to return the point in the 3D output coordinate system.
       Otherwise, return an empty list.
@@ -589,7 +592,7 @@ def searchForAlignedCoordinate(point, simplices, simplex_indices, input_coordina
   return result
 
 def findClosestVertex(point, vertices, input_coordinates, output_coordinates):
-      """ Given a point in the input coordinate system, the vertices in the input coordinate system to search through, the 2D input coordinates and
+  """ Given a point in the input coordinate system, the vertices in the input coordinate system to search through, the 2D input coordinates and
       the 3D output coordinates, return the coordinates corresponding to the vertex in the vertices we searched through that is closest to the vertex we input.
 
       NOTE: This method is used only for emergencies when we cannot find a corresponding boundary edge or triangle when aligning vertices.
