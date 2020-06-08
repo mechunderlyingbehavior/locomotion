@@ -821,43 +821,36 @@ def distortionEnergy(animal_obj_0, animal_obj_1, rho):
   aligned_coordinates = getAlignedCoordinates(animal_obj_1,animal_obj_0,rho)
   triangles = animal_obj_0.getTriangulation()
 
-  #calculate four matrices whose entries correspond to pairs of vertices in the triangulation of Animal 0
-  #with values given by (1) the number of triangles containing that pair of vertices, (2) the length of the
-  #edge between them (if one exists) in the regular triangulation of Animal 0, (3) the length of the edge
-  #between them (if one exists) in the triangulation of Animal 0 aligned to that of Animal 1 via the rotation
-  #rho, and (4) the sum of the areas of the triangles in the regular triangulation of Animal 0 containing the
-  #pair of vertices.
-  incidence_matrix = [[[0 for k in range(4)] for j in range(num_verts)] for i in range(num_verts)]
+  #initialize four matrices whose entries correspond to pairs of vertices in the triangulation of Animal 0:
+  #(1) the number of triangles containing that pair of vertices
+  triangles_per_edge = [[0 for j in range(num_verts)] for i in range(num_verts)]
+  #(2) the length of the edge between them (if one exists) in the regular triangulation of Animal 0
+  original_edge_lengths = [[0 for j in range(num_verts)] for i in range(num_verts)]
+  #(3) the length of the edge between them (if one exists) in the triangulation of Animal 0 aligned to that of Animal 1 via the rotation rho
+  aligned_edge_lengths = [[0 for j in range(num_verts)] for i in range(num_verts)]
+  #(4) the sum of the areas of the triangles in the regular triangulation of Animal 0 containing the pair of vertices
+  area_sum = [[0 for j in range(num_verts)] for i in range(num_verts)]
 
+  #loop through the triangulation to fill in the values of each matrix
   for triangle in triangles:
-    sorted_triangle = sorted(triangle)
-    u = sorted_triangle[0]
-    v = sorted_triangle[1]
-    w = sorted_triangle[2]
+    first, second, third = sorted(triangle)
+    edge_ordering = [(second, first), (third, first), (third, second)]
 
-    incidence_matrix[v][u][0] += 1
-    incidence_matrix[v][u][1] = linalg.norm(array(regular_coordinates[v])-array(regular_coordinates[u]))
-    incidence_matrix[v][u][2] = linalg.norm(array(aligned_coordinates[v])-array(aligned_coordinates[u]))
-    incidence_matrix[v][u][3] += area(regular_coordinates[u],regular_coordinates[v],regular_coordinates[w])
-
-    incidence_matrix[w][u][0] += 1
-    incidence_matrix[w][u][1] = linalg.norm(array(regular_coordinates[w])-array(regular_coordinates[u]))
-    incidence_matrix[w][u][2] = linalg.norm(array(aligned_coordinates[w])-array(aligned_coordinates[u]))
-    incidence_matrix[w][u][3] += area(regular_coordinates[u],regular_coordinates[v],regular_coordinates[w])
-
-    incidence_matrix[w][v][0] += 1
-    incidence_matrix[w][v][1] = linalg.norm(array(regular_coordinates[w])-array(regular_coordinates[v]))
-    incidence_matrix[w][v][2] = linalg.norm(array(aligned_coordinates[w])-array(aligned_coordinates[v]))
-    incidence_matrix[w][v][3] += area(regular_coordinates[u],regular_coordinates[v],regular_coordinates[w])
+    for vertex_0, vertex_1 in edge_ordering:
+      triangles_per_edge[vertex_0][vertex_1] += 1
+      original_edge_lengths[vertex_0][vertex_1] = linalg.norm(array(regular_coordinates[vertex_0]) - array(regular_coordinates[vertex_1]))
+      aligned_edge_lengths[vertex_0][vertex_1] = linalg.norm(array(aligned_coordinates[vertex_0]) - array(aligned_coordinates[vertex_1]))
+      area_sum[vertex_0][vertex_1] += area(regular_coordinates[first], regular_coordinates[second], regular_coordinates[third])
 
   #initialize the return value
   alignment_value = 0
 
-  #sum the squares of the conformal stretching factors of the alignment over each edge in the triangulation
+  #sum the squares of the conformal stretching factors of the alignment over each distinct edge in the triangulation
   for i in range(num_verts):
     for j in range(i):
-      if incidence_matrix[i][j][0] == 2:
-        alignment_value += (incidence_matrix[i][j][3]/3.0)*(incidence_matrix[i][j][2]/incidence_matrix[i][j][1]-1.0)**2
+      #only get the alignment value for interior edges - there must be exactly two triangles containing the edge
+      if triangles_per_edge[i][j] == 2:
+        alignment_value += (area_sum[i][j] / 3.0) * (aligned_edge_lengths[i][j] / original_edge_lengths[i][j] - 1.0)**2
 
   return alignment_value**0.5
 
