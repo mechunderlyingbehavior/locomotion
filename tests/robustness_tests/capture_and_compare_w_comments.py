@@ -27,7 +27,8 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
 import locomotion
 
-#creating necessary folders for storing data / results
+#MAYBE SOME COMMENT SAYING THAT FIRST FOLDERS (TO STORE THE DATA USED FOR THE TESTS AND RESULTS OF THE TESTS) ARE CHECKED/CREATED
+
 PATH_TO_DATA_DIRECTORY = os.getcwd() + "/data"
 try: # Safety check to ensure that data folder exists, and makes it otherwise.
     os.mkdir(PATH_TO_DATA_DIRECTORY)
@@ -45,6 +46,7 @@ try: # Safety check to ensure that figures folder exists, and makes it otherwise
     os.mkdir(PATH_TO_FIG_DIRECTORY)
 except FileExistsError:
     pass
+
 
 
 #static variables used for robustness testing
@@ -84,7 +86,6 @@ def genTrigFun(a_k, b_k):
 
 def changePixDensity(num, density):
     """ Converts a coordinate given in mm (num) to the corresponding coordinate in pixels, given the pixel density.
-        This is used as part of cameraFunc to translate the coordinates in mm to pixels based on the camera settings.
 
         :Parameters:
             num : float. Coordinate value, in mm.
@@ -92,7 +93,7 @@ def changePixDensity(num, density):
 
         :Returns:
             float. Corresponding coordinate value, in px.
-    """
+    """ 
     #initialise return value
     result = 0
 
@@ -102,9 +103,11 @@ def changePixDensity(num, density):
 
     return result
 
+#MAYBE COMMENT THAT WE NEED THIS FUNCTION BECAUSE WE'RE ASSUMING THAT THE GENERATED CURVES HAVE THEIR COORDINATES IN MM BUT CURVES ARE CAPTURED BY A CAMERA SO THE IMAGE USED FOR COMPUTATION OF BDD IS ORIGINALLY IN PIXELS (SO WE NEED TO CONVERT OUR CURVE COORDINATES TO PX)
+
 
 def genVariables(low, high, n):
-    """ Uniformly samples n values from given interval. Utility function for generating test variables.
+    """ Uniformly samples n values from given interval.
 
         :Parameters:
             low : float. Lower bound of interval.
@@ -115,6 +118,8 @@ def genVariables(low, high, n):
             list of n floats. The uniformly sampled values within the interval.
     """
     return list(np.random.uniform(low, high, n))
+
+#NOT CLEAR WHY WE NEED THE FUNCTION ABOVE
 
 ########################################################################
 #### Capturing curves from given frame rate/resolution  ####
@@ -133,9 +138,11 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
 
         :Returns:
             tuple of dataframes (coordinates, summaryStats). 
-                coordinates : dataframe with columns [X, Y]
-                summaryStats : dataframe containing statistics of 'coordinates' (percentile, mean, std)
+            dataframe with columns [X, Y].
     """
+    #NOT CLEAR WHETHER 1, 2, OR 3 DATAFRAMES ARE TO BE GENERATED (IT'S COORDINATES THAT HAS X AND Y COLUMNS RIGHT?)
+    #MAYBE STATE THE GENERAL AIM OF THIS FUNCTION: TO REPRESENT A GIVEN CURVE AS IF IT WAS CAPTURED BY A CAMERA (WITH GIVEN FR AND DENSAITY)?
+    
     #read in data from the corresponding coefficients csv file
     data = pd.read_csv(coeff_path)
 
@@ -153,7 +160,10 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
     #maximum theta value for input into the trig function
     max_theta = data['extras'][0]
     #size is the full dimensions of the camera, whereas x/y min/max/diff are the corresponding
-    #dimensions for the bounding box that will contain the curve. All values currently in mm.
+    #dimensions for the bounding box that will contain the curve
+    
+    #MAYBE ADD THAT THESE ARE THE DIMENSIONS BEFORE THE CONVERSION TO PIXELS?
+    
     size = data['extras'][1]
     x_min = data['extras'][2]
     x_max = data['extras'][3]
@@ -164,15 +174,16 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
 
     #calculate total frames
     total_frames = (time_stop - time_start) * frame_rate
-    #partition the interval [0, max_theta] into total_frame steps, generating 1 theta per frame
-    #to be used in the parametric function.
+    #partition the interval [0, max_theta] into total_frame steps
     thetas = max_theta * np.arange(0, 1, 1/total_frames)
+    #MAYBE CLARIFY THAT THIS IS DONE IN ORDER TO OBTAIN A SEQUENCE OF THETAS (AN INTERVAL WITH DISCRETE POINTS) CORRESPONDING TO CAMERA FRAMES SO THAT FOR EACH THETA X AND Y COORDINATES CAN BE CALCULATED?
 
     #generate trig functions for x, y coordinates. Each function's domain is theta in [0, 2pi]
     x_fun = genTrigFun(a_k, b_k)
     y_fun = genTrigFun(c_k, d_k)
 
-    #calculate x, y coordinates (in mm) using thetas, and calculate min/max for scaling/translation
+    #get minimum and maximum x, y coordinates of the graph 
+    #ALSO, FIRSTLY: GET ALL X AND Y COORDINTES CAPTURED BY CAMERA (DEPENDING ON THE NUMBER OF FRAMES) YET BEFORE CONVERSION TO PIXELS
     x_og = x_fun(thetas)
     y_og = y_fun(thetas)
     lower_xlim = min(x_og)
@@ -180,7 +191,8 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
     lower_ylim = min(y_og)
     upper_ylim = max(y_og)
 
-    #translate and scale the coordinates to fit into the generated bounding box while preserving shape
+    #transform the coordinates to fit into the generated bounding box
+    #MAYBE ADD THAT IT'S JUST TRANSLATION AND STRETCHING SO THE SHAPE SHOULDN'T BE DISTORTED?
     x_enlarged = []
     y_enlarged = []
     for i in range(0, total_frames):
@@ -195,8 +207,8 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
         y.append(changePixDensity(y_enlarged[i], density))
 
     if plot:
-        #generates 2 plots, one plotting the x,y coordinates and the other plotting the coefficients
-        #and saves them into the figures folder
+        # Plots the X, Y coordinates and coefficients of each graph and saves it into the figures folder
+        #MAYBE MENTION THAT THE PLOT X AND Y COORDINATES ARE NOW IN PIXELS? AND THAT FOR EACH CURVE AND GIVEN FR AND DENSITY THERE ARE 2 PLOTS
         newsize = changePixDensity(size, density)
         plt.subplots_adjust(left = None, bottom = None, right = None, top = None, wspace = 0.5, hspace = 0.5)
         plt.subplot(121)
@@ -226,8 +238,8 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
 
 def captureOneCurve(dat_path, curve_str, test_str, coeff_path,
                     frame_rate, density, control = "False", plot = False):
-    """ Given a path to curve data, capture the corresponding curve using cameraFunc, and save coordinates
-        as a .csv in the data directory. Then, produce the json that captures the necessary information.
+    """ Given a path to curve data, capture the corresponding curve using cameraFunc,
+        and outputs the data to data_path. Then, produce the json that captures the necessary information.
 
         :Parameters:
             dat_path : str. Absolute file output path.
@@ -242,6 +254,8 @@ def captureOneCurve(dat_path, curve_str, test_str, coeff_path,
         :Returns:
             jsonItem : dict. Json format, as needed in animal.py.
     """
+    #MAYBE ALSO MENTION THAT THE DATAFRAME GENERATED BY CAMERAFUNC IS NOW BEING CONVERTED TO CSV AND SAVED IN THE OUTPUT DIRECTORY?
+
     # Generate Capture Data
     df, _ = cameraFunc(coeff_path, DEFAULT_START * 60, DEFAULT_STOP * 60, frame_rate, density, plot)
     # Save Capture Data to CSV
@@ -262,19 +276,19 @@ def captureOneCurve(dat_path, curve_str, test_str, coeff_path,
                 "dim_y": 100,
                 "pixels_per_mm": density,
                 "frames_per_sec": frame_rate,
-                "start_time": DEFAULT_START, 
-                "end_time": DEFAULT_STOP, 
+                "start_time": DEFAULT_START,
+                "end_time": DEFAULT_STOP,
                 "baseline_start_time": DEFAULT_START,
                 "baseline_end_time": DEFAULT_STOP
             }
     }
     return jsonItem
 
+#MAYBE SPECIFY WHERE WE GOT X AND Y DIM FROM, THEY ARE THE ORIGINAL DIMENSIONS OF EACH CURVE (IN MM) BEFORE CONVERSION?
+#WHY DEFAULT_START/STOP*60?
+
 def captureAllCurves(test_key):
-    """ The function takes in a test_key which must correspond to one of the keys found
-        in testData, defined fully below. testData is a dictionary used internally for
-        defining the variables (FR and Density) of the test, as well as the value of the
-        control variables. The function then iterates through the curve coefficients
+    """ Given a key in the testData dictionary (defined below), it iterates through the curve coefficients
         and captures the curves based on the different variables stored in testData.
 
         :Parameters:
@@ -282,10 +296,10 @@ def captureAllCurves(test_key):
 
         :Returns:
             None.
-            For each curve, writes a .json file containing the animal data for each test into results directory.
-            Writes an overall Results_variables.json into the results directory.
+            Writes the file Results_variables.json into the results directory.
     """
     # Check / Create directory
+
     resultPath = PATH_TO_RES_DIRECTORY + "/" + test_key
     try:
         os.mkdir(resultPath)
@@ -321,6 +335,10 @@ def captureAllCurves(test_key):
     with open(resultPath + "/Results_variables.json", "w") as outfile:
         varJson = json.dumps(testData[test_key])
         outfile.write(varJson)
+       
+    #I THINK THIS FUNCTION NEEDS MORE DOCUMENTATION, IT'S NOT VERY CLEAR WHAT TEST_DATA AND TEST_KEY ARE AND WHAT FILES ARE WRITTEN (I KNOW IT'S DEFINED BELOW BUT YOU COULD AT LEAST SAY THAT IT CONTAINS INFORMATION ON THE KIND OF TESTS THAT ARE PERFORMED, INCLUDING VARIABLE AND CONTROL/FR AND DENSITY VALUES TESTED)
+    #ALSO THE RETURNS: SECTION SEEMS TO BE INCOMPLETE SINCE MORE THAN ONE JSON IS WRITTEN
+       
 
 
 def runRobustnessTest(test_key, variables, norm_mode, start_min, end_min):
@@ -336,9 +354,10 @@ def runRobustnessTest(test_key, variables, norm_mode, start_min, end_min):
 
         :Returns:
             None.
-            Writes the BDD results as Results_BDD.csv to the result directory, where each row
-            corresponds to a curve, and each column refers to a different test variable setting.
+            Writes the file Results_BDD.csv to the result directory.
     """
+    #MAYBE CLARIFY WHAT THE CSV FILE SHOULD LOOK LIKE?
+    
     NUM_TESTS = len(testData[test_key]["framerates"]) * len(testData[test_key]["densities"])
     results = np.zeros([NUM_CURVES, NUM_TESTS])
     for curve_no in range(NUM_CURVES):
@@ -395,3 +414,6 @@ test_norm_mode = 'spec'
 
 captureAllCurves(test_name) # Uncomment to recapture curves
 runRobustnessTest(test_name, test_variables, test_norm_mode, DEFAULT_START, DEFAULT_STOP)
+
+# df, _ = cameraFunc(PATH_TO_DATA_DIRECTORY + '/curve_data/coefficients_01.csv', DEFAULT_START * 60, DEFAULT_STOP * 60, 24, 2, True)
+#NOT CLEAR WHY WE NEED THE COMMENT ABOVE, IS IT AN EXAMPLE OF APPLICATION OF CAMERAFUNC FUNCTION/OBTAINING COEFFICIENTS OF A CURVE/CURVE DATA?
