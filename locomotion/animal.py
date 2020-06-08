@@ -163,12 +163,6 @@ class Animal(object):
   def getPerturbation(self):
     return self.perturbation
 
-  def setConformalFactor(self, conformal_factor):
-    self.conformal_factor = conformal_factor
-
-  def getConformalFactor(self):
-    return self.conformal_factor
-
   def setTolerance(self, tolerance):
     self.tolerance = tolerance
 
@@ -180,6 +174,12 @@ class Animal(object):
 
   def getNumVerts(self):
     return self.numVerts
+
+  def setNumTriangles(self, n):
+        self.numTriangles = n
+
+  def getNumTriangles(self):
+    return self.numTriangles
 
   def setColors(self, colors):
     self.colors=colors
@@ -204,6 +204,37 @@ class Animal(object):
 
   def getTriangulation(self):
     return self.triangulation
+
+  def setBoundaryVertices(self, vertices):
+    self.boundaryVertices = vertices
+
+  def getBoundaryVertices(self):
+    return self.boundaryVertices
+
+  def setBoundaryEdges(self, edges):
+    self.boundaryEdges = edges
+
+  def getBoundaryEdges(self):
+    return self.boundaryEdges
+
+  def setCentralVertex(self, central_vertex):
+    self.centralVertex = central_vertex
+
+  def getCentralVertex(self, central_vertex):
+    return self.centralVertex
+
+  def setInteriorVertexBFS(self, vertex_bfs):
+    self.vertexBFS = vertex_bfs
+
+  def getInteriorVertexBFS(self):
+    return self.vertexBFS
+
+  def setTriangleTriangleAdjacency(self, triangle_triangle_adjacency):
+    self.triangleTriangleAdjacency = triangle_triangle_adjacency
+  
+  def getTriangleTriangleAdjacency(self):
+    return self.triangleTriangleAdjacency
+
   
 ################################################################################
 ### Basic Functions
