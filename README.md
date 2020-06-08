@@ -15,9 +15,6 @@ Python 3.7.3. This module also requires the following python packages:
 * Plotly (>= 4.4.1)
 * Libigl (beta version, under development)
 
-Libigl can be installed with conda:
-`conda install -c conda-forge igl`
-
 ### Installing
 
 The `pip` installation is a work in progress. In the meantime, the package can
