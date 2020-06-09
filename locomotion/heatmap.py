@@ -98,7 +98,7 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   print("Calculating vertex BFS and triangle adjacency for %s..." % animal_obj.get_name())
 
   #calculate and record central vertex and BFS from the centre
-  central_vertex = getCentralVertex(animal_obj)
+  central_vertex = findCentralVertex(animal_obj)
   animal_obj.set_central_vertex(central_vertex)
 
   #for each animal, we want a BFS of just the interior vertices, not the boundary vertices
@@ -318,7 +318,7 @@ def getTriangleColors(animal_obj):
 ###    METHODS NEEDED FOR TRIANGLE-TRIANGLE AND VERTEX-VERTEX ADJACENCIES AND BFS   ###
 #######################################################################################  
 
-def getCentralVertex(animal_obj):
+def findCentralVertex(animal_obj):
   """ 
   Finds the index of the vertex coordinate for the triangulation of an animal that is closest to its topological centre.
 
@@ -330,10 +330,12 @@ def getCentralVertex(animal_obj):
   """
   #get the regular coordinates in the x, y dimension to find the central vertex in that plane
   x_y_coordinates = [coord[:2] for coord in animal_obj.get_regular_coordinates()]
+  num_x_grid, num_y_grid = animal_obj.get_num_grids()
+  grid_size = animal_obj.get_grid_size()
 
   #get the central coordinate in the grid. It must be a multiple of the grid size.
-  mid_x_coordinate = (animal_obj.num_x_grid // 2) * animal_obj.grid_size
-  mid_y_coordinate = (animal_obj.num_y_grid // 2) * animal_obj.grid_size
+  mid_x_coordinate = (num_x_grid // 2) * grid_size
+  mid_y_coordinate = (num_y_grid // 2) * grid_size
 
   #find the index of this central coordinate
   central_vertex = x_y_coordinates.index([mid_x_coordinate, mid_y_coordinate])

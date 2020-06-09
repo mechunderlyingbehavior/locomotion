@@ -44,7 +44,7 @@ class Animal():
         self.__animal_type = json_item["animal_attributes"]["species"]
         self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__animal_id = json_item["animal_attributes"]["ID"]
-        self.__is_control = json_item["animal_attributes"]["control_group"].toLowerCase() == 'true'
+        self.__is_control = json_item["animal_attributes"]["control_group"].lower() == 'true'
         self.__dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
         self.__dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
         self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
@@ -180,7 +180,7 @@ class Animal():
                           "Defaulting to the final frame stored.")
         return values[start_frame:end_frame]
 
-    def get_mult_raw_val(self, var_names, start_frame=None, end_frame=None):
+    def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """
         Runs self.get_raw_vals for multiple variables stored in animal object.
         :Parameters:
@@ -234,6 +234,8 @@ class Animal():
         :Parameters:
          grid_size : int. Size of each grid. Should divide self.__dim_x and self.__dim_y.
         """
+        if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
+            throw_error("grid_size does not divide dim x or dim y.")
         self.__grid_size = grid_size
         self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
         self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
