@@ -53,9 +53,9 @@ def main():
     print("That wasn't quite one of the options...")
     exit(1)
 
-  animals = locomotion.getAnimalObjs(infofile,name_list)
+  animals = locomotion.get_animal_objs(infofile,name_list)
   for a in animals:
-    x_dim,y_dim = a.getDims()
+    x_dim,y_dim = a.get_dims()
     if not float(x_dim/grid_size).is_integer() or not float(y_dim/grid_size).is_integer():
       print("The grid size must divide each of the dimensions evenly.")
       exit(1)

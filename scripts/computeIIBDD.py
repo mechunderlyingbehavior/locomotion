@@ -53,7 +53,7 @@ def main():
     print("That wasn't quite one of the options...")
     exit(1)
 
-  animals = locomotion.getAnimalObjs(infofile,name_list)
+  animals = locomotion.get_animal_objs(infofile,name_list)
   for a in animals:
     locomotion.trajectory.getCurveData(a)
   if output == 'y':

@@ -79,7 +79,7 @@ dataset and run the BDD on it.
 The package accepts csv and tsv files. However, because it distinguishes between
 tsv and csv by doing a simple check to see if tabs or commas are present in the
 first (header) line, make sure to avoid using both delimiters in the header of
-your data file. If your data must use both, you will need to edit the `getRawData`
+your data file. If your data must use both, you will need to edit the `get_raw_data`
 function in `animal.py`. 
 
 ### Header Format 
@@ -149,7 +149,7 @@ Wrote the information entered into /path/to/json/files/sample.json
 ## Using the Package
 
 Once you import the `locomotion` package, you will need to first initiate animal
-objects using the `locomotion.getAnimalObjs` command, which returns a list of
+objects using the `locomotion.get_animal_objs` command, which returns a list of
 animal objects with basic X and Y data from the data files.
 
 The routines for calculating Behavioral Distortion Distance (BDD) are located in
@@ -161,7 +161,7 @@ Example script:
 ```python
 import locomotion
 info_file = "/path/to/animal_info.json"
-animals = locomotion.getAnimalObjs( info_file )
+animals = locomotion.get_animal_objs( info_file )
 for a in animals:
   locomotion.trajectory.getCurveData( a )
 variables = ['Y','Velocity','Curvature']
@@ -198,7 +198,7 @@ specified info sheet, one can run a script like the following:
 ```python
 import locomotion
 info_file = "/path/to/animal_info.json"
-animals = locomotion.getAnimalObjs( info_file )
+animals = locomotion.get_animal_objs( info_file )
 for a in animals:
   locomotion.trajectory.getCurveData( a )
 variables = ['Y','Velocity','Curvature']
@@ -234,7 +234,7 @@ Example script:
 ```python
 import locomotion
 info_file = "/path/to/animal_info.json"
-animals = locomotion.getAnimalObjs( info_file )
+animals = locomotion.get_animal_objs( info_file )
 grid_size, start_time, end_time = 10, 0, 2
 for a in animals:
   locomotion.heatmap.getSurfaceData( a, grid_size, start_time, end_time )

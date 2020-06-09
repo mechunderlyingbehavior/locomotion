@@ -25,7 +25,7 @@ import numpy as np
 import locomotion.extendedDTW as extendedDTW
 import locomotion.write as write
 import locomotion.animal as animal
-from locomotion.animal import throwError
+from locomotion.animal import throw_error
 from scipy.signal import savgol_filter
 from collections import defaultdict
 
@@ -118,22 +118,22 @@ def getCurveData( animal_obj , col_names = ['X', 'Y']):
   coords = []
   for col in col_names:
     try:
-      coords.append(smooth(animal_obj.getRawVals(col), animal_obj.getFrameRate()))
+      coords.append(smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
     except KeyError:
       raise Exception("column name {} does not exist in animal dataset".format(col))
   coords = np.array(coords) # MM
   d1 = getDerivatives(coords, axis = 1) # MM per frame
-  d1 = d1 * animal_obj.getFrameRate() # MM per second
+  d1 = d1 * animal_obj.get_frame_rate() # MM per second
   d2 = getDerivatives(d1, axis = 1) # MM per second per frame
-  d2 = d2 * animal_obj.getFrameRate() # MM per second per second
+  d2 = d2 * animal_obj.get_frame_rate() # MM per second per second
   V = getVelocity(d1)
   C = getCurvature(d1, d2, V)
 
-  st, et = animal_obj.getBaselineTimes()
-  animal_obj.addRawVals('Velocity', V)
-  animal_obj.addStats('Velocity', 'baseline', st, et)
-  animal_obj.addRawVals('Curvature', C)
-  animal_obj.addStats('Curvature', 'baseline', st, et)
+  st, et = animal_obj.get_baseline_times()
+  animal_obj.add_raw_vals('Velocity', V)
+  animal_obj.add_stats('Velocity', 'baseline', st, et)
+  animal_obj.add_raw_vals('Curvature', C)
+  animal_obj.add_stats('Curvature', 'baseline', st, et)
   return d1, d2, V, C
 
 
@@ -168,25 +168,25 @@ def computeOneBDD(animal_obj_0, animal_obj_1, varnames, seg_start_time_0, seg_en
 
   #quick sanity check for output mode
   if fullmode and outdir == None:
-    throwError("Full mode requires the path to output directory")
+    throw_error("Full mode requires the path to output directory")
 
-  seg_start_frame_0 = animal.getFrameNum(animal_obj_0, seg_start_time_0)
-  seg_end_frame_0 = animal.getFrameNum(animal_obj_0, seg_end_time_0)
-  data_0 = animal_obj_0.getMultRawVals(varnames, seg_start_frame_0, seg_end_frame_0)
+  seg_start_frame_0 = animal.get_frame_num(animal_obj_0, seg_start_time_0)
+  seg_end_frame_0 = animal.get_frame_num(animal_obj_0, seg_end_time_0)
+  data_0 = animal_obj_0.get_mult_raw_vals(varnames, seg_start_frame_0, seg_end_frame_0)
 
-  seg_start_frame_1 = animal.getFrameNum(animal_obj_1, seg_start_time_1)
-  seg_end_frame_1 = animal.getFrameNum(animal_obj_1, seg_end_time_1)
-  data_1 = animal_obj_1.getMultRawVals(varnames, seg_start_frame_1, seg_end_frame_1)
+  seg_start_frame_1 = animal.get_frame_num(animal_obj_1, seg_start_time_1)
+  seg_end_frame_1 = animal.get_frame_num(animal_obj_1, seg_end_time_1)
+  data_1 = animal_obj_1.get_mult_raw_vals(varnames, seg_start_frame_1, seg_end_frame_1)
 
-  print("LOG: Applying DTW to the data from files %s and %s..." % (animal_obj_0.getName(), animal_obj_1.getName()))
+  print("LOG: Applying DTW to the data from files %s and %s..." % (animal_obj_0.get_name(), animal_obj_1.get_name()))
   
   numVars = len(varnames)
 
   if norm_mode == 'baseline':
     for i in range(numVars):
-      m, s = animal_obj_0.getStats(varnames[i], 'baseline')
+      m, s = animal_obj_0.get_stats(varnames[i], 'baseline')
       data_0[i] = animal.normalize(data_0[i], m, s)
-      m, s = animal_obj_1.getStats(varnames[i], 'baseline')
+      m, s = animal_obj_1.get_stats(varnames[i], 'baseline')
       data_1[i] = animal.normalize(data_1[i], m, s)
   elif norm_mode == 'spec':
     for i in range(numVars):
@@ -198,7 +198,7 @@ def computeOneBDD(animal_obj_0, animal_obj_1, varnames, seg_start_time_0, seg_en
   #dist is the integral part of the BDD formula
   scaler = len(alignment[0]) #arclength of the alignment
   bdd = dist/scaler
-  print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.getName(), animal_obj_1.getName(), bdd))
+  print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name(), animal_obj_1.get_name(), bdd))
 
   if fullmode:
     #save alignment graphs in directory specified
@@ -273,9 +273,9 @@ def computeOneIIBDD(animal_obj, varnames, norm_mode, interval_length=None, start
   """
 
   if start_time == None:
-    start_time = animal_obj.getExpStartTime()
+    start_time = animal_obj.get_exp_start_time()
   if end_time == None:
-    end_time = animal_obj.getExpEndTime()
+    end_time = animal_obj.get_exp_end_time()
 
   if interval_length == None:
   # No interval lengths are specified, so we are going to generate random interval lengths
@@ -364,9 +364,9 @@ def computeAllIIBDD(animal_list, varnames, norm_mode, num_exps, interval_lengths
       std_list = []
 
       if start_time == None:
-        start_time = animal_obj.getExpStartTime()
+        start_time = animal_obj.get_exp_start_time()
       if end_time == None:
-        end_time = animal_obj.getExpEndTime()
+        end_time = animal_obj.get_exp_end_time()
 
       slice_areas = [0.5*((end_time-start_time)-2*length)**2 for length in interval_lengths]
       total_area = sum(slice_areas)
