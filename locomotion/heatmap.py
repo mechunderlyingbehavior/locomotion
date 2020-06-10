@@ -20,7 +20,7 @@ from numpy import mean, std, array, linalg
 from scipy.optimize import minimize_scalar
 import locomotion.write as write
 import locomotion.animal as animal
-from locomotion.animal import throwError
+from locomotion.animal import throw_error
 from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, adjacency_matrix, bfs, triangle_triangle_adjacency
 
 #Static Variables
@@ -51,55 +51,55 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   """
   #Check if start_time or end_time need to be set:
   if start_time == None:
-    start_time = animal_obj.getExpStartTime()
+    start_time = animal_obj.get_exp_start_time()
   if end_time == None:
-    end_time = animal_obj.getExpEndTime()
+    end_time = animal_obj.get_exp_end_time()
 
   #store given parameters
-  animal_obj.setGridSize(grid_size)
-  animal_obj.setPerturbation(PERTURBATION)
-  animal_obj.setTolerance(TOLERANCE)
+  animal_obj.set_grid_size(grid_size)
+  animal_obj.set_perturbation(PERTURBATION)
+  animal_obj.set_tolerance(TOLERANCE)
   
-  print("Calculating heatmap for %s..." % animal_obj.getName())
+  print("Calculating heatmap for %s..." % animal_obj.get_name())
   
   #calculate heatmap
   frequencies = getFrequencies(animal_obj, start_time, end_time)
 
-  print("Calculating triangulation for %s..." % animal_obj.getName())
+  print("Calculating triangulation for %s..." % animal_obj.get_name())
   
   #get and record vertices
   original_coordinates = getVertexCoordinates(animal_obj, frequencies)
-  animal_obj.setNumVerts(len(original_coordinates))
-  animal_obj.setRegularCoordinates(original_coordinates)
+  animal_obj.set_num_verts(len(original_coordinates))
+  animal_obj.set_regular_coordinates(original_coordinates)
   
   #get and record triangles
   triangles = getTriangles(animal_obj)
-  animal_obj.setNumTriangles(len(triangles))
-  animal_obj.setTriangulation(triangles)
+  animal_obj.set_num_triangles(len(triangles))
+  animal_obj.set_triangulation(triangles)
 
   #calculate and store colors for output file
-  colors = getColors(animal_obj)
-  animal_obj.setColors(colors)
+  colors = getTriangleColors(animal_obj)
+  animal_obj.set_colors(colors)
 
-  print("Calculating flattened coordinates for %s..." % animal_obj.getName())
+  print("Calculating flattened coordinates for %s..." % animal_obj.get_name())
 
   #calculate and record boundary vertices
   boundary_vertices = getBoundaryLoop(animal_obj)
-  animal_obj.setBoundaryVertices(boundary_vertices)
+  animal_obj.set_boundary_vertices(boundary_vertices)
 
   #calculate and record boundary edges
-  boundary_edges = getBoundaryEdges(animal_obj)
-  animal_obj.setBoundaryEdges(boundary_edges)
+  boundary_edges = get_boundary_edges(animal_obj)
+  animal_obj.set_boundary_edges(boundary_edges)
   
   #calculate and record flattened coordinates of triangulation
   flattened_coordinates = getFlatCoordinates(animal_obj)
-  animal_obj.setFlattenedCoordinates(flattened_coordinates)
+  animal_obj.set_flattened_coordinates(flattened_coordinates)
 
-  print("Calculating vertex BFS and triangle adjacency for %s..." % animal_obj.getName())
+  print("Calculating vertex BFS and triangle adjacency for %s..." % animal_obj.get_name())
 
   #calculate and record central vertex and BFS from the centre
-  central_vertex = getCentralVertex(animal_obj)
-  animal_obj.setCentralVertex(central_vertex)
+  central_vertex = findCentralVertex(animal_obj)
+  animal_obj.set_central_vertex(central_vertex)
 
   #for each animal, we want a BFS of just the interior vertices, not the boundary vertices
   #as a first step, we need to get all triangles that do not contain a boundary vertex (No-Boundary-Vertex/NBV triangles)
@@ -109,11 +109,11 @@ def getSurfaceData(animal_obj, grid_size, start_time=None, end_time=None):
   #find the adjacency matrix of the interior vertices using NBV triangles to calculate and record the BFS
   interior_vertex_adjacency_matrix = adjacency_matrix(array(nbv_triangles))
   interior_vertex_bfs = bfs(interior_vertex_adjacency_matrix, central_vertex)
-  animal_obj.setInteriorVertexBFS(interior_vertex_bfs)
+  animal_obj.set_interior_vertex_bfs(interior_vertex_bfs)
 
   #calculate and record triangle-triangle adjacency matrix
   triangle_adjacency_matrix = triangle_triangle_adjacency(array(triangles))[0]
-  animal_obj.setTriangleTriangleAdjacency(triangle_adjacency_matrix)
+  animal_obj.set_triangle_triangle_adjacency(triangle_adjacency_matrix)
 
   
 #######################################################################################  
@@ -138,14 +138,14 @@ def getFrequencies(animal_obj, start_time, end_time):
   """
 
   #set or get relevant parameters
-  start_frame = animal.getFrameNum(animal_obj, start_time)
-  end_frame = animal.getFrameNum(animal_obj, end_time)
-  perturb = animal_obj.getPerturbation()
-  grid_size = animal_obj.getGridSize()
-  x_dim, y_dim = animal_obj.getDims()
-  num_x_grid, num_y_grid = animal_obj.getNumGrids()
-  X = animal_obj.getRawVals('X', start_frame, end_frame)
-  Y = animal_obj.getRawVals('Y', start_frame, end_frame)
+  start_frame = animal.get_frame_num(animal_obj, start_time)
+  end_frame = animal.get_frame_num(animal_obj, end_time)
+  perturb = animal_obj.get_perturbation()
+  grid_size = animal_obj.get_grid_size()
+  x_dim, y_dim = animal_obj.get_dims()
+  num_x_grid, num_y_grid = animal_obj.get_num_grids()
+  X = animal_obj.get_raw_vals('X', start_frame, end_frame)
+  Y = animal_obj.get_raw_vals('Y', start_frame, end_frame)
 
   #initialize frequency matrix
   freqency_matrix = [[0 for j in range(num_y_grid)] for i in range(num_x_grid)]
@@ -184,7 +184,7 @@ def getZDim(animal_obj):
      int, value of vertical dimension
   """
   
-  return min(animal_obj.getDims())
+  return min(animal_obj.get_dims())
 
 def getVertexCoordinates(animal_obj, freqs):
   """ Calculates the vertex coordinates for a triangulation of the surface 
@@ -201,8 +201,8 @@ def getVertexCoordinates(animal_obj, freqs):
   """
 
   #gather relevant parameters
-  grid_size = animal_obj.getGridSize()
-  num_x_grid, num_y_grid = animal_obj.getNumGrids()
+  grid_size = animal_obj.get_grid_size()
+  num_x_grid, num_y_grid = animal_obj.get_num_grids()
 
   #normalize the values to floats between 0 and a specified z-dimension
   m = mean(freqs)
@@ -233,7 +233,7 @@ def getTriangles(animal_obj):
       in the triangulation of a surface
   """
   #store relevant parameters
-  num_x_grid, num_y_grid = animal_obj.getNumGrids()
+  num_x_grid, num_y_grid = animal_obj.get_num_grids()
 
   #initialize triangle list
   triangles = []
@@ -256,10 +256,10 @@ def getBoundaryLoop(animal_obj):
         array of ints. The indices of the vertices that are on the boundary of this animal.
   """
   #convert triangulation to array for IGL 
-  triangulation = array(animal_obj.getTriangulation())
+  triangulation = array(animal_obj.get_triangulation())
   return boundary_loop(triangulation)
 
-def getBoundaryEdges(animal_obj):
+def get_boundary_edges(animal_obj):
   """ Given an animal object, get its ordered boundary edges in counter-clockwise order.
 
     :Parameters:
@@ -268,12 +268,12 @@ def getBoundaryEdges(animal_obj):
       :Returns:
         list of int tuple pairs: list of edges ordered as in the boundary loop, where each edge is a tuple of the two vertices it connects
   """
-  boundary_vertices = list(animal_obj.getBoundaryVertices())
+  boundary_vertices = list(animal_obj.get_boundary_vertices())
   #zip the boundary vertices with itself with an offset of 1 and its head appended at the back (so it goes full circle), then cast to a list
   boundary_edges = list(zip(boundary_vertices, boundary_vertices[1:] + [boundary_vertices[0]]))
   return boundary_edges
 
-def getColors(animal_obj):
+def getTriangleColors(animal_obj):
   """ Calculates color for rendering each triangle in the triangulation of an animal according 
     to the average height of the regular coordinates of its vertices 
 
@@ -286,8 +286,8 @@ def getColors(animal_obj):
   """
 
   #gather relevant parameters
-  coordinates = animal_obj.getRegularCoordinates()
-  triangles = animal_obj.getTriangulation()
+  coordinates = animal_obj.get_regular_coordinates()
+  triangles = animal_obj.get_triangulation()
 
   #initialize return list
   colors = []
@@ -318,7 +318,7 @@ def getColors(animal_obj):
 ###    METHODS NEEDED FOR TRIANGLE-TRIANGLE AND VERTEX-VERTEX ADJACENCIES AND BFS   ###
 #######################################################################################  
 
-def getCentralVertex(animal_obj):
+def findCentralVertex(animal_obj):
   """ 
   Finds the index of the vertex coordinate for the triangulation of an animal that is closest to its topological centre.
 
@@ -329,11 +329,13 @@ def getCentralVertex(animal_obj):
       integer index of the vertex at the the central coordinate. We know that it will be there because of our triangulation method.
   """
   #get the regular coordinates in the x, y dimension to find the central vertex in that plane
-  x_y_coordinates = [coord[:2] for coord in animal_obj.getRegularCoordinates()]
+  x_y_coordinates = [coord[:2] for coord in animal_obj.get_regular_coordinates()]
+  num_x_grid, num_y_grid = animal_obj.get_num_grids()
+  grid_size = animal_obj.get_grid_size()
 
   #get the central coordinate in the grid. It must be a multiple of the grid size.
-  mid_x_coordinate = (animal_obj.num_x_grid // 2) * animal_obj.grid_size
-  mid_y_coordinate = (animal_obj.num_y_grid // 2) * animal_obj.grid_size
+  mid_x_coordinate = (num_x_grid // 2) * grid_size
+  mid_y_coordinate = (num_y_grid // 2) * grid_size
 
   #find the index of this central coordinate
   central_vertex = x_y_coordinates.index([mid_x_coordinate, mid_y_coordinate])
@@ -351,8 +353,8 @@ def getNBVTriangles(animal_obj):
       list of list triples. list of all triangles in the animal that do not contain boundary vertices.
   """
   #get relevant parameters
-  triangles = animal_obj.getTriangulation()
-  boundary_vertices = set(animal_obj.getBoundaryVertices())
+  triangles = animal_obj.get_triangulation()
+  boundary_vertices = set(animal_obj.get_boundary_vertices())
   interior_triangles = []
   
   #for each triangle, check if each vertex is a boundary vertex. If it does not contain a boundary vertex, add it to interior_triangles
@@ -389,11 +391,11 @@ def getFlatCoordinates(animal_obj):
   """
 
   # store relevant parameters and convert to arrays
-  tolerance = animal_obj.getTolerance()
-  regular_coordinates, triangles = array(animal_obj.getRegularCoordinates()), array(animal_obj.getTriangulation())
+  tolerance = animal_obj.get_tolerance()
+  regular_coordinates, triangles = array(animal_obj.get_regular_coordinates()), array(animal_obj.get_triangulation())
     
   # get boundary vertice indices (already an array) from the animal
-  boundary_vertices = animal_obj.getBoundaryVertices()
+  boundary_vertices = animal_obj.get_boundary_vertices()
 
   # map boundary vertices to unit circle, preserving edge proportions, to get the flattened boundary coordinates
   flattened_boundary_coordinates = map_vertices_to_circle(regular_coordinates, boundary_vertices)
@@ -651,7 +653,7 @@ def getNextNeighbourhood(animal_obj, current_triangles, traversed_triangles):
   all_adjacent_triangles = set()
 
   #use the triangle-triangle adjacency array to find neighbouring triangles
-  triangle_triangle_adjacency_array = animal_obj.getTriangleTriangleAdjacency()
+  triangle_triangle_adjacency_array = animal_obj.get_triangle_triangle_adjacency()
 
   for triangle_i in current_triangles:
     #update all adjacent triangles with the triangles adjacent to each triangle
@@ -678,19 +680,19 @@ def getAlignedCoordinates(animal_obj_0, animal_obj_1, theta):
   """
   
   #store relevant parameters
-  num_verts_0 = animal_obj_0.getNumVerts()
-  num_verts_1 = animal_obj_1.getNumVerts()
-  regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
-  flat_coordinates_0 = animal_obj_0.getFlattenedCoordinates()
-  flat_coordinates_1 = animal_obj_1.getFlattenedCoordinates()
-  triangles_0 = animal_obj_0.getTriangulation()
-  num_triangles_0 = animal_obj_0.getNumTriangles() 
-  boundary_vertices_1 = list(animal_obj_1.getBoundaryVertices())
-  boundary_edges_0 = animal_obj_0.getBoundaryEdges()
+  num_verts_0 = animal_obj_0.get_num_verts()
+  num_verts_1 = animal_obj_1.get_num_verts()
+  regular_coordinates_0 = animal_obj_0.get_regular_coordinates()
+  flat_coordinates_0 = animal_obj_0.get_flattened_coordinates()
+  flat_coordinates_1 = animal_obj_1.get_flattened_coordinates()
+  triangles_0 = animal_obj_0.get_triangulation()
+  num_triangles_0 = animal_obj_0.get_num_triangles() 
+  boundary_vertices_1 = list(animal_obj_1.get_boundary_vertices())
+  boundary_edges_0 = animal_obj_0.get_boundary_edges()
   num_edges_0 = len(boundary_edges_0)
   
   #given the bfs ordering of vertices, store the first vertex and the rest of the list separately
-  bfs_ordering, bfs_ancestors = animal_obj_1.getInteriorVertexBFS()
+  bfs_ordering, bfs_ancestors = animal_obj_1.get_interior_vertex_bfs()
   first_vertex, *v_traversal_1 = bfs_ordering
   #initialize return list with triples of -1
   aligned_coordinates_1 = [[-1,-1,-1]] * num_verts_1
@@ -816,10 +818,10 @@ def distortionEnergy(animal_obj_0, animal_obj_1, rho):
   """
 
   #store relevant parameters
-  num_verts = animal_obj_0.getNumVerts()
-  regular_coordinates = animal_obj_0.getRegularCoordinates()
+  num_verts = animal_obj_0.get_num_verts()
+  regular_coordinates = animal_obj_0.get_regular_coordinates()
   aligned_coordinates = getAlignedCoordinates(animal_obj_1,animal_obj_0,rho)
-  triangles = animal_obj_0.getTriangulation()
+  triangles = animal_obj_0.get_triangulation()
 
   #initialize four matrices whose entries correspond to pairs of vertices in the triangulation of Animal 0:
   #(1) the number of triangles containing that pair of vertices
@@ -905,37 +907,37 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
 
   #check that a directory is specified if fullmode is true
   if fullmode and outdir == None:
-    throwError("Full mode requires the path to output direcotry")
+    throw_error("Full mode requires the path to output direcotry")
 
   #notify user of progress
-  print("Measuring conformal spatiotemporal distance between heat maps of %s and %s..." % (animal_obj_0.getName(),animal_obj_1.getName()))
+  print("Measuring conformal spatiotemporal distance between heat maps of %s and %s..." % (animal_obj_0.get_name(),animal_obj_1.get_name()))
 
   #calculate the optimal rotation for aligning the triangulations of the two animals
   #theta = optimalRotation(animal_obj_0,animal_obj_1)
   theta = 0
 
   #store relevant parameters.  Note that we assume both animal observations have the same dimensions
-  x_dim, y_dim = animal_obj_0.getDims()
+  x_dim, y_dim = animal_obj_0.get_dims()
   z_dim = getZDim(animal_obj_0)
-  num_verts_0 = animal_obj_0.getNumVerts()
-  regular_coordinates_0 = animal_obj_0.getRegularCoordinates()
+  num_verts_0 = animal_obj_0.get_num_verts()
+  regular_coordinates_0 = animal_obj_0.get_regular_coordinates()
   aligned_coordinates_0 = getAlignedCoordinates(animal_obj_1,animal_obj_0,theta)
-  triangles_0 = animal_obj_0.getTriangulation()
-  num_verts_1 = animal_obj_1.getNumVerts()
-  regular_coordinates_1 = animal_obj_1.getRegularCoordinates()
+  triangles_0 = animal_obj_0.get_triangulation()
+  num_verts_1 = animal_obj_1.get_num_verts()
+  regular_coordinates_1 = animal_obj_1.get_regular_coordinates()
   aligned_coordinates_1 = getAlignedCoordinates(animal_obj_0,animal_obj_1,-theta)
-  triangles_1 = animal_obj_1.getTriangulation()
+  triangles_1 = animal_obj_1.get_triangulation()
 
   #Save the triangulation data in .OFF files if fullmode is True
   if fullmode:
-    write.writeOFF(animal_obj_0, regular_coordinates_0, outdir, "heatmap_%s_regular.off" % animal_obj_0.getName())
-    write.writeOFF(animal_obj_1, regular_coordinates_1, outdir, "heatmap_%s_regular.off" % animal_obj_1.getName())
-    flattened_coordinates_0 = [coord + [0] for coord in animal_obj_0.getFlattenedCoordinates()]
-    flattened_coordinates_1 = [coord + [0] for coord in animal_obj_1.getFlattenedCoordinates()]
-    write.writeOFF(animal_obj_0, flattened_coordinates_0, outdir, "heatmap_%s_flat.off" % animal_obj_0.getName())
-    write.writeOFF(animal_obj_1, flattened_coordinates_1, outdir, "heatmap_%s_flat.off" % animal_obj_1.getName())
-    write.writeOFF(animal_obj_0, aligned_coordinates_0, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_0.getName(),animal_obj_1.getName()))
-    write.writeOFF(animal_obj_1, aligned_coordinates_1, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_1.getName(),animal_obj_0.getName()))
+    write.writeOFF(animal_obj_0, regular_coordinates_0, outdir, "heatmap_%s_regular.off" % animal_obj_0.get_name())
+    write.writeOFF(animal_obj_1, regular_coordinates_1, outdir, "heatmap_%s_regular.off" % animal_obj_1.get_name())
+    flattened_coordinates_0 = [coord + [0] for coord in animal_obj_0.get_flattened_coordinates()]
+    flattened_coordinates_1 = [coord + [0] for coord in animal_obj_1.get_flattened_coordinates()]
+    write.writeOFF(animal_obj_0, flattened_coordinates_0, outdir, "heatmap_%s_flat.off" % animal_obj_0.get_name())
+    write.writeOFF(animal_obj_1, flattened_coordinates_1, outdir, "heatmap_%s_flat.off" % animal_obj_1.get_name())
+    write.writeOFF(animal_obj_0, aligned_coordinates_0, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_0.get_name(),animal_obj_1.get_name()))
+    write.writeOFF(animal_obj_1, aligned_coordinates_1, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_1.get_name(),animal_obj_0.get_name()))
 
   #calculate the distance between the aligned surfaces 
   difference_val_0 = 0
@@ -957,7 +959,7 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
   distance = (difference_val_0**0.5+difference_val_1**0.5)/(2*z_dim*x_dim*y_dim)
 
   #record distance in terminal
-  print("LOG: distance  between aligned surfaces of %s and %s: %.3f" % (animal_obj_0.getName(), animal_obj_1.getName(), distance))
+  print("LOG: distance  between aligned surfaces of %s and %s: %.3f" % (animal_obj_0.get_name(), animal_obj_1.get_name(), distance))
 
   return distance
 
