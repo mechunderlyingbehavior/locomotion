@@ -3,11 +3,15 @@ test.py
 extendedDTW/extendedDTW.c
 extendedDTW/extendedDTW.so
 extendedDTW/build/
+locomotion/extendedDTW.so
+locomotion/__pycache__/
+results/
 samples/info_med.json
 samples/info_med_data/*
-locomotion/extendedDTW.so
-results/
-locomotion/__pycache__/
+samples/sample_check.json
+scripts/compute*.py
+tests/robustness_tests/results/
+tests/robustness_tests/figures/
 
 # Git Ignore taken from https://github.com/github/gitignore/blob/master/Python.gitignore
 
