@@ -253,7 +253,7 @@ def getBoundaryLoop(animal_obj):
         animal_obj : animal object, initialized with regular coordinates and triangulation set/updated
 
       :Returns:
-        array of ints. The indices of the vertices that are on the boundary of this animal.
+        array of ints. The indices of the vertices that are on the boundary of this animal in counter-clockwise order.
   """
   #convert triangulation to array for IGL 
   triangulation = array(animal_obj.get_triangulation())
