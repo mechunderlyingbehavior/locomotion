@@ -252,7 +252,8 @@ class Animal():
         """
         Setter functions for self.__perturbation
         :Parameters:
-         perturbation : ELAINE
+         perturbation : float. A small number. Used to create an offset value
+         from which we can check if an animal's X, Y values are within bounds.
         """
         self.__perturbation = perturbation
 
@@ -264,7 +265,8 @@ class Animal():
         """
         Setter functions for self.__tolerance
         :Parameters:
-         tolerance : ELAINE
+         tolerance : float. A small number. Used to check if an animal's centre
+         of mass is close enough to the origin.
         """
         self.__tolerance = tolerance
 
@@ -276,7 +278,7 @@ class Animal():
         """
         Setter functions for self.__num_verts
         :Parameters:
-         num_verts : ELAINE
+         num_verts : int. The number of vertices in an animal's heat map.
         """
         self.__num_verts = num_verts
 
@@ -288,7 +290,8 @@ class Animal():
         """
         Setter functions for self.__num_triangles
         :Parameters:
-         num_triangles : ELAINE
+         num_triangles : int. The number of triangles in the triangulation
+         associated with an animal's heat map.
         """
         self.__num_triangles = num_triangles
 
@@ -300,7 +303,8 @@ class Animal():
         """
         Setter functions for self.__colors
         :Parameters:
-         colors : ELAINE
+         colors : list of triples of floats. The RGB coordinates for each 
+         triangle in the triangulation associated to an animal's heat map.
         """
         self.__colors = colors
 
@@ -312,7 +316,9 @@ class Animal():
         """
         Setter functions for self.__reg_coords
         :Parameters:
-         coordinates : ELAINE
+         coordinates : list of triples of floats. The the x-, y-,
+         and z-coordinates of the vertices for a triangulation of the 
+         animal's heat map.
         """
         self.__reg_coords = coordinates
 
@@ -324,7 +330,9 @@ class Animal():
         """
         Setter functions for self.__flat_coords
         :Parameters:
-         coordinates : ELAINE
+         coordinates : list of pairs of floats. The x- and y-coordinates of 
+         the vertices of a triangulation that have been conformally flattened
+         to the unit disk.
         """
         self.__flat_coords = coordinates
 
@@ -336,7 +344,8 @@ class Animal():
         """
         Setter functions for self.__triangulation
         :Parameters:
-         triangles : ELAINE
+         triangles : list of triples of ints. The indices of the vertices
+         for each triangle in the triangulation of a surface.
         """
         self.__triangulation = triangles
 
@@ -348,7 +357,8 @@ class Animal():
         """
         Setter functions for self.__boundary_vertices
         :Parameters:
-         vertices : ELAINE
+         vertices : numpy array of ints. The indices of the vertices that 
+         are on the boundary of this animal in counter-clockwise order.
         """
         self.__boundary_vertices = vertices
 
@@ -360,7 +370,9 @@ class Animal():
         """
         Setter functions for self.__boundary_edges
         :Parameters:
-         edges : ELAINE
+         edges : list of int tuple pairs. The edges of the boundary loop in
+         counter-clockwise order, where each edge is a tuple of the two 
+         vertices it connects.
         """
         self.__boundary_edges = edges
 
@@ -372,7 +384,8 @@ class Animal():
         """
         Setter functions for self.__central_vertex
         :Parameters:
-         central_vertex : ELAINE
+         central_vertex : int. The index of the vertex at the topological
+         centre of the animal's heat map in the x-y plane.
         """
         self.__central_vertex = central_vertex
 
@@ -384,7 +397,17 @@ class Animal():
         """
         Setter functions for self.__vertex_bfs
         :Parameters:
-         vertex_bfs : ELAINE
+         vertex_bfs : A tuple of int numpy arrays, (bfs_ordering, bfs_ancestors).
+
+            bfs_ordering is an array containing the interior vertices in an animal's
+            heat map in order of discovery in the breadth-first-search.
+
+            bfs_ancestors is an array with length corresponding to the interior vertex
+            with the largest index. Each element bfs_ancestors[i] is the index of the
+            vertex that preceded vertex i in the breadth-first-search, where -1 
+            indicates either the root vertex (where the breadth-first-search started) 
+            or a vertex that was not discovered in the breadth-first-search (in this 
+            case, it must be a boundary vertex).
         """
         self.__vertex_bfs = vertex_bfs
 
@@ -396,7 +419,11 @@ class Animal():
         """
         Setter functions for self.__triangle_triangle_adjacency
         :Parameters:
-         triangle_triangle_adjacency : ELAINE
+         triangle_triangle_adjacency : num_triangles x 3 numpy array of ints.
+         Each 3 X 1 element of triangle_triangle_adjacency[i] corresponds to the
+         indices of the triangle in the triangulation of the heat map that is 
+         adjacent to the three edges of the triangle with index i. -1 indicates
+         that no triangles are adjacent to that particular edge of the the triangle.
         """
         self.__triangle_triangle_adjacency = triangle_triangle_adjacency
 
