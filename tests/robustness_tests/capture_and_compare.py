@@ -42,7 +42,7 @@ except FileExistsError:
 
 
 #static variables used for robustness testing
-NUM_CURVES = 11 # This must match the number of curves in the data/curve_data directory.
+NUM_CURVES = 50 # This must match the number of curves in the data/curve_data directory.
 ZFILL_LEN = int(np.ceil(np.log10(NUM_CURVES)))
 NUM_SAMPLES = 50 # Number of samples being tested
 SAMP_FILL = int(np.ceil(np.log10(NUM_SAMPLES)))
