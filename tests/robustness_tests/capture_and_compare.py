@@ -40,15 +40,9 @@ try: # Safety check to ensure that results folder exists, and makes it otherwise
 except FileExistsError:
     pass
 
-PATH_TO_FIG_DIRECTORY = os.getcwd() + "/figures"
-try: # Safety check to ensure that figures folder exists, and makes it otherwise.
-    os.mkdir(PATH_TO_FIG_DIRECTORY)
-except FileExistsError:
-    pass
-
 
 #static variables used for robustness testing
-NUM_CURVES = 50 # This must match the number of curves in the data/curve_data directory.
+NUM_CURVES = 11 # This must match the number of curves in the data/curve_data directory.
 ZFILL_LEN = int(np.ceil(np.log10(NUM_CURVES)))
 NUM_SAMPLES = 50 # Number of samples being tested
 SAMP_FILL = int(np.ceil(np.log10(NUM_SAMPLES)))
@@ -121,7 +115,7 @@ def genVariables(low, high, n):
 ########################################################################
 
 
-def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=False):
+def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density):
     """ Given a path to coefficients for the plane curve and other necessary information,
         generate curve functions and capture curves as though captured by a camera, in pixels and frames.
 
@@ -138,9 +132,6 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
     """
     #read in data from the corresponding coefficients csv file
     data = pd.read_csv(coeff_path)
-
-    #get curve number from the path
-    curve_no = re.search('coefficients_(\d+)\.csv', coeff_path).group(1)
 
     #coefficients - each are sequences of length k
     #a_k, b_k are used for x(theta) and c_k, d_k are used for y(theta)
@@ -194,26 +185,6 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
         x.append(changePixDensity(x_enlarged[i], density))
         y.append(changePixDensity(y_enlarged[i], density))
 
-    if plot:
-        #generates 2 plots, one plotting the x,y coordinates and the other plotting the coefficients
-        #and saves them into the figures folder
-        newsize = changePixDensity(size, density)
-        plt.subplots_adjust(left = None, bottom = None, right = None, top = None, wspace = 0.5, hspace = 0.5)
-        plt.subplot(121)
-        plt.plot(x, y)
-        plt.title("Coordinate plot for Curve No. " + curve_no)
-        plt.axis([0, newsize, 0, newsize])
-        plt.subplot(122)
-        kSeq = np.arange(0, len(a_k), 1)
-        plt.plot(kSeq, a_k)
-        plt.plot(kSeq, b_k)
-        plt.plot(kSeq, c_k)
-        plt.plot(kSeq, d_k)
-        plt.title("Coefficients of Curve No. " + curve_no)
-        plt.axis([0, 20, -1, 1])
-        plt.savefig(PATH_TO_FIG_DIRECTORY + "/plot_" + curve_no)
-        plt.clf()
-
     # Transform data into dataframe
     data = np.transpose(np.array((x, y)))
     coordinates = pd.DataFrame(data, columns = ['X', 'Y'])
@@ -225,7 +196,7 @@ def cameraFunc(coeff_path, time_start, time_stop, frame_rate, density, plot=Fals
 ########################################################################
 
 def captureOneCurve(dat_path, curve_str, test_str, coeff_path,
-                    frame_rate, density, control = "False", plot = False):
+                    frame_rate, density, control = "False"):
     """ Given a path to curve data, capture the corresponding curve using cameraFunc, and save coordinates
         as a .csv in the data directory. Then, produce the json that captures the necessary information.
 
@@ -238,12 +209,11 @@ def captureOneCurve(dat_path, curve_str, test_str, coeff_path,
             density : int. Pixel density of file, in pixels/mm.
             control : str. Indicating whether the current test is the control.
                            Valid options = "True", "False". Default = "False".
-            plot : bool. If True, will save a plot of the curve. Default = False.
         :Returns:
             jsonItem : dict. Json format, as needed in animal.py.
     """
     # Generate Capture Data
-    df, _ = cameraFunc(coeff_path, DEFAULT_START * 60, DEFAULT_STOP * 60, frame_rate, density, plot)
+    df, _ = cameraFunc(coeff_path, DEFAULT_START * 60, DEFAULT_STOP * 60, frame_rate, density)
     # Save Capture Data to CSV
     df.to_csv(dat_path)
     jsonItem = {
@@ -345,7 +315,7 @@ def runRobustnessTest(test_key, variables, norm_mode, start_min, end_min):
         curve_str = str(curve_no).zfill(ZFILL_LEN)
         json_path = PATH_TO_RES_DIRECTORY + "/{}/CRV_{}.json".format(test_key, curve_str)
         # Load all animals
-        animals = locomotion.getAnimalObjs(json_path)
+        animals = locomotion.get_animal_objs(json_path)
         for a in animals:
             locomotion.trajectory.getCurveData(a)
         # Run BDD against control animal (index 0)
