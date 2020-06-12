@@ -32,14 +32,12 @@ ORDER = 5 #order of smoothing curve used in smooth()
 
 #############################
 
-def get_derivatives(X, axis=0):
+def get_derivatives(series, axis=0):
     """
-    Computes the derivative of the series X. Returns a numpy array
+    Computes the derivative of the series. Returns a numpy array
     """
-    # pylint: disable=invalid-name
-    # understandable math variables
-    dX = np.gradient(X, axis=axis)
-    return dX
+    derivatives = np.gradient(X, axis=axis)
+    return derivatives
 
 
 def smooth(sequence, frame_rate):
