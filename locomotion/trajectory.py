@@ -36,7 +36,7 @@ def get_derivatives(series, axis=0):
     """
     Computes the derivative of the series. Returns a numpy array
     """
-    derivatives = np.gradient(X, axis=axis)
+    derivatives = np.gradient(series, axis=axis)
     return derivatives
 
 

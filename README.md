@@ -237,8 +237,8 @@ info_file = "/path/to/animal_info.json"
 animals = locomotion.get_animal_objs( info_file )
 grid_size, start_time, end_time = 10, 0, 2
 for a in animals:
-  locomotion.heatmap.getSurfaceData( a, grid_size, start_time, end_time )
-distances = locomotion.heatmap.computeAllCSD( animals )
+  locomotion.heatmap.get_surface_data( a, grid_size, start_time, end_time )
+distances = locomotion.heatmap.compute_all_csd( animals )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0, 0.2
