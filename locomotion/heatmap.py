@@ -930,14 +930,14 @@ def computeOneCSD(animal_obj_0, animal_obj_1, fullmode=False, outdir=None):
 
   #Save the triangulation data in .OFF files if fullmode is True
   if fullmode:
-    write.writeOFF(animal_obj_0, regular_coordinates_0, outdir, "heatmap_%s_regular.off" % animal_obj_0.get_name())
-    write.writeOFF(animal_obj_1, regular_coordinates_1, outdir, "heatmap_%s_regular.off" % animal_obj_1.get_name())
+    write.write_off(animal_obj_0, regular_coordinates_0, outdir, "heatmap_%s_regular.off" % animal_obj_0.get_name())
+    write.write_off(animal_obj_1, regular_coordinates_1, outdir, "heatmap_%s_regular.off" % animal_obj_1.get_name())
     flattened_coordinates_0 = [coord + [0] for coord in animal_obj_0.get_flattened_coordinates()]
     flattened_coordinates_1 = [coord + [0] for coord in animal_obj_1.get_flattened_coordinates()]
-    write.writeOFF(animal_obj_0, flattened_coordinates_0, outdir, "heatmap_%s_flat.off" % animal_obj_0.get_name())
-    write.writeOFF(animal_obj_1, flattened_coordinates_1, outdir, "heatmap_%s_flat.off" % animal_obj_1.get_name())
-    write.writeOFF(animal_obj_0, aligned_coordinates_0, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_0.get_name(),animal_obj_1.get_name()))
-    write.writeOFF(animal_obj_1, aligned_coordinates_1, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_1.get_name(),animal_obj_0.get_name()))
+    write.write_off(animal_obj_0, flattened_coordinates_0, outdir, "heatmap_%s_flat.off" % animal_obj_0.get_name())
+    write.write_off(animal_obj_1, flattened_coordinates_1, outdir, "heatmap_%s_flat.off" % animal_obj_1.get_name())
+    write.write_off(animal_obj_0, aligned_coordinates_0, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_0.get_name(),animal_obj_1.get_name()))
+    write.write_off(animal_obj_1, aligned_coordinates_1, outdir, "heatmap_%s_aligned_to_%s.off" % (animal_obj_1.get_name(),animal_obj_0.get_name()))
 
   #calculate the distance between the aligned surfaces 
   difference_val_0 = 0

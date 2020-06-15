@@ -171,7 +171,7 @@ distances = locomotion.trajectory.compute_all_bdd( animals, variables, start_tim
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0.1, 0.5
-locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
 Alternately, you can use the `computeBDD.py` script and follow prompts to run
@@ -242,7 +242,7 @@ distances = locomotion.heatmap.computeAllCSD( animals )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0, 0.2
-locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
 Alternately, you can use the `computeCSD.py` script and follow prompts to run

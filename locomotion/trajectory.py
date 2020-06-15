@@ -209,17 +209,17 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     if fullmode:
         #save alignment graphs in directory specified
-        write.renderAlignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir)
+        write.render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir)
         for i in range(num_vars):
             var = varnames[i]
             if not os.path.exists(outdir):
                 os.makedirs(outdir)
-            write.renderAlignedGraphs(data_0[i], data_1[i], alignment,
-                                      animal_obj_0, animal_obj_1, var, outdir)
+            write.render_aligned_graphs(data_0[i], data_1[i], alignment,
+                                        animal_obj_0, animal_obj_1, var, outdir)
 
             #For individual plots, enable the following two lines
-            #write.renderSingleAnimalGraph(data_0[i], animal_obj_0, var, outdir)
-            #write.renderSingleAnimalGraph(data_1[i], animal_obj_1, var, outdir)
+            #write.render_single_animal_graph(data_0[i], animal_obj_0, var, outdir)
+            #write.render_single_animal_graph(data_1[i], animal_obj_1, var, outdir)
 
     return bdd
 
@@ -373,7 +373,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
                 exp_list.append(res)
             exp_table.append(exp_list)
         if outdir:
-            write.writeSegmentExpsToCSV(animal_list, exp_table, None, None, outdir, outfilename)
+            write.write_segment_exps_to_csv(animal_list, exp_table, None, None, outdir, outfilename)
         return exp_table
 
     #lengths given => run num_exps comparisons per length
@@ -417,7 +417,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
 
     if outdir:
         #Time to write the results into a file
-        write.writeSegmentExpsToCSV(animal_list, exp_table, mean_table,
-                                    std_table, outdir, outfilename)
+        write.write_segment_exps_to_csv(animal_list, exp_table, mean_table,
+                                        std_table, outdir, outfilename)
 
     return exp_table, mean_table, std_table
