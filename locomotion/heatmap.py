@@ -271,8 +271,6 @@ def get_boundary_loop(animal_obj):
     triangulation = array(animal_obj.get_triangulation())
     return boundary_loop(triangulation)
 
-      :Returns:
-        array of ints. The indices of the vertices that are on the boundary of this animal in counter-clockwise order.
 
 def get_boundary_edges(animal_obj):
     """Given an animal object, get its ordered boundary edges in counter-clockwise
@@ -454,7 +452,7 @@ def get_flat_coordinates(animal_obj):
         print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
               "Moving closer to origin.")
         for i, _ in enumerate(flat_coordinates):
-                x_val = flat_coordinates[i][0]
+            x_val = flat_coordinates[i][0]
             y_val = flat_coordinates[i][1]
             flat_coordinates[i] = mobius(x_val, y_val, p_val, q_val)
         p_val = mean([c[0] for c in flat_coordinates])
