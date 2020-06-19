@@ -317,11 +317,11 @@ def runRobustnessTest(test_key, variables, norm_mode, start_min, end_min):
         # Load all animals
         animals = locomotion.get_animal_objs(json_path)
         for a in animals:
-            locomotion.trajectory.getCurveData(a)
+            locomotion.trajectory.get_curve_data(a)
         # Run BDD against control animal (index 0)
         control = animals[0]
         for a_no, a in enumerate(animals[1:]):
-            bdd = locomotion.trajectory.computeOneBDD(a, control, variables,
+            bdd = locomotion.trajectory.compute_one_bdd(a, control, variables,
                                                       start_min, end_min,
                                                       start_min, end_min,
                                                       norm_mode)

@@ -163,15 +163,15 @@ import locomotion
 info_file = "/path/to/animal_info.json"
 animals = locomotion.get_animal_objs( info_file )
 for a in animals:
-  locomotion.trajectory.getCurveData( a )
+  locomotion.trajectory.get_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 start_time, end_time = 0, 1
 norm_mode = 'spec'
-distances = locomotion.trajectory.computeAllBDD( animals, variables, start_time, end_time, norm_mode )
+distances = locomotion.trajectory.compute_all_bdd( animals, variables, start_time, end_time, norm_mode )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0.1, 0.5
-locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
 Alternately, you can use the `computeBDD.py` script and follow prompts to run
@@ -200,13 +200,13 @@ import locomotion
 info_file = "/path/to/animal_info.json"
 animals = locomotion.get_animal_objs( info_file )
 for a in animals:
-  locomotion.trajectory.getCurveData( a )
+  locomotion.trajectory.get_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 norm_mode = 'spec'
 number_of_comparisons_per_animal, specified_durations = 100, None
 output_directory, outfile_name = "/path/to/outdir", "results"
 start_time, end_time = 0, 1
-locomotion.trajectory.computeAllIIBDD( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
+locomotion.trajectory.compute_all_iibdd( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
 ```
 
 Alternately, you can use the `computeIIBDD.py` script and follow prompts to run
@@ -237,12 +237,12 @@ info_file = "/path/to/animal_info.json"
 animals = locomotion.get_animal_objs( info_file )
 grid_size, start_time, end_time = 10, 0, 2
 for a in animals:
-  locomotion.heatmap.getSurfaceData( a, grid_size, start_time, end_time )
-distances = locomotion.heatmap.computeAllCSD( animals )
+  locomotion.heatmap.get_surface_data( a, grid_size, start_time, end_time )
+distances = locomotion.heatmap.compute_all_csd( animals )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0, 0.2
-locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
 Alternately, you can use the `computeCSD.py` script and follow prompts to run
