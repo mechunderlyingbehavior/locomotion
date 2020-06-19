@@ -404,6 +404,23 @@ def get_nbv_triangles(animal_obj):
 #METHODS FOR CALCULATING CONFORMAL FLATTENINGS OF TRIANGULATIONS TO UNIT DISK ###
 ##################################################################################
 
+def mobius(u, v, a, b):
+    """Applies the mobius transformation that moves the point (a, b) to the origin
+       to the coordinates (u, v).
+
+       :Parameters:
+            u, v, a, b : floats. (u, v) is the coordinate we are transforming, and
+            (a, b) is the point that is mapped to the origin by this transformation.
+            (u, v) is the point 
+
+        :Returns:
+            list pair of floats. The transformed coordinate (u, v) after applying
+            the transformation that moves (a, b) to the origin.
+    """
+    # pylint:disable=invalid-name
+    # pure math formula
+    return [((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
+            ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
 
 def get_flat_coordinates(animal_obj):
     """Calculates the vertex coordinates for the triangulation of an animal from its
@@ -436,12 +453,6 @@ def get_flat_coordinates(animal_obj):
     flat_coordinates = harmonic_weights(reg_coordinates, triangles,
                                         boundary_vertices, flattened_boundary_coordinates, 1)
     flat_coordinates = list(flat_coordinates)
-
-    def mobius(u, v, a, b):
-        # pylint:disable=invalid-name
-        # pure math formula
-        return [((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
-                ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
 
     # apply a conformal automorphism (Mobius transformation) of the unit disk
     # that moves the center of mass of the flattened coordinates to the origin
@@ -961,16 +972,16 @@ def area(p, q, r):
     return 0.5*((x[1]*y[2]-x[2]*y[1])**2+(x[2]*y[0]-x[0]*y[2])**2+(x[0]*y[1]-x[1]*y[0])**2)**0.5
 
 
-def distortion_energy(animal_0, animal_1, rho):
+def distortion_energy(animal_0, animal_1, theta):
     """Calculates the elastic energy required to stretch the triangulation of
         Animal 0 onto the triangulation of Animal 1 via the conformal mapping
         obtained by factoring through their respective conformal flattenings and
-        applyling a rotation of angle rho.
+        applyling a rotation of angle theta.
 
         :Parameters:
             animal_0/1 : animal objects, initialized with regular/flattened
             coordinates and triangulation set/updated
-            rho : float with value between 0 and pi, an angle of rotation
+            theta : float with value between 0 and pi, an angle of rotation
 
         :Returns:
             float, specifying the elastic energy required to align the
@@ -982,7 +993,7 @@ def distortion_energy(animal_0, animal_1, rho):
     #store relevant parameters
     num_verts = animal_0.get_num_verts()
     reg_coordinates = animal_0.get_regular_coordinates()
-    aligned_coordinates = get_aligned_coordinates(animal_1, animal_0, rho)
+    aligned_coordinates = get_aligned_coordinates(animal_1, animal_0, theta)
     triangles = animal_0.get_triangulation()
 
     #initialize four matrices whose entries correspond to pairs of vertices in
@@ -993,7 +1004,7 @@ def distortion_energy(animal_0, animal_1, rho):
     #triangulation of Animal 0
     original_edge_lens = [[0 for j in range(num_verts)] for i in range(num_verts)]
     #(3) the length of the edge between them (if one exists) in the
-    #triangulation of Animal 0 aligned to that of Animal 1 via the rotation rho
+    #triangulation of Animal 0 aligned to that of Animal 1 via the rotation theta
     aligned_edge_lens = [[0 for j in range(num_verts)] for i in range(num_verts)]
     #(4) the sum of the areas of the triangles in the regular triangulation of
     #Animal 0 containing the pair of vertices
@@ -1028,23 +1039,23 @@ def distortion_energy(animal_0, animal_1, rho):
     return alignment_value**0.5
 
 
-def symmetric_distortion_energy(animal_0, animal_1, rho):
+def symmetric_distortion_energy(animal_0, animal_1, theta):
     """Calculates the symmetric distortion energy required to stretch the
         triangulation of Animal 0 onto the triangulation of Animal 1 and vice
         versa via the conformal mapping obtained by factoring through their
-        respective conformal flattenings and applyling a rotation of angle rho.
+        respective conformal flattenings and applyling a rotation of angle theta.
 
         :Parameters:
             animal_0/1 : animal objects, initialized with
             regular/flattened coordinates and triangulation set/updated
-            rho : float with value between 0 and pi, an angle of rotation
+            theta : float with value between 0 and pi, an angle of rotation
 
         :Returns:
             float, specifying the symmetric distortion energy required to
             align the triangulations of Animals 0 and 1
     """
-    return distortion_energy(animal_0, animal_1, rho) + \
-        distortion_energy(animal_1, animal_0, -rho)
+    return distortion_energy(animal_0, animal_1, theta) + \
+        distortion_energy(animal_1, animal_0, -theta)
 
 
 def optimal_rotation(animal_0, animal_1):
@@ -1098,9 +1109,8 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
           " %s and %s..." % (animal_0.get_name(), animal_1.get_name()))
 
     #calculate the optimal rotation for aligning the triangulations of the two animals
-    #theta = optimal_rotation(animal_0,animal_1)
-    theta = 0
-
+    theta = optimal_rotation(animal_0,animal_1)
+    
     #store relevant parameters. Note that we assume both animal observations
     #have the same dimensions
     x_dim, y_dim = animal_0.get_dims()
