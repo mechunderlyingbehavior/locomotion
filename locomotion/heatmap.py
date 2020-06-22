@@ -1110,10 +1110,10 @@ def optimal_mapping(animal_0, animal_1):
         if dist_energy < min_dist_energy:
             min_dist_energy = dist_energy
             res = [theta, rho]
-        print("TESTING OPTIMAL MAPPING: THETA, RHO, DIST ENERGY: " + str(theta) + ", " + str(rho) + ", " + str(min_dist_energy))
+        print("TESTING OPTIMAL MAPPING: THETA, RHO, DIST ENERGY: " + str(theta) + ", " + str(rho) + ", " + str(dist_energy))
 
     print("OPTIMAL MAPPING RESULTS:")
-    print("THETA:  " + str(theta) + ", RHO:  " + str(rho))
+    print("THETA:  " + str(res[0]) + ", RHO:  " + str(res[1]))
 
     return res
 
