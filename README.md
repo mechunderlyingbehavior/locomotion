@@ -14,7 +14,7 @@ Python 3.7.3. This module also requires the following python packages:
 * scipy (>= 1.2.1)
 * plotly (>= 4.4.1)
 * dtw-python (>= 1.1.4)
-* libigl (beta version, under development)
+* igl (>=0.4.1)
 
 ### Installing
 
