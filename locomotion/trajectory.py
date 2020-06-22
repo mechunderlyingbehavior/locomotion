@@ -20,8 +20,8 @@ along with the locomotion package.
 import os
 import random
 import numpy as np
+import dtw
 from scipy.signal import savgol_filter
-import locomotion.extendedDTW as extendedDTW
 import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import throw_error
@@ -200,10 +200,11 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             data_0[i] = animal.normalize(data_0[i], means, stds)
             means, stds = animal.norm(data_1[i])
             data_1[i] = animal.normalize(data_1[i], means, stds)
-    dist, _, alignment = extendedDTW.dtw_ext(data_0, data_1, dist_only=False)
-    #dist is the integral part of the BDD formula
-    scaler = len(alignment[0]) #arclength of the alignment
-    bdd = dist/scaler
+    data_0_t = np.array(data_0).T.tolist()
+    data_1_t = np.array(data_1).T.tolist()
+    dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean')
+    bdd = dtw_obj.normalizedDistance
+    alignment = (dtw_obj.index1, dtw_obj.index2)
     print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name(),
                                                      animal_obj_1.get_name(), bdd))
 
