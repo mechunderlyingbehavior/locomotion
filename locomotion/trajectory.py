@@ -1,5 +1,4 @@
-"""
-Copyright Mechanisms Underlying Behavior Lab, Singapore
+"""Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
 trajectory.py is part of the locomotion package comparing
@@ -7,14 +6,11 @@ animal behaviours, developed to support the work discussed
 in paper Computational Geometric Tools for Modeling Inherent
 Variability in Animal Behavior (MT Stamps, S Go, and AS Mathuru)
 
-This python script contains methods for running Dynamic Time
-Warping on pairs of animal trajectories. The DTW method was
-extended from the dtw() method in the mlpy package, modified
-to take in multivariate input points, referenced as
-extendedDTW.dtw_ext() here. Note that extendedDTW.so contains
-the extendedDTW.dtw_ext(), which may have to be re-built for
-your system using the source code and build script provided
-along with the locomotion package.
+This python script contains methods for running Dynamic Time Warping on pairs of
+animal trajectories. The DTW implementation used in this package is the one
+provided in the dtw-python package (T. Giorgino. Computing and Visualizing
+Dynamic Time Warping Alignments in R: The dtw Package. J. Stat. Soft.,
+doi:10.18637/jss.v031.i07.).
 """
 
 import os
