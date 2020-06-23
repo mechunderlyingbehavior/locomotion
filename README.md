@@ -10,10 +10,11 @@ how to deploy the project on a live system.
 
 As of 24 January 2020, the `locomotion` package has been converted for use on
 Python 3.7.3. This module also requires the following python packages:
-* Numpy (>= 1.16.2)
-* Scipy (>= 1.2.1)
-* Plotly (>= 4.4.1)
-* Libigl (beta version, under development)
+* numpy (>= 1.16.2)
+* scipy (>= 1.2.1)
+* plotly (>= 4.4.1)
+* dtw-python (>= 1.1.4)
+* igl (>=0.4.1)
 
 ### Installing
 
@@ -42,30 +43,30 @@ sys.path.append('/PATH/TO/PACKAGE')
 
 You should now be able to `import locomotion` from your python shell.
 
-#### Step 2: Compiling `extendedDTW.so` file
+<!-- #### Step 2: Compiling `extendedDTW.so` file -->
 
-If `import extendedDTW` results in an `ImportError`, you will need to rebuild
-the package to make it compatible to your system. To do so, perform the following
-steps:
-1. First, `cd` into the `locomotion` directory. Note that this is the
-   `locomotion` folder in the package, not the package itself.
-1. If there is an `extendedDTW.so` file in the directory, remove it.
-1. Now, run `cd ../extendedDTW`
-1. If there exists an `extendedDTW.so` file, remove it.
-1. If there exists an `extendedDTW.c` file, remove it.
-1. Run `setup.py` with the following command on terminal.
-```
-python setup.py build_ext --inplace
-```
-1. The terminal log might show some warnings, but if it runs successfully, there
-   should be a `extendedDTW.cpython ... .so` file in your current directory.
-1. Rename this `.so` file to `extendedDTW.so`, and move it into the `locomotion`
-   directory.
+<!-- If `import extendedDTW` results in an `ImportError`, you will need to rebuild -->
+<!-- the package to make it compatible to your system. To do so, perform the following -->
+<!-- steps: -->
+<!-- 1. First, `cd` into the `locomotion` directory. Note that this is the -->
+<!--    `locomotion` folder in the package, not the package itself. -->
+<!-- 1. If there is an `extendedDTW.so` file in the directory, remove it. -->
+<!-- 1. Now, run `cd ../extendedDTW` -->
+<!-- 1. If there exists an `extendedDTW.so` file, remove it. -->
+<!-- 1. If there exists an `extendedDTW.c` file, remove it. -->
+<!-- 1. Run `setup.py` with the following command on terminal. -->
+<!-- ``` -->
+<!-- python setup.py build_ext --inplace -->
+<!-- ``` -->
+<!-- 1. The terminal log might show some warnings, but if it runs successfully, there -->
+<!--    should be a `extendedDTW.cpython ... .so` file in your current directory. -->
+<!-- 1. Rename this `.so` file to `extendedDTW.so`, and move it into the `locomotion` -->
+<!--    directory. -->
 
-If all goes well, you should be able to run `import extendedDTW` in your Python
-shell now.
+<!-- If all goes well, you should be able to run `import extendedDTW` in your Python -->
+<!-- shell now. -->
 
-#### Step 3: Check if the installation worked
+#### Step 2: Check if the installation worked
 
 To ensure that the package was installed properly, run the jupyer notebook
 `installation_check.ipynb`, which is located in the main folder. Follow through
