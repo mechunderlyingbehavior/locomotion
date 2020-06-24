@@ -15,12 +15,15 @@ setup(
                       "dtw-python>=1.1.4", "igl>=0.4.1"],
 
     # metadata to display on PyPI
-    author="Me",
-    author_email="me@email.com",
+    author="Mechanisms Underlying Behavior Lab",
+    author_email="mechunderlyingbehavior@gmail.com",
     description="Computational geometric tools for quantitative comparison of locomotory behavior",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/mechunderlyingbehavior/locomotion",
+    project_urls={
+        "Lab Website": "https://https://mechunderlyingbehavior.wordpress.com/"
+    }
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
