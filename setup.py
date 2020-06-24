@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="locomotion",
-    version="0.1.1",
+    version="1.0.0",
     packages=["locomotion"],
     install_requires=["numpy>=1.16.2", "plotly>=4.4.1", "scipy>=1.2.1",
                       "dtw-python>=1.1.4", "igl>=0.4.1"],
