@@ -14,7 +14,7 @@ Python 3.7.3. This module also requires the following python packages:
 * scipy (>= 1.2.1)
 * plotly (>= 4.4.1)
 * dtw-python (>= 1.1.4)
-* igl (>=0.4.1)
+* igl (>=2.2.0)
 
 ### Installing
 
@@ -29,7 +29,13 @@ file, run the following command while in the main directory.
 python setup.py install
 ```
 
-You should now be able to run `import locomotion` in your Python shell.
+**Note**: One of our dependencies, `igl`, is still in development phase, and is
+not currently on PyPI. You will have to install it manually in order to use
+`locomotion`. You may find the installation instructions
+[here](https://github.com/libigl/libigl-python-bindings).
+
+After installing all the requirements, you should now be able to run `import
+locomotion` in your Python shell.
 
 #### Check if the installation worked
 
