@@ -6,7 +6,7 @@ These instructions will get you a copy of the project up and running on your
 local machine for development and testing purposes. See deployment for notes on
 how to deploy the project on a live system.
 
-### Prerequisites
+### Installation and Requirements
 
 As of 24 January 2020, the `locomotion` package has been converted for use on
 Python 3.7.3. This module also requires the following python packages:
@@ -16,15 +16,12 @@ Python 3.7.3. This module also requires the following python packages:
 * dtw-python (>= 1.1.4)
 * igl (>=2.2.0)
 
-### Installing
+#### Installation instructions
 
-`locomotion` may be installed through pip with the following command.
-```
-pip install locomotion
-```
-
-You may also install this from the source. Once you've downloaded the source
-file, run the following command while in the main directory.
+As `locomotion` is still in development, the only supported method for 
+installation method is from source. Once you've cloned the directory or 
+downloaded the source file, run the following command while in the main 
+directory.
 ```
 python setup.py install
 ```
@@ -37,7 +34,7 @@ not currently on PyPI. You will have to install it manually in order to use
 After installing all the requirements, you should now be able to run `import
 locomotion` in your Python shell.
 
-#### Check if the installation worked
+#### Checking the installation
 
 To ensure that all the functions in the package work as intended, run the jupyer
 notebook `installation_check.ipynb`, which is located in the main folder. Follow
