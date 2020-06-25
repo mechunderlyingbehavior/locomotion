@@ -23,7 +23,7 @@ setup(
     url="https://github.com/mechunderlyingbehavior/locomotion",
     project_urls={
         "Lab Website": "https://https://mechunderlyingbehavior.wordpress.com/"
-    }
+    },
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
