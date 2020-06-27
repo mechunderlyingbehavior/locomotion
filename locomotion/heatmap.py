@@ -19,8 +19,8 @@ symmetric distortion energy of such an alignment.
 # pylint:disable=too-many-lines
 
 from math import sin, cos, pi
-from numpy import mean, std, array, linalg
-from scipy.optimize import minimize_scalar
+from numpy import mean, std, array, linalg, arange
+from scipy.optimize import minimize
 import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import throw_error
@@ -31,8 +31,7 @@ from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
 PERTURBATION = 0.000000001
 TOLERANCE = 0.00001
 
-#rho values we are testing out for inversion
-RHO_VALUES = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+ENABLE_WARNINGS = False
 
 ################################################################################
 #METHOD FOR INITIALIZING HEAT MAP AND SURFACE DATA FOR EACH ANIMAL OBJECT ###
@@ -422,8 +421,8 @@ def mobius(u, v, a, b):
     """
     # pylint:disable=invalid-name
     # pure math formula
-    return [((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
-            ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
+    return [-1 * ((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
+            -1 * ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
 
 def get_flat_coordinates(animal_obj):
     """Calculates the vertex coordinates for the triangulation of an animal from its
@@ -476,15 +475,6 @@ def get_flat_coordinates(animal_obj):
 #######################################################################
 # METHODS FOR ALIGNING TWO SURFACES VIA THEIR CONFORMAL FLATTENINGS ###
 #######################################################################
-
-
-# Given a point and a theta, map the point to the rotation by theta
-def rotation(p_val, theta):
-    """
-    this is a helper method for the method get_aligned_coordinates below. It
-    rotates a given point in the plane about the origin by a given angle.
-    """
-    return [cos(theta)*p_val[0]-sin(theta)*p_val[1], sin(theta)*p_val[0]+cos(theta)*p_val[1]]
 
 
 def in_unit_interval(x_val):
@@ -820,9 +810,10 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     vertex_to_triangle_map = {}
     #1. FIND THE COORDINATES FOR THE FIRST INTERIOR VERTEX VIA BRUTE FORCE
     #   TRIANGLE SEARCH
+    # print("SEARCHING FOR FIRST TRIANGLE")
+
     # rotate the flattened coordinates of the first vertex
-    first_inverted_coordinate = mobius(flat_coordinates_1[first_vertex][0], flat_coordinates_1[first_vertex][1], rho, 0)
-    first_rotated_coordinate = rotation(first_inverted_coordinate, theta)
+    first_rotated_coordinate = mobius(flat_coordinates_1[first_vertex][0], flat_coordinates_1[first_vertex][1], rho*cos(theta), rho*sin(theta))
 
     #search through all the triangles in the triangulation of Animal 0 for one
     #whose flattened coordinates contain the first vertex
@@ -854,11 +845,17 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
     # 2. FIND THE CORRESPONDING COORDINATES FOR THE REST OF THE INTERIOR
     #    VERTICES VIA TRIANGLE BFS
+    # print("SEARCHING FOR INTERIOR VERTEX TRIANGLES")
+
     for vertex in v_traversal_1:
         #rotate the flattened coordinates of this vertex and get the parent of
         #this vertex from our BFS of interior vertices
-        inverted_coordinate = mobius(flat_coordinates_1[vertex][0], flat_coordinates_1[vertex][1], rho, 0)
-        rotated_coordinate = rotation(inverted_coordinate, theta)
+        rotated_coordinate = mobius(flat_coordinates_1[vertex][0], flat_coordinates_1[vertex][1], rho*cos(theta), rho*sin(theta))
+
+        # (array(rotated_coordinate))
+        # if norm > 0.999:
+        #     print(" NORM OF TRANSFORMED COORD > 0.999: " + str(norm))
+
         parent_vertex = bfs_ancestors[vertex]
         triangle_coord_pair = []
 
@@ -910,6 +907,8 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
     # 3. FIND THE THE CORRESPONDING COORDINATES FOR THE BOUNDARY VERTICES
     # initialise the root edge
+    # print("SEARCHING THROUGH BOUNDARY VERTICES")
+
     root_edge = 0
 
     for vertex in boundary_vertices_1:
@@ -921,17 +920,22 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
         edges_searched = 0
 
         #rotate the flattened coordinates of this vertex by theta
-        inverted_coordinate = mobius(flat_coordinates_1[vertex][0], flat_coordinates_1[vertex][1], rho, 0)
-        rotated_coordinate = rotation(inverted_coordinate, theta)
+        rotated_coordinate = mobius(flat_coordinates_1[vertex][0], flat_coordinates_1[vertex][1], rho*cos(theta), rho*sin(theta))
+
+        # norm = linalg.norm(array(rotated_coordinate))
+        # if norm > 0.999:
+        #     print(" NORM OF TRANSFORMED COORD > 0.999: " + str(norm))
+
         edge_coordinate_pair = []
 
         while edge_coordinate_pair == []:
             #if we haven't found an edge after searching all the edges, assign
             #the same root edge and the closest vertex coordinate
             if edges_searched == num_edges_0:
-                print("WARNING: BOUNDARY FAILURE: " \
+                if ENABLE_WARNINGS:
+                    print("WARNING: BOUNDARY FAILURE: " \
                       "Could not find boundary edge for boundary vertex " + \
-                      str(vertex) + ". Assigning closest vertex instead.")
+                          str(vertex) + ". Assigning closest vertex instead.")
                 closest_vertex_coordinate = find_closest_vertex(rotated_coordinate,
                                                                 range(num_verts_0),
                                                                 flat_coordinates_0,
@@ -956,6 +960,7 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
         #coordinates to return list
         root_edge = edge_coordinate_pair[0]
         aligned_coordinates_1[vertex] = edge_coordinate_pair[1]
+
     return aligned_coordinates_1
 
 
@@ -1064,7 +1069,7 @@ def symmetric_distortion_energy(animal_0, animal_1, theta, rho):
         distortion_energy(animal_1, animal_0, -theta, rho)
 
 
-def optimal_rotation(animal_0, animal_1, rho):
+def optimal_mapping(animal_0, animal_1):
     """Calculates the optimal rotation of the unit disk that minimizes the
         symmetric distortion energy between the triangulations of two animals
 
@@ -1075,49 +1080,15 @@ def optimal_rotation(animal_0, animal_1, rho):
         :Returns:
             float, specifying an angle between 0 and pi
     """
-
     #define a single variable function for a fixed pair of animals that takes an
     #angle as input and outputs the corresponding symmetric distortion energy
-    def optimization_function(x_val):
-        return symmetric_distortion_energy(animal_0, animal_1, x_val, rho)
-
-    res = minimize_scalar(optimization_function, bounds=(0, pi),
-                           method='Brent', tol=1.0)
-
-    #res.x is the optimal angle, res.fun is the symmetric distortion energy
-    return (res.x, res.fun)
-
-def optimal_mapping(animal_0, animal_1):
-    """Calculates the optimal mobius transformation of the unit disk that minimizes
-        the symmetric distortion energy between the triangulations of two animals.
-
-        :Parameters:
-            animal_0/1 : animal objects, initialized with
-            regular/flattened coordinates and triangulation set/updated
-
-        :Returns:
-            theta: float, specifying an angle between 0 and pi
-            rho: float in the unit interval, specifying the translation in the x-
-            direction before rotation
-    """
-    min_dist_energy = 100000000000000
-    res = []
-    rho_values = RHO_VALUES
-
-    for rho in rho_values:
-        #calculate the optimal rotation for aligning the triangulations of the two animals
-        theta, dist_energy = optimal_rotation(animal_0,animal_1, rho)
-        if dist_energy < min_dist_energy:
-            min_dist_energy = dist_energy
-            res = [theta, rho]
-        print("TESTING OPTIMAL MAPPING: THETA, RHO, DIST ENERGY: " + str(theta) + ", " + str(rho) + ", " + str(dist_energy))
-
-    print("OPTIMAL MAPPING RESULTS:")
-    print("THETA:  " + str(res[0]) + ", RHO:  " + str(res[1]))
-
-    return res
-
-
+    def optimization_function(theta_rho_pair):
+        return symmetric_distortion_energy(animal_0, animal_1, theta_rho_pair[0], theta_rho_pair[1])
+    
+    res = minimize(optimization_function, [0., 0.],method = 'Powell', bounds= ((0, 2*pi), (0, 1)),
+               options={'maxiter': 10000, 'disp': True})
+    print(res.x)
+    return res.x
 
 ##################################################################################
 #METHODS FOR CALCULATING CONFORMAL SPATIOTEMPORAL DISTANCES BETWEEN HEAT MAPS ###
