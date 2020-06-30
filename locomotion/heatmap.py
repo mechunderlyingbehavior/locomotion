@@ -19,7 +19,7 @@ symmetric distortion energy of such an alignment.
 # pylint:disable=too-many-lines
 
 from math import sin, cos, pi
-from numpy import mean, std, array, linalg, arange
+from numpy import mean, std, array, linalg
 from scipy.optimize import minimize
 import locomotion.write as write
 import locomotion.animal as animal
@@ -31,7 +31,8 @@ from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
 PERTURBATION = 0.000000001
 TOLERANCE = 0.00001
 
-ENABLE_WARNINGS = False
+#Enable warnings for boundary mappings
+ENABLE_BOUNDARY_WARNINGS = False
 
 ################################################################################
 #METHOD FOR INITIALIZING HEAT MAP AND SURFACE DATA FOR EACH ANIMAL OBJECT ###
@@ -406,21 +407,24 @@ def get_nbv_triangles(animal_obj):
 #METHODS FOR CALCULATING CONFORMAL FLATTENINGS OF TRIANGULATIONS TO UNIT DISK ###
 ##################################################################################
 
-def mobius(u, v, a, b):
-    """Applies the mobius transformation that moves the point (a, b) to the origin
-       to the coordinates (u, v).
+def mobius(p, q):
+    """Applies the mobius transformation, uniquely defined by moving the 
+       2D point q to the origin, to the 2D point p.
 
        :Parameters:
-            u, v, a, b : floats. (u, v) is the coordinate we are transforming, and
-            (a, b) is the point that is mapped to the origin by this transformation.
-            (u, v) is the point 
+            p : list of two floats, [u, v]. The coordinate we are applying 
+                this transformation to.
+            q : list of two floats, [a, b]. The coordinate that gets sent
+                to the origin by this map.
 
         :Returns:
-            list pair of floats. The transformed coordinate (u, v) after applying
-            the transformation that moves (a, b) to the origin.
+            list pair of floats. The transformed coordinate p after applying
+            the transformation that moves q to the origin.
     """
     # pylint:disable=invalid-name
     # pure math formula
+    u, v = p
+    a, b = q
     return [-1 * ((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
             -1 * ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
 
@@ -465,9 +469,8 @@ def get_flat_coordinates(animal_obj):
         print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
               "Moving closer to origin.")
         for i, _ in enumerate(flat_coordinates):
-            x_val = flat_coordinates[i][0]
-            y_val = flat_coordinates[i][1]
-            flat_coordinates[i] = mobius(x_val, y_val, p_val, q_val)
+            flat_coordinates[i] = mobius(flat_coordinates[i], 
+                                         [p_val, q_val])
         p_val = mean([c[0] for c in flat_coordinates])
         q_val = mean([c[1] for c in flat_coordinates])
     return flat_coordinates
@@ -772,12 +775,18 @@ def get_next_neighbourhood(animal_obj, current_triangles, traversed_triangles):
 def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     """Calculates the vertex coordinates for the triangulation of Animal 1 aligned
         to the triangulation of Animal 0 by factoring through their respective
-        conformal flattenings and applyling a rotation of angle theta.
+        conformal flattenings and applyling a mobius transformation that moves the
+        point (rho*cos(theta), rho*sin(theta)) to the origin.
 
         :Parameters:
             animal_obj : animal object, initialized with
             regular/flattened coordinates and triangulation set/updated
-            theta : float with value between 0 and pi, an angle of rotation
+            theta : float with value between 0 and pi. an angle of rotation.
+            rho : float with value between 0 and 1. The magnitude of the reference
+            point to be mapped to the origin by the mobius function.
+
+            NOTE: The mobius function maps the the point
+            (rho*cos(theta), rho*sin(theta)) to the origin.
 
         :Returns:
             list of triples of floats, specifying the x-, y-, and
@@ -808,16 +817,15 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     #initialise dictionary that maps each vertex index of Animal 1 to the
     #triangle index of Animal 0
     vertex_to_triangle_map = {}
-    #1. FIND THE COORDINATES FOR THE FIRST INTERIOR VERTEX VIA BRUTE FORCE
-    #   TRIANGLE SEARCH
-    # print("SEARCHING FOR FIRST TRIANGLE")
 
-    # rotate the flattened coordinates of the first vertex
-    first_rotated_coordinate = mobius(flat_coordinates_1[first_vertex][0], flat_coordinates_1[first_vertex][1], rho*cos(theta), rho*sin(theta))
+    #1. FIND THE COORDINATES FOR THE FIRST INTERIOR VERTEX VIA BRUTE FORCE
+    # transform the flattened coordinates of the first vertex
+    first_transformed_coordinate = mobius(flat_coordinates_1[first_vertex],
+                                          [rho*cos(theta), rho*sin(theta)])
 
     #search through all the triangles in the triangulation of Animal 0 for one
     #whose flattened coordinates contain the first vertex
-    triangle_coord_pair = search_for_aligned_coordinate(first_rotated_coordinate,
+    triangle_coord_pair = search_for_aligned_coordinate(first_transformed_coordinate,
                                                         triangles_0,
                                                         range(num_triangles_0),
                                                         flat_coordinates_0,
@@ -827,7 +835,7 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     #containing that vertex
     if triangle_coord_pair == []:
         print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
-        closest_vertex, closest_vertex_coordinate = find_closest_vertex(first_rotated_coordinate,
+        closest_vertex, closest_vertex_coordinate = find_closest_vertex(first_transformed_coordinate,
                                                                         range(num_verts_0),
                                                                         flat_coordinates_0,
                                                                         reg_coordinates_0)
@@ -845,22 +853,16 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
     # 2. FIND THE CORRESPONDING COORDINATES FOR THE REST OF THE INTERIOR
     #    VERTICES VIA TRIANGLE BFS
-    # print("SEARCHING FOR INTERIOR VERTEX TRIANGLES")
-
     for vertex in v_traversal_1:
-        #rotate the flattened coordinates of this vertex and get the parent of
+        #transform the flattened coordinates of this vertex and get the parent of
         #this vertex from our BFS of interior vertices
-        rotated_coordinate = mobius(flat_coordinates_1[vertex][0], flat_coordinates_1[vertex][1], rho*cos(theta), rho*sin(theta))
-
-        # (array(rotated_coordinate))
-        # if norm > 0.999:
-        #     print(" NORM OF TRANSFORMED COORD > 0.999: " + str(norm))
-
+        transformed_coordinate = mobius(flat_coordinates_1[vertex],
+                                        [rho*cos(theta), rho*sin(theta)])
         parent_vertex = bfs_ancestors[vertex]
         triangle_coord_pair = []
 
         #initialize what we need to kickstart the while loop - traversed
-        #triangles and current list of triangles to search we start by searching
+        #triangles and current list of triangles to search. We start by searching
         #the triangle corresponding to this vertex's parent
         traversed_triangles = set()
         current_triangle_indices = {vertex_to_triangle_map[parent_vertex]}
@@ -873,7 +875,7 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
             if len(traversed_triangles) == num_triangles_0:
                 print("WARNING: no triangle found for interior vertex " + \
                       str(vertex) + ". Assigning closest vertex instead.")
-                closest_vertex, closest_vertex_coordinate = find_closest_vertex(rotated_coordinate,
+                closest_vertex, closest_vertex_coordinate = find_closest_vertex(transformed_coordinate,
                                                                                 range(num_verts_0),
                                                                                 flat_coordinates_0,
                                                                                 reg_coordinates_0)
@@ -885,8 +887,8 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
                 triangle_coord_pair = [triangle_i, closest_vertex_coordinate]
                 break
 
-            #check if our rotated coordinate is in the current triangles
-            triangle_coord_pair = search_for_aligned_coordinate(rotated_coordinate,
+            #check if our transformed coordinate is in the current triangles
+            triangle_coord_pair = search_for_aligned_coordinate(transformed_coordinate,
                                                                 current_triangles,
                                                                 current_triangle_indices,
                                                                 flat_coordinates_0,
@@ -907,8 +909,6 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
     # 3. FIND THE THE CORRESPONDING COORDINATES FOR THE BOUNDARY VERTICES
     # initialise the root edge
-    # print("SEARCHING THROUGH BOUNDARY VERTICES")
-
     root_edge = 0
 
     for vertex in boundary_vertices_1:
@@ -919,24 +919,22 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
             boundary_edge_indices[:root_edge]
         edges_searched = 0
 
-        #rotate the flattened coordinates of this vertex by theta
-        rotated_coordinate = mobius(flat_coordinates_1[vertex][0], flat_coordinates_1[vertex][1], rho*cos(theta), rho*sin(theta))
-
-        # norm = linalg.norm(array(rotated_coordinate))
-        # if norm > 0.999:
-        #     print(" NORM OF TRANSFORMED COORD > 0.999: " + str(norm))
-
+        #transform the flattened coordinates of this vertex
+        transformed_coordinate = mobius(flat_coordinates_1[vertex],
+                                        [rho*cos(theta), rho*sin(theta)])
+        
+        #initialise our edge-coordinate-pair and search through each edge
+        #corresponding to the transformed coordinate
         edge_coordinate_pair = []
-
         while edge_coordinate_pair == []:
             #if we haven't found an edge after searching all the edges, assign
             #the same root edge and the closest vertex coordinate
             if edges_searched == num_edges_0:
-                if ENABLE_WARNINGS:
+                if ENABLE_BOUNDARY_WARNINGS:
                     print("WARNING: BOUNDARY FAILURE: " \
-                      "Could not find boundary edge for boundary vertex " + \
-                          str(vertex) + ". Assigning closest vertex instead.")
-                closest_vertex_coordinate = find_closest_vertex(rotated_coordinate,
+                    "Could not find boundary edge for boundary vertex " + \
+                        str(vertex) + ". Assigning closest vertex instead.")
+                closest_vertex_coordinate = find_closest_vertex(transformed_coordinate,
                                                                 range(num_verts_0),
                                                                 flat_coordinates_0,
                                                                 reg_coordinates_0)[1]
@@ -948,7 +946,7 @@ def get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
             edge_to_search = boundary_edges_0[edge_index_to_search]
             #search through one boundary edge at a time to find the boundary
             #edge that the this boundary vertex is mapped to
-            edge_coordinate_pair = search_for_aligned_coordinate(rotated_coordinate,
+            edge_coordinate_pair = search_for_aligned_coordinate(transformed_coordinate,
                                                                  [edge_to_search],
                                                                  [edge_index_to_search],
                                                                  flat_coordinates_0,
@@ -992,7 +990,12 @@ def distortion_energy(animal_0, animal_1, theta, rho):
         :Parameters:
             animal_0/1 : animal objects, initialized with regular/flattened
             coordinates and triangulation set/updated
-            theta : float with value between 0 and pi, an angle of rotation
+            theta : float with value between 0 and pi. an angle of rotation.
+            rho : float with value between 0 and 1. The distance of the reference
+            point to be mapped to the origin by the mobius function.
+
+            NOTE: The mobius function maps the the point
+            (rho*cos(theta), rho*sin(theta)) to the origin.
 
         :Returns:
             float, specifying the elastic energy required to align the
@@ -1059,7 +1062,12 @@ def symmetric_distortion_energy(animal_0, animal_1, theta, rho):
         :Parameters:
             animal_0/1 : animal objects, initialized with
             regular/flattened coordinates and triangulation set/updated
-            theta : float with value between 0 and pi, an angle of rotation
+            theta : float with value between 0 and pi. an angle of rotation.
+            rho : float with value between 0 and 1. The distance of the reference
+            point to be mapped to the origin by the mobius function.
+
+            NOTE: The mobius function maps the the point
+            (rho*cos(theta), rho*sin(theta)) to the origin.
 
         :Returns:
             float, specifying the symmetric distortion energy required to
@@ -1067,7 +1075,6 @@ def symmetric_distortion_energy(animal_0, animal_1, theta, rho):
     """
     return distortion_energy(animal_0, animal_1, theta, rho) + \
         distortion_energy(animal_1, animal_0, -theta, rho)
-
 
 def optimal_mapping(animal_0, animal_1):
     """Calculates the optimal rotation of the unit disk that minimizes the
@@ -1080,14 +1087,18 @@ def optimal_mapping(animal_0, animal_1):
         :Returns:
             float, specifying an angle between 0 and pi
     """
-    #define a single variable function for a fixed pair of animals that takes an
-    #angle as input and outputs the corresponding symmetric distortion energy
+    #define a two-variable function that, for a fixed pair of animals, takes an
+    #angle in [0, 2*pi] and rho value in [0, 1) as input and outputs the 
+    #corresponding symmetric distortion energy
     def optimization_function(theta_rho_pair):
         return symmetric_distortion_energy(animal_0, animal_1, theta_rho_pair[0], theta_rho_pair[1])
     
+    #find the optimal theta and rho values that minimize the symmetric distortion energy
+    #set 'disp' to True to print convergence messages. This will show the number of iterations and function evaluations
+    #for faster conversion, reduce the values of 'maxiter' and 'maxfev'
     res = minimize(optimization_function, [0., 0.],method = 'Powell', bounds= ((0, 2*pi), (0, 1)),
-               options={'maxiter': 10000, 'disp': True})
-    print(res.x)
+               options={'maxiter': 2, 'maxfev': 40, 'disp': False, 'direc':[[0, 0.9], [0.9,0]]})
+    print("LOG: Found an optimal (theta, rho) mapping of " + str(res.x) + ". ")
     return res.x
 
 ##################################################################################
@@ -1121,7 +1132,7 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
 
     #calculate the optimal mapping between both animals
     theta, rho = optimal_mapping(animal_0, animal_1)
-    
+
     #store relevant parameters. Note that we assume both animal observations
     #have the same dimensions
     x_dim, y_dim = animal_0.get_dims()
@@ -1182,7 +1193,6 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
           " %s and %s: %.3f" % (animal_0.get_name(), animal_1.get_name(), distance))
 
     return distance
-
 
 def compute_all_csd(animal_list):
     """Computes the Conformal Spatiotemporal Distances between the heatmaps of all
