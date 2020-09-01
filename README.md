@@ -6,72 +6,42 @@ These instructions will get you a copy of the project up and running on your
 local machine for development and testing purposes. See deployment for notes on
 how to deploy the project on a live system.
 
-### Prerequisites
+### Installation and Requirements
 
 As of 24 January 2020, the `locomotion` package has been converted for use on
 Python 3.7.3. This module also requires the following python packages:
-* Numpy (>= 1.16.2)
-* Scipy (>= 1.5.0)
-* Plotly (>= 4.4.1)
-* Libigl (beta version, under development)
 
-### Installing
+* numpy (>= 1.16.2)
+* scipy (>= 1.5.0)
+* plotly (>= 4.4.1)
+* dtw-python (>= 1.1.4)
+* igl (>=2.2.0)
 
-The `pip` installation is a work in progress. In the meantime, the package can
-be manually installed in your system.
+#### Installation instructions
 
-#### Step 1: Adding `locomotion` to your Python Path
-
-To access the `locomotion` package, you could either copy the `locomotion`
-folder into your working directory, or add the package to your environment. To
-do the latter, you may use the following methods in your terminal, replacing
-`/PATH/TO/PACKAGE` with the directory containing the package:
-
-```shell
-export PYTHONPATH=$PYTHONPATH:/PATH/TO/PACKAGE
+As `locomotion` is still in development, the only supported method for 
+installation method is from source. Once you've cloned the directory or 
+downloaded the source file, run the following command while in the main 
+directory.
+```
+python setup.py install
 ```
 
-Note that this method will have to be repeated every time a new terminal window
-is opened. An alternative to the terminal method would be to add the following
-directly to the top of your python script, before any other imports:
+**Note**: One of our dependencies, `igl`, is still in development phase, and is
+not currently on PyPI. You will have to install it manually in order to use
+`locomotion`. You may find the installation instructions
+[here](https://github.com/libigl/libigl-python-bindings).
 
-```python
-import sys
-sys.path.append('/PATH/TO/PACKAGE')
-```
+After installing all the requirements, you should now be able to run `import
+locomotion` in your Python shell.
 
-You should now be able to `import locomotion` from your python shell.
+#### Checking the installation
 
-#### Step 2: Compiling `extendedDTW.so` file
-
-If `import extendedDTW` results in an `ImportError`, you will need to rebuild
-the package to make it compatible to your system. To do so, perform the following
-steps:
-1. First, `cd` into the `locomotion` directory. Note that this is the
-   `locomotion` folder in the package, not the package itself.
-1. If there is an `extendedDTW.so` file in the directory, remove it.
-1. Now, run `cd ../extendedDTW`
-1. If there exists an `extendedDTW.so` file, remove it.
-1. If there exists an `extendedDTW.c` file, remove it.
-1. Run `setup.py` with the following command on terminal.
-```
-python setup.py build_ext --inplace
-```
-1. The terminal log might show some warnings, but if it runs successfully, there
-   should be a `extendedDTW.cpython ... .so` file in your current directory.
-1. Rename this `.so` file to `extendedDTW.so`, and move it into the `locomotion`
-   directory.
-
-If all goes well, you should be able to run `import extendedDTW` in your Python
-shell now.
-
-#### Step 3: Check if the installation worked
-
-To ensure that the package was installed properly, run the jupyer notebook
-`installation_check.ipynb`, which is located in the main folder. Follow through
-the notebook, which will run through the basic functions of the package. If the
-package is installed properly, it should be able to generate a small sample
-dataset and run the BDD on it.
+To ensure that all the functions in the package work as intended, run the jupyer
+notebook `installation_check.ipynb`, which is located in the main folder. Follow
+through the notebook, which will run through the basic functions of the package.
+If the package is installed properly, it should be able to generate a small
+sample dataset and run the BDD and CSD on it.
 
 ## Data format
 

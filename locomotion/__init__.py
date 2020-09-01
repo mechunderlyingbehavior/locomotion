@@ -9,8 +9,9 @@ modeling inherent variability in animal behavior" by MT Stamps, S Go, and AS Mat
 This python module initializes the locomotion package when you run `import locomotion`.
 """
 
-import locomotion.extendedDTW as extendedDTW
 from locomotion.animal import *
 import locomotion.trajectory as trajectory
 import locomotion.heatmap as heatmap
 import locomotion.write as write
+
+__version__="1.0.0"

@@ -1,5 +1,4 @@
-"""
-Copyright Mechanisms Underlying Behavior Lab, Singapore
+"""Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
 trajectory.py is part of the locomotion package comparing
@@ -7,21 +6,18 @@ animal behaviours, developed to support the work discussed
 in paper Computational Geometric Tools for Modeling Inherent
 Variability in Animal Behavior (MT Stamps, S Go, and AS Mathuru)
 
-This python script contains methods for running Dynamic Time
-Warping on pairs of animal trajectories. The DTW method was
-extended from the dtw() method in the mlpy package, modified
-to take in multivariate input points, referenced as
-extendedDTW.dtw_ext() here. Note that extendedDTW.so contains
-the extendedDTW.dtw_ext(), which may have to be re-built for
-your system using the source code and build script provided
-along with the locomotion package.
+This python script contains methods for running Dynamic Time Warping on pairs of
+animal trajectories. The DTW implementation used in this package is the one
+provided in the dtw-python package (T. Giorgino. Computing and Visualizing
+Dynamic Time Warping Alignments in R: The dtw Package. J. Stat. Soft.,
+doi:10.18637/jss.v031.i07.).
 """
 
 import os
 import random
 import numpy as np
+import dtw
 from scipy.signal import savgol_filter
-import locomotion.extendedDTW as extendedDTW
 import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import throw_error
@@ -200,10 +196,11 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             data_0[i] = animal.normalize(data_0[i], means, stds)
             means, stds = animal.norm(data_1[i])
             data_1[i] = animal.normalize(data_1[i], means, stds)
-    dist, _, alignment = extendedDTW.dtw_ext(data_0, data_1, dist_only=False)
-    #dist is the integral part of the BDD formula
-    scaler = len(alignment[0]) #arclength of the alignment
-    bdd = dist/scaler
+    data_0_t = np.array(data_0).T.tolist()
+    data_1_t = np.array(data_1).T.tolist()
+    dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean')
+    bdd = dtw_obj.normalizedDistance
+    alignment = (dtw_obj.index1, dtw_obj.index2)
     print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name(),
                                                      animal_obj_1.get_name(), bdd))
 
