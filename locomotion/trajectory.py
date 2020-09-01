@@ -206,8 +206,8 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean')
     bdd = dtw_obj.normalizedDistance
     alignment = (dtw_obj.index1, dtw_obj.index2)
-    print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name()[i],
-                                                     animal_obj_1.get_name(),[i] bdd))
+    print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name(),
+                                                     animal_obj_1.get_name(), bdd))
 
     if fullmode:
         #save alignment graphs in directory specified
