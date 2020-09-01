@@ -10,8 +10,9 @@ how to deploy the project on a live system.
 
 As of 24 January 2020, the `locomotion` package has been converted for use on
 Python 3.7.3. This module also requires the following python packages:
+
 * numpy (>= 1.16.2)
-* scipy (>= 1.2.1)
+* scipy (>= 1.5.0)
 * plotly (>= 4.4.1)
 * dtw-python (>= 1.1.4)
 * igl (>=2.2.0)
