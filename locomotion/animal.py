@@ -235,7 +235,7 @@ class Animal():
          grid_size : int. Size of each grid. Should divide self.__dim_x and self.__dim_y.
         """
         if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
-            throw_error("grid_size does not divide dim x or dim y.")
+            _throw_error("grid_size does not divide dim x or dim y.")
         self.__grid_size = grid_size
         self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
         self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
@@ -436,7 +436,7 @@ class Animal():
 ################################################################################
 
 # Sure, I suppose I could use the actual error handling, but...
-def throw_error(errmsg):
+def _throw_error(errmsg):
     """Wrapper function for throwing an error message"""
     print("ERROR: %s" % errmsg)
     sys.exit(1)
@@ -465,11 +465,11 @@ def find_col_index(header, col_name):
         if re.match(pat, header[i]):
             return i
     # if we didn't find the index, the column name input is incorrect
-    throw_error("invalid column name: %s" % col_name)
+    _throw_error("invalid column name: %s" % col_name)
     return None
 
 
-def remove_outliers(data):
+def _remove_outliers(data):
     """
     Given a numpy array, removes outliers using 1.5 Interquartile Range standard
     :Parameters:
@@ -495,7 +495,7 @@ def norm(data, rm_outliers = True):
     """
     data_array = np.array(data, dtype=np.float)
     if rm_outliers:
-        data_array = remove_outliers(data_array) #Calculate norm without outliers
+        data_array = _remove_outliers(data_array) #Calculate norm without outliers
     mean = np.mean(data_array)
     std = np.std(data_array)
     return mean, std
@@ -553,12 +553,12 @@ def get_raw_data(animal):
         elif ',' in header:
             delim = ','
         else:
-            throw_error("invalid data format")
+            _throw_error("invalid data format")
         header = list(map(lambda x: x.strip(), header.split(delim)))
         try: # verify the file can be parsed
             reader = csv.reader(infile, delimiter=delim)
         except FileNotFoundError:
-            throw_error("invalid data format")
+            _throw_error("invalid data format")
 
         x_ind = find_col_index(header, 'X')
         y_ind = find_col_index(header, 'Y')
@@ -576,7 +576,7 @@ def get_raw_data(animal):
             y_val = row[y_ind]
             if len(x_val) == 0 or x_val == ' ' or len(y_val) == 0 or y_val == ' ':
                 print(row)
-                throw_error("possible truncated data")
+                _throw_error("possible truncated data")
             x_vals.append(float(x_val)/animal.get_pixel_density()) #scaling for pixel density
             y_vals.append(float(y_val)/animal.get_pixel_density())
             #DEFN: baseline norm is where we take the stats from the first two minutes of the
@@ -605,12 +605,12 @@ def get_animal_objs(infofile, name_list=None):
     """
     info = read_info(infofile)
     if name_list is not None:
-        objs = [init_animal(item) for item in info if item["name"] in name_list]
+        objs = [_init_animal(item) for item in info if item["name"] in name_list]
         return objs
-    return [init_animal(item) for item in info]
+    return [_init_animal(item) for item in info]
 
 
-def init_animal(json_item):
+def _init_animal(json_item):
     """
     Given a json entry, extracts the relevant information and returns an initialized animal object
     :Parameters:
