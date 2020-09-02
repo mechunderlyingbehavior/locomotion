@@ -23,7 +23,8 @@ import locomotion.animal as animal
 from locomotion.animal import throw_error
 
 #Static Variables
-SMOOTH_RANGE_MIN = 5 #length of smoothing window in smooth()
+SMOOTH_RANGE_MIN = 5 #minimum length of smoothing window in smooth()
+WINDOW_SCALAR = 2.5 #scalar for smoothing window calculation in smooth()
 ORDER = 5 #order of smoothing curve used in smooth()
 
 #############################
@@ -43,7 +44,7 @@ def smooth(sequence, frame_rate):
         :Return:
          smoothed : list
     """
-    smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * 2.5)))
+    smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * WINDOW_SCALAR)))
     smooth_range_odd = smooth_range + 1 if smooth_range % 2 == 0 else smooth_range
     smoothed = savgol_filter(sequence, smooth_range_odd, ORDER)
     return smoothed
@@ -61,7 +62,7 @@ def get_velocity(coordinates):
     return velocity
 
 
-def get_curvature(first_deriv, second_deriv, velocity):
+def get_signed_curvature(first_deriv, second_deriv, velocity):
     """
     Given a list of first and second derivatives, return curvature.
     Note: Currently only works for up to 2 / 3 dimensions.
@@ -81,7 +82,7 @@ def get_curvature(first_deriv, second_deriv, velocity):
     elif n_dims == 3:
         ones = np.ones_like(first_deriv)
         mats = np.transpose(np.array([ones, first_deriv, second_deriv]), (2, 0, 1))
-    numer = np.absolute(np.linalg.det(mats))
+    numer = np.linalg.det(mats)
     denom = np.power(velocity, 3)
     curvatures = []
     for i, _ in enumerate(numer):
@@ -122,7 +123,7 @@ def get_curve_data(animal_obj, col_names=None):
     second_deriv = get_derivatives(first_deriv, axis=1) # MM per second per frame
     second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
     velocity = get_velocity(first_deriv)
-    curvature = get_curvature(first_deriv, second_deriv, velocity)
+    curvature = get_signed_curvature(first_deriv, second_deriv, velocity)
 
     start_time, end_time = animal_obj.get_baseline_times()
     animal_obj.add_raw_vals('Velocity', velocity)
@@ -196,6 +197,10 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             data_0[i] = animal.normalize(data_0[i], means, stds)
             means, stds = animal.norm(data_1[i])
             data_1[i] = animal.normalize(data_1[i], means, stds)
+    for i in range(num_vars):
+        if varnames[i] == "Curvature": # Convert signed curvature to curvature
+            data_0[i] = np.absolute(data_0[i])
+            data_1[i] = np.absolute(data_1[i])
     data_0_t = np.array(data_0).T.tolist()
     data_1_t = np.array(data_1).T.tolist()
     dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean')

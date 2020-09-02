@@ -469,15 +469,33 @@ def find_col_index(header, col_name):
     return None
 
 
-def norm(data):
+def remove_outliers(data):
+    """
+    Given a numpy array, removes outliers using 1.5 Interquartile Range standard
+    :Parameters:
+     data : numpy array
+    :Returns:
+     numpy array, without outliers
+    """
+    first_quart = np.percentile(data, 25)
+    third_quart = np.percentile(data, 75)
+    IQR = third_quart - first_quart
+    idx = (data > first_quart - 1.5 * IQR) & (data < third_quart + 1.5 * IQR)
+    return data[idx]
+
+
+def norm(data, rm_outliers = True):
     """
     Given data, find the mean and standard deviation.
     :Parameters:
      data : list of data values
+     rm_outliers : bool. If True, function removes outliers. True by default.
     :Returns:
      mean, stds
     """
     data_array = np.array(data, dtype=np.float)
+    if rm_outliers:
+        data_array = remove_outliers(data_array) #Calculate norm without outliers
     mean = np.mean(data_array)
     std = np.std(data_array)
     return mean, std
