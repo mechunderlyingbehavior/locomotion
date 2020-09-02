@@ -21,11 +21,11 @@ symmetric distortion energy of such an alignment.
 from math import sin, cos, pi
 from numpy import mean, std, array, linalg
 from scipy.optimize import minimize
+from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
+    adjacency_matrix, bfs, triangle_triangle_adjacency
 import locomotion.write as write
 import locomotion.animal as animal
 from locomotion.animal import _throw_error
-from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
-    adjacency_matrix, bfs, triangle_triangle_adjacency
 
 #Static Variables
 PERTURBATION = 0.000000001
@@ -408,11 +408,11 @@ def _get_nbv_triangles(animal_obj):
 ##################################################################################
 
 def _mobius(p, q):
-    """Applies the mobius transformation, uniquely defined by moving the 
+    """Applies the mobius transformation, uniquely defined by moving the
        2D point q to the origin, to the 2D point p.
 
        :Parameters:
-            p : list of two floats, [u, v]. The coordinate we are applying 
+            p : list of two floats, [u, v]. The coordinate we are applying
                 this transformation to.
             q : list of two floats, [a, b]. The coordinate that gets sent
                 to the origin by this map.
@@ -469,8 +469,8 @@ def _get_flat_coordinates(animal_obj):
         print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
               "Moving closer to origin.")
         for i, _ in enumerate(flat_coordinates):
-            flat_coordinates[i] = _mobius(flat_coordinates[i], 
-                                         [p_val, q_val])
+            flat_coordinates[i] = _mobius(flat_coordinates[i],
+                                          [p_val, q_val])
         p_val = mean([c[0] for c in flat_coordinates])
         q_val = mean([c[1] for c in flat_coordinates])
     return flat_coordinates
@@ -641,7 +641,7 @@ def _from_barycentric_to_coordinates(barycentric_coords, simplex, coordinates):
 
 
 def _search_for_aligned_coordinate(point, simplices, simplex_indices,
-                                  input_coordinates, output_coordinates):
+                                   input_coordinates, output_coordinates):
     """Given a point in the 2D input coordinate system, search through the given
         simplices (either triangle or edges) in the input coordinate system to
         check if it is inside one of them. If it is, convert the point into
@@ -674,13 +674,13 @@ def _search_for_aligned_coordinate(point, simplices, simplex_indices,
         #get the barycentric coordinates of this point in this simplex in the
         #input coordinate system
         barycentric_coords = _get_barycentric_coordinates(point, simplex,
-                                                         input_coordinates)
+                                                          input_coordinates)
         if _is_inside(barycentric_coords):
             #set the result as the regular coordinates corresponding to the
             #barycentric coordinates
             result = [simplex_i,
                       _from_barycentric_to_coordinates(barycentric_coords, simplex,
-                                                      output_coordinates)]
+                                                       output_coordinates)]
             break
     return result
 
@@ -805,7 +805,7 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     triangles_0 = animal_obj_0.get_triangulation()
     num_triangles_0 = animal_obj_0.get_num_triangles()
     boundary_vertices_1 = list(animal_obj_1.get_boundary_vertices())
-    boundary_edges_0 = animal_obj_0._get_boundary_edges()
+    boundary_edges_0 = animal_obj_0.get_boundary_edges()
     num_edges_0 = len(boundary_edges_0)
 
     #given the bfs ordering of vertices, store the first vertex and the rest of
@@ -820,31 +820,31 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
     #1. FIND THE COORDINATES FOR THE FIRST INTERIOR VERTEX VIA BRUTE FORCE
     # transform the flattened coordinates of the first vertex
-    first_transformed_coordinate = _mobius(flat_coordinates_1[first_vertex],
-                                          [rho*cos(theta), rho*sin(theta)])
+    first_transformed_coord = _mobius(flat_coordinates_1[first_vertex],
+                                      [rho*cos(theta), rho*sin(theta)])
 
     #search through all the triangles in the triangulation of Animal 0 for one
     #whose flattened coordinates contain the first vertex
-    triangle_coord_pair = _search_for_aligned_coordinate(first_transformed_coordinate,
-                                                        triangles_0,
-                                                        range(num_triangles_0),
-                                                        flat_coordinates_0,
-                                                        reg_coordinates_0)
+    triangle_coord_pair = _search_for_aligned_coordinate(first_transformed_coord,
+                                                         triangles_0,
+                                                         range(num_triangles_0),
+                                                         flat_coordinates_0,
+                                                         reg_coordinates_0)
     #if we can't find a triangle for the first vertex, set the
     #triangle-coordinate-pair as the closest vertex and the first triangle
     #containing that vertex
     if triangle_coord_pair == []:
         print("WARNING: Central vertex in Animal 1 is not contained in any triangle in Animal 0.")
-        closest_vertex, closest_vertex_coordinate = _find_closest_vertex(first_transformed_coordinate,
-                                                                        range(num_verts_0),
-                                                                        flat_coordinates_0,
-                                                                        reg_coordinates_0)
+        closest_vertex, closest_vertex_coord = _find_closest_vertex(first_transformed_coord,
+                                                                    range(num_verts_0),
+                                                                    flat_coordinates_0,
+                                                                    reg_coordinates_0)
         triangle_i = _get_triangle_containing_vertex(closest_vertex, triangles_0)
         if triangle_i is None:
             print("WARNING: No triangle associated to the closest vertex " + \
                   str(closest_vertex) + \
                   ". Not updating vertex-to-triangle map for this vertex.")
-        triangle_coord_pair = [triangle_i, closest_vertex_coordinate]
+        triangle_coord_pair = [triangle_i, closest_vertex_coord]
 
     #add the index of the triangle we found to our vertex-to-triangle map and
     #add the aligned coordinate to return list
@@ -857,7 +857,7 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
         #transform the flattened coordinates of this vertex and get the parent of
         #this vertex from our BFS of interior vertices
         transformed_coordinate = _mobius(flat_coordinates_1[vertex],
-                                        [rho*cos(theta), rho*sin(theta)])
+                                         [rho*cos(theta), rho*sin(theta)])
         parent_vertex = bfs_ancestors[vertex]
         triangle_coord_pair = []
 
@@ -875,31 +875,31 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
             if len(traversed_triangles) == num_triangles_0:
                 print("WARNING: no triangle found for interior vertex " + \
                       str(vertex) + ". Assigning closest vertex instead.")
-                closest_vertex, closest_vertex_coordinate = _find_closest_vertex(transformed_coordinate,
-                                                                                range(num_verts_0),
-                                                                                flat_coordinates_0,
-                                                                                reg_coordinates_0)
+                closest_vertex, closest_vertex_coord = _find_closest_vertex(transformed_coordinate,
+                                                                            range(num_verts_0),
+                                                                            flat_coordinates_0,
+                                                                            reg_coordinates_0)
                 triangle_i = _get_triangle_containing_vertex(closest_vertex, triangles_0)
                 if triangle_i is None:
                     print("WARNING: No triangle associated to the closest vertex " + \
                           str(closest_vertex) + \
                           ". Not updating vertex-to-triangle map for this vertex.")
-                triangle_coord_pair = [triangle_i, closest_vertex_coordinate]
+                triangle_coord_pair = [triangle_i, closest_vertex_coord]
                 break
 
             #check if our transformed coordinate is in the current triangles
             triangle_coord_pair = _search_for_aligned_coordinate(transformed_coordinate,
-                                                                current_triangles,
-                                                                current_triangle_indices,
-                                                                flat_coordinates_0,
-                                                                reg_coordinates_0)
+                                                                 current_triangles,
+                                                                 current_triangle_indices,
+                                                                 flat_coordinates_0,
+                                                                 reg_coordinates_0)
 
             #update values for next iteration - add the triangles we just
             #traversed, and set the current triangles to their neighbours
             traversed_triangles = traversed_triangles.union(current_triangle_indices)
             current_triangle_indices = _get_next_neighbourhood(animal_obj_0,
-                                                              current_triangle_indices,
-                                                              traversed_triangles)
+                                                               current_triangle_indices,
+                                                               traversed_triangles)
             current_triangles = [triangles_0[i] for i in current_triangle_indices]
 
         #add the index of the triangle we found to our vertex-to-triangle map,
@@ -921,7 +921,7 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
         #transform the flattened coordinates of this vertex
         transformed_coordinate = _mobius(flat_coordinates_1[vertex],
-                                        [rho*cos(theta), rho*sin(theta)])
+                                         [rho*cos(theta), rho*sin(theta)])
         #initialise our edge-coordinate-pair and search through each edge
         #corresponding to the transformed coordinate
         edge_coordinate_pair = []
@@ -933,11 +933,11 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
                     print("WARNING: BOUNDARY FAILURE: " \
                     "Could not find boundary edge for boundary vertex " + \
                         str(vertex) + ". Assigning closest vertex instead.")
-                closest_vertex_coordinate = _find_closest_vertex(transformed_coordinate,
-                                                                range(num_verts_0),
-                                                                flat_coordinates_0,
-                                                                reg_coordinates_0)[1]
-                edge_coordinate_pair = [root_edge, closest_vertex_coordinate]
+                closest_vertex_coord = _find_closest_vertex(transformed_coordinate,
+                                                            range(num_verts_0),
+                                                            flat_coordinates_0,
+                                                            reg_coordinates_0)[1]
+                edge_coordinate_pair = [root_edge, closest_vertex_coord]
                 break
 
             #assign the edge to search based on how many edges we've searched so far
@@ -946,10 +946,10 @@ def _get_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
             #search through one boundary edge at a time to find the boundary
             #edge that the this boundary vertex is mapped to
             edge_coordinate_pair = _search_for_aligned_coordinate(transformed_coordinate,
-                                                                 [edge_to_search],
-                                                                 [edge_index_to_search],
-                                                                 flat_coordinates_0,
-                                                                 reg_coordinates_0)
+                                                                  [edge_to_search],
+                                                                  [edge_index_to_search],
+                                                                  flat_coordinates_0,
+                                                                  reg_coordinates_0)
             #update the edges searched for the next iteration
             edges_searched += 1
 
@@ -1035,8 +1035,8 @@ def _distortion_energy(animal_0, animal_1, theta, rho):
             aligned_edge_lens[vert_0][vert_1] = linalg.norm(array(aligned_coordinates[vert_0]) - \
                                                             array(aligned_coordinates[vert_1]))
             area_sum[vert_0][vert_1] += _area(reg_coordinates[first],
-                                             reg_coordinates[second],
-                                             reg_coordinates[third])
+                                              reg_coordinates[second],
+                                              reg_coordinates[third])
     #initialize the return value
     alignment_value = 0
 
@@ -1090,12 +1090,15 @@ def _optimal_mapping(animal_0, animal_1):
     #angle in [0, 2*pi] and rho value in [0, 1) as input and outputs the
     #corresponding symmetric distortion energy
     def optimization_function(theta_rho_pair):
-        return _symmetric_distortion_energy(animal_0, animal_1, theta_rho_pair[0], theta_rho_pair[1])
+        return _symmetric_distortion_energy(animal_0, animal_1,
+                                            theta_rho_pair[0], theta_rho_pair[1])
     #find the optimal theta and rho values that minimize the symmetric distortion energy
-    #set 'disp' to True to print convergence messages. This will show the number of iterations and function evaluations
+    #set 'disp' to True to print convergence messages.
+    #This will show the number of iterations and function evaluations
     #for faster conversion, reduce the values of 'maxiter' and 'maxfev'
-    res = minimize(optimization_function, [0., 0.],method = 'Powell', bounds= ((0, 2*pi), (0, 1)),
-               options={'maxiter': 2, 'maxfev': 40, 'disp': False, 'direc':[[0, 0.9], [0.9,0]]})
+    res = minimize(optimization_function, [0., 0.], method='Powell', bounds=((0, 2*pi), (0, 1)),
+                   options={'maxiter': 2, 'maxfev': 40,
+                            'disp': False, 'direc':[[0, 0.9], [0.9, 0]]})
     print("LOG: Found an optimal (theta, rho) mapping of " + str(res.x) + ". ")
     return res.x
 
@@ -1168,8 +1171,8 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
         for triangle in triangles_1:
             if vertex in triangle:
                 change_in_area += _area(regular_coordinates_1[triangle[0]][0:2],
-                                       regular_coordinates_1[triangle[1]][0:2],
-                                       regular_coordinates_1[triangle[2]][0:2])/3.0
+                                        regular_coordinates_1[triangle[1]][0:2],
+                                        regular_coordinates_1[triangle[2]][0:2])/3.0
         difference_val_0 += change_in_area * \
             (aligned_coordinates_1[vertex][2]-regular_coordinates_1[vertex][2])**2
 
@@ -1179,8 +1182,8 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
         for triangle in triangles_0:
             if vertex in triangle:
                 change_in_area += _area(reg_coordinates_0[triangle[0]][0:2],
-                                       reg_coordinates_0[triangle[1]][0:2],
-                                       reg_coordinates_0[triangle[2]][0:2])/3.0
+                                        reg_coordinates_0[triangle[1]][0:2],
+                                        reg_coordinates_0[triangle[2]][0:2])/3.0
         difference_val_1 += change_in_area * \
             (aligned_coordinates_0[vertex][2]-reg_coordinates_0[vertex][2])**2
 
