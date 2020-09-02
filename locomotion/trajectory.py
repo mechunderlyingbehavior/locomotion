@@ -20,16 +20,16 @@ import dtw
 from scipy.signal import savgol_filter
 import locomotion.write as write
 import locomotion.animal as animal
-from locomotion.animal import throw_error
+from locomotion.animal import _throw_error
 
 #Static Variables
-SMOOTH_RANGE_MIN = 5 #minimum length of smoothing window in smooth()
-WINDOW_SCALAR = 2.5 #scalar for smoothing window calculation in smooth()
-ORDER = 5 #order of smoothing curve used in smooth()
+SMOOTH_RANGE_MIN = 5 #minimum length of smoothing window in _smooth()
+WINDOW_SCALAR = 2.5 #scalar for smoothing window calculation in _smooth()
+ORDER = 5 #order of smoothing curve used in _smooth()
 
 #############################
 
-def get_derivatives(series, axis=0):
+def _get_derivatives(series, axis=0):
     """
     Computes the derivative of the series. Returns a numpy array
     """
@@ -37,7 +37,7 @@ def get_derivatives(series, axis=0):
     return derivatives
 
 
-def smooth(sequence, frame_rate):
+def _smooth(sequence, frame_rate):
     """ Smoothes sequence by applying Savitzky-Golay smoothing
         :Parameters:
          sequence : list
@@ -50,7 +50,7 @@ def smooth(sequence, frame_rate):
     return smoothed
 
 
-def get_velocity(coordinates):
+def _get_velocity(coordinates):
     """
     Calculate the velocity
     :Parameters:
@@ -62,7 +62,7 @@ def get_velocity(coordinates):
     return velocity
 
 
-def get_signed_curvature(first_deriv, second_deriv, velocity):
+def _get_signed_curvature(first_deriv, second_deriv, velocity):
     """
     Given a list of first and second derivatives, return curvature.
     Note: Currently only works for up to 2 / 3 dimensions.
@@ -114,16 +114,16 @@ def get_curve_data(animal_obj, col_names=None):
     coords = []
     for col in col_names:
         try:
-            coords.append(smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
         except KeyError:
             raise Exception("column name {} does not exist in animal dataset".format(col))
     coords = np.array(coords) # MM
-    first_deriv = get_derivatives(coords, axis=1) # MM per frame
+    first_deriv = _get_derivatives(coords, axis=1) # MM per frame
     first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
-    second_deriv = get_derivatives(first_deriv, axis=1) # MM per second per frame
+    second_deriv = _get_derivatives(first_deriv, axis=1) # MM per second per frame
     second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
-    velocity = get_velocity(first_deriv)
-    curvature = get_signed_curvature(first_deriv, second_deriv, velocity)
+    velocity = _get_velocity(first_deriv)
+    curvature = _get_signed_curvature(first_deriv, second_deriv, velocity)
 
     start_time, end_time = animal_obj.get_baseline_times()
     animal_obj.add_raw_vals('Velocity', velocity)
@@ -170,7 +170,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     #quick sanity check for output mode
     if fullmode and outdir is None:
-        throw_error("Full mode requires the path to output directory")
+        _throw_error("Full mode requires the path to output directory")
 
     seg_start_frame_0 = animal.get_frame_num(animal_obj_0, seg_start_time_0)
     seg_end_frame_0 = animal.get_frame_num(animal_obj_0, seg_end_time_0)
