@@ -23,7 +23,7 @@ from numpy import mean, std, array, linalg
 from scipy.optimize import minimize
 import locomotion.write as write
 import locomotion.animal as animal
-from locomotion.animal import throw_error
+from locomotion.animal import _throw_error
 from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
     adjacency_matrix, bfs, triangle_triangle_adjacency
 
@@ -1124,7 +1124,7 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
 
     #check that a directory is specified if fullmode is true
     if fullmode and outdir is None:
-        throw_error("Full mode requires the path to output direcotry")
+        _throw_error("Full mode requires the path to output direcotry")
 
     #notify user of progress
     print("Measuring conformal spatiotemporal distance between heat maps of" \
