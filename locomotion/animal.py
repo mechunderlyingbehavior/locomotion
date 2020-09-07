@@ -442,7 +442,7 @@ def _throw_error(errmsg):
     sys.exit(1)
 
 
-def get_frame_num(animal, time_in_minutes):
+def calculate_frame_num(animal, time_in_minutes):
     """
     Calculate the frame number given the time in minutes using the
     frame rate stored in the animal object
@@ -536,7 +536,7 @@ def read_info(infile):
     return info
 
 
-def get_raw_data(animal):
+def setup_raw_data(animal):
     """
     Store the raw data values from the data file location of the animal object
     into the animal object itself.
@@ -564,8 +564,8 @@ def get_raw_data(animal):
         y_ind = find_col_index(header, 'Y')
         x_vals, y_vals = [], []
         start, end = animal.get_exp_times()
-        start_frame = get_frame_num(animal, start)
-        end_frame = get_frame_num(animal, end)
+        start_frame = calculate_frame_num(animal, start)
+        end_frame = calculate_frame_num(animal, end)
 
         for line, row in enumerate(reader):
             if line < start_frame:
@@ -587,13 +587,13 @@ def get_raw_data(animal):
     animal.add_raw_vals('Y', y_vals)
 
     baseline_start, baseline_end = animal.get_baseline_times()
-    baseline_start_frame = get_frame_num(animal, baseline_start)
-    baseline_end_frame = get_frame_num(animal, baseline_end)
+    baseline_start_frame = calculate_frame_num(animal, baseline_start)
+    baseline_end_frame = calculate_frame_num(animal, baseline_end)
     animal.add_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
     animal.add_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
-def get_animal_objs(infofile, name_list=None):
+def setup_animal_objs(infofile, name_list=None):
     """
     Given a json file, generate and return the animal object files.
     If name_list is given, only generate the animal objects for animals in name_list
@@ -619,5 +619,5 @@ def _init_animal(json_item):
      animal : Animal object.
     """
     animal = Animal(json_item)
-    get_raw_data(animal)
+    setup_raw_data(animal)
     return animal
