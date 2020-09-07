@@ -29,7 +29,7 @@ ORDER = 5 #order of smoothing curve used in _smooth()
 
 #############################
 
-def _get_derivatives(series, axis=0):
+def _calculate_derivatives(series, axis=0):
     """
     Computes the derivative of the series. Returns a numpy array
     """
@@ -50,7 +50,7 @@ def _smooth(sequence, frame_rate):
     return smoothed
 
 
-def _get_velocity(coordinates):
+def _calculate_velocity(coordinates):
     """
     Calculate the velocity
     :Parameters:
@@ -62,7 +62,7 @@ def _get_velocity(coordinates):
     return velocity
 
 
-def _get_signed_curvature(first_deriv, second_deriv, velocity):
+def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
     """
     Given a list of first and second derivatives, return curvature.
     Note: Currently only works for up to 2 / 3 dimensions.
@@ -94,7 +94,7 @@ def _get_signed_curvature(first_deriv, second_deriv, velocity):
     return curvatures
 
 
-def get_curve_data(animal_obj, col_names=None):
+def setup_curve_data(animal_obj, col_names=None):
     """ Computes the behavioural curve data such as Velocity and Curvature .
      Note that we could take in the varnames here and only compute V and C
      if they are called. However, since velocity and curvature data usually
@@ -118,12 +118,12 @@ def get_curve_data(animal_obj, col_names=None):
         except KeyError:
             raise Exception("column name {} does not exist in animal dataset".format(col))
     coords = np.array(coords) # MM
-    first_deriv = _get_derivatives(coords, axis=1) # MM per frame
+    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
     first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
-    second_deriv = _get_derivatives(first_deriv, axis=1) # MM per second per frame
+    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
     second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
-    velocity = _get_velocity(first_deriv)
-    curvature = _get_signed_curvature(first_deriv, second_deriv, velocity)
+    velocity = _calculate_velocity(first_deriv)
+    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
 
     start_time, end_time = animal_obj.get_baseline_times()
     animal_obj.add_raw_vals('Velocity', velocity)
@@ -172,12 +172,12 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     if fullmode and outdir is None:
         _throw_error("Full mode requires the path to output directory")
 
-    seg_start_frame_0 = animal.get_frame_num(animal_obj_0, seg_start_time_0)
-    seg_end_frame_0 = animal.get_frame_num(animal_obj_0, seg_end_time_0)
+    seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
+    seg_end_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_end_time_0)
     data_0 = animal_obj_0.get_mult_raw_vals(varnames, seg_start_frame_0, seg_end_frame_0)
 
-    seg_start_frame_1 = animal.get_frame_num(animal_obj_1, seg_start_time_1)
-    seg_end_frame_1 = animal.get_frame_num(animal_obj_1, seg_end_time_1)
+    seg_start_frame_1 = animal.calculate_frame_num(animal_obj_1, seg_start_time_1)
+    seg_end_frame_1 = animal.calculate_frame_num(animal_obj_1, seg_end_time_1)
     data_1 = animal_obj_1.get_mult_raw_vals(varnames, seg_start_frame_1, seg_end_frame_1)
 
     print("LOG: Applying DTW to the data from files %s and %s..." % (animal_obj_0.get_name(),
