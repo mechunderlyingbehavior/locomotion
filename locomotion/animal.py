@@ -404,9 +404,9 @@ class Animal():
 
             bfs_ancestors is an array with length corresponding to the interior vertex
             with the largest index. Each element bfs_ancestors[i] is the index of the
-            vertex that preceded vertex i in the breadth-first-search, where -1 
-            indicates either the root vertex (where the breadth-first-search started) 
-            or a vertex that was not discovered in the breadth-first-search (in this 
+            vertex that preceded vertex i in the breadth-first-search, where -1
+            indicates either the root vertex (where the breadth-first-search started)
+            or a vertex that was not discovered in the breadth-first-search (in this
             case, it must be a boundary vertex).
         """
         self.__vertex_bfs = vertex_bfs
