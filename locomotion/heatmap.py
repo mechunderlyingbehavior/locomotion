@@ -25,7 +25,6 @@ from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
     adjacency_matrix, bfs, triangle_triangle_adjacency
 import locomotion.write as write
 import locomotion.animal as animal
-from locomotion.animal import _throw_error
 
 #Static Variables
 PERTURBATION = 0.000000001
@@ -35,10 +34,10 @@ TOLERANCE = 0.00001
 ENABLE_BOUNDARY_WARNINGS = False
 
 ################################################################################
-#METHOD FOR INITIALIZING HEAT MAP AND SURFACE DATA FOR EACH ANIMAL OBJECT ###
+### METHOD FOR INITIALIZING HEAT MAP AND SURFACE DATA FOR EACH ANIMAL OBJECT ###
 ################################################################################
 
-def setup_surface_data(animal_obj, grid_size, start_time=None, end_time=None):
+def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None):
     """ Computes the heatmap for a given animal representing the amount
         of time the animal spent in each location during a specified time
         interval, an approximately regular Delaunay triangulation of
@@ -128,7 +127,7 @@ def setup_surface_data(animal_obj, grid_size, start_time=None, end_time=None):
 
 
 #####################################################################################
-#METHODS FOR CALCULATING HEAT MAPS AND THEIR CORRESPONDING TRIANGULATED SURFACES ###
+#### METHODS FOR CALCULATING HEAT MAPS AND THEIR CORRESPONDING TRIANGULATED SURFACES ###
 #####################################################################################
 
 
@@ -572,7 +571,7 @@ def _calculate_barycentric_coordinates(point, simplex, coordinates):
     return result
 
 
-def _barycentric_to_coordinates(barycentric_coords, simplex, coordinates):
+def _convert_barycentric_to_coordinates(barycentric_coords, simplex, coordinates):
     """Given barycentric coordinates, a list of coordinates and a simplex (triangle
        or line segment), return the actual coordinates in R^3 corresponding to
        the barycentric coordinates.
@@ -679,8 +678,8 @@ def _find_aligned_coordinate(point, simplices, simplex_indices,
             #set the result as the regular coordinates corresponding to the
             #barycentric coordinates
             result = [simplex_i,
-                      _barycentric_to_coordinates(barycentric_coords, simplex,
-                                                       output_coordinates)]
+                      _convert_barycentric_to_coordinates(barycentric_coords, simplex,
+                                                          output_coordinates)]
             break
     return result
 
@@ -772,7 +771,7 @@ def _find_next_neighbourhood(animal_obj, current_triangles, traversed_triangles)
     return all_adjacent_triangles
 
 
-def _compute_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
+def _calculate_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     """Calculates the vertex coordinates for the triangulation of Animal 1 aligned
         to the triangulation of Animal 0 by factoring through their respective
         conformal flattenings and applyling a mobius transformation that moves the
@@ -963,7 +962,7 @@ def _compute_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
 
 def _area(p, q, r):
     """
-    this is a helper method for the _compute_distortion_energy and compute_one_csd methods
+    this is a helper method for the _calculate_distortion_energy and compute_one_csd methods
     below. It calculates the area of the triangle spanned by three points in
     R^2 or R^3.
     """
@@ -980,7 +979,7 @@ def _area(p, q, r):
     return 0.5*((x[1]*y[2]-x[2]*y[1])**2+(x[2]*y[0]-x[0]*y[2])**2+(x[0]*y[1]-x[1]*y[0])**2)**0.5
 
 
-def _compute_distortion_energy(animal_0, animal_1, theta, rho):
+def _calculate_distortion_energy(animal_0, animal_1, theta, rho):
     """Calculates the elastic energy required to stretch the triangulation of
         Animal 0 onto the triangulation of Animal 1 via the conformal mapping
         obtained by factoring through their respective conformal flattenings and
@@ -1006,7 +1005,7 @@ def _compute_distortion_energy(animal_0, animal_1, theta, rho):
     #store relevant parameters
     num_verts = animal_0.get_num_verts()
     reg_coordinates = animal_0.get_regular_coordinates()
-    aligned_coordinates = _compute_aligned_coordinates(animal_1, animal_0, theta, rho)
+    aligned_coordinates = _calculate_aligned_coordinates(animal_1, animal_0, theta, rho)
     triangles = animal_0.get_triangulation()
 
     #initialize four matrices whose entries correspond to pairs of vertices in
@@ -1072,8 +1071,8 @@ def _calculate_symmetric_distortion_energy(animal_0, animal_1, theta, rho):
             float, specifying the symmetric distortion energy required to
             align the triangulations of Animals 0 and 1
     """
-    return _compute_distortion_energy(animal_0, animal_1, theta, rho) + \
-        _compute_distortion_energy(animal_1, animal_0, -theta, rho)
+    return _calculate_distortion_energy(animal_0, animal_1, theta, rho) + \
+        _calculate_distortion_energy(animal_1, animal_0, -theta, rho)
 
 def _calculate_optimal_mapping(animal_0, animal_1):
     """Calculates the optimal rotation of the unit disk that minimizes the
@@ -1125,7 +1124,7 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
 
     #check that a directory is specified if fullmode is true
     if fullmode and outdir is None:
-        _throw_error("Full mode requires the path to output direcotry")
+        raise Exception("Full mode requires a path to output directory.")
 
     #notify user of progress
     print("Measuring conformal spatiotemporal distance between heat maps of" \
@@ -1140,11 +1139,11 @@ def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
     z_dim = _calculate_z_dim(animal_0)
     num_verts_0 = animal_0.get_num_verts()
     reg_coordinates_0 = animal_0.get_regular_coordinates()
-    aligned_coordinates_0 = _compute_aligned_coordinates(animal_1, animal_0, theta, rho)
+    aligned_coordinates_0 = _calculate_aligned_coordinates(animal_1, animal_0, theta, rho)
     triangles_0 = animal_0.get_triangulation()
     num_verts_1 = animal_1.get_num_verts()
     regular_coordinates_1 = animal_1.get_regular_coordinates()
-    aligned_coordinates_1 = _compute_aligned_coordinates(animal_0, animal_1, -theta, rho)
+    aligned_coordinates_1 = _calculate_aligned_coordinates(animal_0, animal_1, -theta, rho)
     triangles_1 = animal_1.get_triangulation()
 
     #Save the triangulation data in .OFF files if fullmode is True

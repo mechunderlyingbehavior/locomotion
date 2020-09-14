@@ -73,45 +73,52 @@ class Animal():
         self.__vertex_bfs = None
         self.__triangle_triangle_adjacency = None
 
-    def get_name(self):
-        """Getter function for self.__name."""
-        return self.__name
+    def add_raw_vals(self, var_name, val_list):
+        """
+        Adds an entry to the dict self.__raw_vals.
+        :Parameters:
+         var_name : hashable key point to variables in animal object
+         val_list : list of data values corresponding to var_name
+        """
+        self.__raw_vals.update({var_name:val_list})
 
-    def get_data_file_location(self):
-        """Getter function for self.__data_file."""
-        return self.__data_file
+    def add_stats(self, var_name, scope, start_frame, end_frame):
+        """
+        Calculates statistics of var_name over a specific scope, as defined by
+        start_frame and end_frame.
+        :Parameters:
+         var_name : hashable key pointing to variables in animal object
+         scope : hashable key representing the scope defined by start_frame and end_frame
+         start_frame : starting frame of scope
+         end_frame : ending frame of scope
+        """
+        if var_name not in self.__means:
+            self.init_stats(var_name)
+        means, stds = norm(self.__raw_vals[var_name][start_frame:end_frame])
+        self.__means[var_name].update({scope:means})
+        self.__stds[var_name].update({scope:stds})
 
-    def get_data_file_name(self):
-        """Getter function for self.__filename."""
-        return self.__filename
+    def init_stats(self, var_name):
+        """
+        Utility function for initializing a dictionary entry in self.__means and
+        self.__stds for key var_name.
+        :Parameters:
+         var_name : hashable key pointing to variable in animal object
+        """
+        self.__means.update({var_name:{}})
+        self.__stds.update({var_name:{}})
 
     def get_animal_type(self):
         """Getter function for self.__name."""
         return self.__animal_type
 
-    def get_exp_type(self):
-        """Getter function for self.__exp_type."""
-        return self.__exp_type
+    def get_control_boolean(self):
+        """Getter function for self.__is_control."""
+        return self.__is_control
 
-    def get_id(self):
-        """Getter function for self.__animal_id."""
-        return self.__animal_id
-
-    def get_exp_times(self):
-        """
-        Getter function for both self.__start and self.__end.
-        :Returns:
-            tuple : (self.__start, self.__end)
-        """
-        return (self.__start, self.__end)
-
-    def get_exp_start_time(self):
-        """Getter function for self.__start."""
-        return self.__start
-
-    def get_exp_end_time(self):
-        """Getter function for self.__end."""
-        return self.__end
+    def get_dims(self):
+        """Getter function for self.__dim_x and self.__dim_y."""
+        return self.__dim_x, self.__dim_y
 
     def get_baseline_times(self):
         """
@@ -129,30 +136,59 @@ class Animal():
         """Getter function for self.__baseline_end."""
         return self.__baseline_end
 
-    def in_control_group(self):
-        """Getter function for self.__is_control."""
-        return self.__is_control
+    def get_data_file_location(self):
+        """Getter function for self.__data_file."""
+        return self.__data_file
 
-    def get_dims(self):
-        """Getter function for self.__dim_x and self.__dim_y."""
-        return self.__dim_x, self.__dim_y
+    def get_data_file_name(self):
+        """Getter function for self.__filename."""
+        return self.__filename
 
-    def get_pixel_density(self):
-        """Getter function for self.__pix."""
-        return self.__pix
+    def get_exp_type(self):
+        """Getter function for self.__exp_type."""
+        return self.__exp_type
+
+    def get_exp_times(self):
+        """
+        Getter function for both self.__start and self.__end.
+        :Returns:
+            tuple : (self.__start, self.__end)
+        """
+        return (self.__start, self.__end)
+
+    def get_exp_start_time(self):
+        """Getter function for self.__start."""
+        return self.__start
+
+    def get_exp_end_time(self):
+        """Getter function for self.__end."""
+        return self.__end
 
     def get_frame_rate(self):
         """Getter function for self.__frame_rate."""
         return self.__frame_rate
 
-    def add_raw_vals(self, var_name, val_list):
+    def get_id(self):
+        """Getter function for self.__animal_id."""
+        return self.__animal_id
+
+    def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """
-        Adds an entry to the dict self.__raw_vals.
+        Runs self.get_raw_vals for multiple variables stored in animal object.
         :Parameters:
-         var_name : hashable key point to variables in animal object
-         val_list : list of data values corresponding to var_name
+         var_names : list of hashable keys pointing to variables in animal object
+         start_frame : starting frame of portion to extract
+         end_frame : ending frame of portion to extract
         """
-        self.__raw_vals.update({var_name:val_list})
+        return [self.get_raw_vals(v, start_frame, end_frame) for v in var_names]
+
+    def get_name(self):
+        """Getter function for self.__name."""
+        return self.__name
+
+    def get_pixel_density(self):
+        """Getter function for self.__pix."""
+        return self.__pix
 
     def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
         """
@@ -180,42 +216,6 @@ class Animal():
                           "Defaulting to the final frame stored.")
         return values[start_frame:end_frame]
 
-    def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
-        """
-        Runs self.get_raw_vals for multiple variables stored in animal object.
-        :Parameters:
-         var_names : list of hashable keys pointing to variables in animal object
-         start_frame : starting frame of portion to extract
-         end_frame : ending frame of portion to extract
-        """
-        return [self.get_raw_vals(v, start_frame, end_frame) for v in var_names]
-
-    def init_stats(self, var_name):
-        """
-        Utility function for initializing a dictionary entry in self.__means and
-        self.__stds for key var_name.
-        :Parameters:
-         var_name : hashable key pointing to variable in animal object
-        """
-        self.__means.update({var_name:{}})
-        self.__stds.update({var_name:{}})
-
-    def add_stats(self, var_name, scope, start_frame, end_frame):
-        """
-        Calculates statistics of var_name over a specific scope, as defined by
-        start_frame and end_frame.
-        :Parameters:
-         var_name : hashable key pointing to variables in animal object
-         scope : hashable key representing the scope defined by start_frame and end_frame
-         start_frame : starting frame of scope
-         end_frame : ending frame of scope
-        """
-        if var_name not in self.__means:
-            self.init_stats(var_name)
-        means, stds = norm(self.__raw_vals[var_name][start_frame:end_frame])
-        self.__means[var_name].update({scope:means})
-        self.__stds[var_name].update({scope:stds})
-
     def get_stats(self, var_name, scope):
         """
         Retrieve statistics of var_name calculated over scope period.
@@ -227,158 +227,88 @@ class Animal():
         """
         return self.__means[var_name][scope], self.__stds[var_name][scope]
 
-    def set_grid_size(self, grid_size):
-        """
-        Setter function for self.__grid_size, self.__num_x_grid, and self.__num_y_grid
-        by dividing self.__dim_x and self.__dim_y by grid_size.
-        :Parameters:
-         grid_size : int. Size of each grid. Should divide self.__dim_x and self.__dim_y.
-        """
-        if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
-            _throw_error("grid_size does not divide dim x or dim y.")
-        self.__grid_size = grid_size
-        self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
-        self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
+    ############################
+    # Functions for heatmap.py #
+    ############################
 
-    def get_num_grids(self):
-        """Getter functions for self.__num_x_grid and self.__num_y_grid"""
-        return self.__num_x_grid, self.__num_y_grid
+    def get_boundary_edges(self):
+        """Getter functions for self.__boundary_edges"""
+        return self.__boundary_edges
 
-    def get_grid_size(self):
-        """Getter functions for self.__num_x_grid and self.__num_y_grid"""
-        return self.__grid_size
+    def get_boundary_vertices(self):
+        """Getter functions for self.__boundary_vertices"""
+        return self.__boundary_vertices
 
-    def set_perturbation(self, perturbation):
-        """
-        Setter functions for self.__perturbation
-        :Parameters:
-         perturbation : float. A small number. Used to create an offset value
-         from which we can check if an animal's X, Y values are within bounds.
-        """
-        self.__perturbation = perturbation
-
-    def get_perturbation(self):
-        """Getter functions for self.__perturbation"""
-        return self.__perturbation
-
-    def set_tolerance(self, tolerance):
-        """
-        Setter functions for self.__tolerance
-        :Parameters:
-         tolerance : float. A small number. Used to check if an animal's centre
-         of mass is close enough to the origin.
-        """
-        self.__tolerance = tolerance
-
-    def get_tolerance(self):
-        """Getter functions for self.__tolerance"""
-        return self.__tolerance
-
-    def set_num_verts(self, num_verts):
-        """
-        Setter functions for self.__num_verts
-        :Parameters:
-         num_verts : int. The number of vertices in an animal's heat map.
-        """
-        self.__num_verts = num_verts
-
-    def get_num_verts(self):
-        """Getter functions for self.__num_verts"""
-        return self.__num_verts
-
-    def set_num_triangles(self, num_triangles):
-        """
-        Setter functions for self.__num_triangles
-        :Parameters:
-         num_triangles : int. The number of triangles in the triangulation
-         associated with an animal's heat map.
-        """
-        self.__num_triangles = num_triangles
-
-    def get_num_triangles(self):
-        """Getter functions for self.__num_triangles"""
-        return self.__num_triangles
-
-    def set_colors(self, colors):
-        """
-        Setter functions for self.__colors
-        :Parameters:
-         colors : list of triples of floats. The RGB coordinates for each 
-         triangle in the triangulation associated to an animal's heat map.
-        """
-        self.__colors = colors
+    def get_central_vertex(self):
+        """Getter functions for self.__central_vertex"""
+        return self.__central_vertex
 
     def get_colors(self):
         """Getter functions for self.__colors"""
         return self.__colors
 
-    def set_regular_coordinates(self, coordinates):
-        """
-        Setter functions for self.__reg_coords
-        :Parameters:
-         coordinates : list of triples of floats. The the x-, y-,
-         and z-coordinates of the vertices for a triangulation of the 
-         animal's heat map.
-        """
-        self.__reg_coords = coordinates
+    def get_flattened_coordinates(self):
+        """Getter functions for self.__flat_coords"""
+        return self.__flat_coords
+
+    def get_grid_size(self):
+        """Getter functions for self.__num_x_grid and self.__num_y_grid"""
+        return self.__grid_size
+
+    def get_interior_vertex_bfs(self):
+        """Getter functions for self.__vertex_bfs"""
+        return self.__vertex_bfs
+
+    def get_num_grids(self):
+        """Getter functions for self.__num_x_grid and self.__num_y_grid"""
+        return self.__num_x_grid, self.__num_y_grid
+
+    def get_num_triangles(self):
+        """Getter functions for self.__num_triangles"""
+        return self.__num_triangles
+
+    def get_num_verts(self):
+        """Getter functions for self.__num_verts"""
+        return self.__num_verts
+
+    def get_perturbation(self):
+        """Getter functions for self.__perturbation"""
+        return self.__perturbation
 
     def get_regular_coordinates(self):
         """Getter functions for self.__reg_coords"""
         return self.__reg_coords
 
-    def set_flattened_coordinates(self, coordinates):
-        """
-        Setter functions for self.__flat_coords
-        :Parameters:
-         coordinates : list of pairs of floats. The x- and y-coordinates of 
-         the vertices of a triangulation that have been conformally flattened
-         to the unit disk.
-        """
-        self.__flat_coords = coordinates
-
-    def get_flattened_coordinates(self):
-        """Getter functions for self.__flat_coords"""
-        return self.__flat_coords
-
-    def set_triangulation(self, triangles):
-        """
-        Setter functions for self.__triangulation
-        :Parameters:
-         triangles : list of triples of ints. The indices of the vertices
-         for each triangle in the triangulation of a surface.
-        """
-        self.__triangulation = triangles
+    def get_tolerance(self):
+        """Getter functions for self.__tolerance"""
+        return self.__tolerance
 
     def get_triangulation(self):
         """Getter functions for self.__triangulation"""
         return self.__triangulation
 
-    def set_boundary_vertices(self, vertices):
-        """
-        Setter functions for self.__boundary_vertices
-        :Parameters:
-         vertices : numpy array of ints. The indices of the vertices that 
-         are on the boundary of this animal in counter-clockwise order.
-        """
-        self.__boundary_vertices = vertices
-
-    def get_boundary_vertices(self):
-        """Getter functions for self.__boundary_vertices"""
-        return self.__boundary_vertices
+    def get_triangle_triangle_adjacency(self):
+        """Getter functions for self.__triangle_triangle_adjacency"""
+        return self.__triangle_triangle_adjacency
 
     def set_boundary_edges(self, edges):
         """
         Setter functions for self.__boundary_edges
         :Parameters:
          edges : list of int tuple pairs. The edges of the boundary loop in
-         counter-clockwise order, where each edge is a tuple of the two 
+         counter-clockwise order, where each edge is a tuple of the two
          vertices it connects.
         """
         self.__boundary_edges = edges
 
-    def get_boundary_edges(self):
-        """Getter functions for self.__boundary_edges"""
-        return self.__boundary_edges
+    def set_boundary_vertices(self, vertices):
+        """
+        Setter functions for self.__boundary_vertices
+        :Parameters:
+         vertices : numpy array of ints. The indices of the vertices that
+         are on the boundary of this animal in counter-clockwise order.
+        """
+        self.__boundary_vertices = vertices
 
     def set_central_vertex(self, central_vertex):
         """
@@ -389,9 +319,37 @@ class Animal():
         """
         self.__central_vertex = central_vertex
 
-    def get_central_vertex(self):
-        """Getter functions for self.__central_vertex"""
-        return self.__central_vertex
+    def set_colors(self, colors):
+        """
+        Setter functions for self.__colors
+        :Parameters:
+         colors : list of triples of floats. The RGB coordinates for each
+         triangle in the triangulation associated to an animal's heat map.
+        """
+        self.__colors = colors
+
+    def set_flattened_coordinates(self, coordinates):
+        """
+        Setter functions for self.__flat_coords
+        :Parameters:
+         coordinates : list of pairs of floats. The x- and y-coordinates of
+         the vertices of a triangulation that have been conformally flattened
+         to the unit disk.
+        """
+        self.__flat_coords = coordinates
+
+    def set_grid_size(self, grid_size):
+        """
+        Setter function for self.__grid_size, self.__num_x_grid, and self.__num_y_grid
+        by dividing self.__dim_x and self.__dim_y by grid_size.
+        :Parameters:
+         grid_size : int. Size of each grid. Should divide self.__dim_x and self.__dim_y.
+        """
+        if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
+            raise Exception("grid_size does not divide dim x or dim y.")
+        self.__grid_size = grid_size
+        self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
+        self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
 
     def set_interior_vertex_bfs(self, vertex_bfs):
         """
@@ -411,9 +369,59 @@ class Animal():
         """
         self.__vertex_bfs = vertex_bfs
 
-    def get_interior_vertex_bfs(self):
-        """Getter functions for self.__vertex_bfs"""
-        return self.__vertex_bfs
+    def set_num_triangles(self, num_triangles):
+        """
+        Setter functions for self.__num_triangles
+        :Parameters:
+         num_triangles : int. The number of triangles in the triangulation
+         associated with an animal's heat map.
+        """
+        self.__num_triangles = num_triangles
+
+    def set_num_verts(self, num_verts):
+        """
+        Setter functions for self.__num_verts
+        :Parameters:
+         num_verts : int. The number of vertices in an animal's heat map.
+        """
+        self.__num_verts = num_verts
+
+    def set_perturbation(self, perturbation):
+        """
+        Setter functions for self.__perturbation
+        :Parameters:
+         perturbation : float. A small number. Used to create an offset value
+         from which we can check if an animal's X, Y values are within bounds.
+        """
+        self.__perturbation = perturbation
+
+    def set_regular_coordinates(self, coordinates):
+        """
+        Setter functions for self.__reg_coords
+        :Parameters:
+         coordinates : list of triples of floats. The the x-, y-,
+         and z-coordinates of the vertices for a triangulation of the
+         animal's heat map.
+        """
+        self.__reg_coords = coordinates
+
+    def set_tolerance(self, tolerance):
+        """
+        Setter functions for self.__tolerance
+        :Parameters:
+         tolerance : float. A small number. Used to check if an animal's centre
+         of mass is close enough to the origin.
+        """
+        self.__tolerance = tolerance
+
+    def set_triangulation(self, triangles):
+        """
+        Setter functions for self.__triangulation
+        :Parameters:
+         triangles : list of triples of ints. The indices of the vertices
+         for each triangle in the triangulation of a surface.
+        """
+        self.__triangulation = triangles
 
     def set_triangle_triangle_adjacency(self, triangle_triangle_adjacency):
         """
@@ -421,26 +429,15 @@ class Animal():
         :Parameters:
          triangle_triangle_adjacency : num_triangles x 3 numpy array of ints.
          Each 3 X 1 element of triangle_triangle_adjacency[i] corresponds to the
-         indices of the triangle in the triangulation of the heat map that is 
+         indices of the triangle in the triangulation of the heat map that is
          adjacent to the three edges of the triangle with index i. -1 indicates
          that no triangles are adjacent to that particular edge of the the triangle.
         """
         self.__triangle_triangle_adjacency = triangle_triangle_adjacency
 
-    def get_triangle_triangle_adjacency(self):
-        """Getter functions for self.__triangle_triangle_adjacency"""
-        return self.__triangle_triangle_adjacency
-
 ################################################################################
 ### Basic Functions
 ################################################################################
-
-# Sure, I suppose I could use the actual error handling, but...
-def _throw_error(errmsg):
-    """Wrapper function for throwing an error message"""
-    print("ERROR: %s" % errmsg)
-    sys.exit(1)
-
 
 def calculate_frame_num(animal, time_in_minutes):
     """
@@ -459,29 +456,13 @@ def find_col_index(header, col_name):
      header : list of headers in the dataset
      col_name : name of column to be indexed
     """
-    # TO-DO: make this case insensitive
+    # TODO: make this case insensitive
     pat = re.compile('^(")*%s(")*$' % col_name)
     for i, _ in enumerate(header):
         if re.match(pat, header[i]):
             return i
-    # if we didn't find the index, the column name input is incorrect
-    _throw_error("invalid column name: %s" % col_name)
+    raise Exception("Column name not found: %s" % col_name)
     return None
-
-
-def _remove_outliers(data):
-    """
-    Given a numpy array, removes outliers using 1.5 Interquartile Range standard
-    :Parameters:
-     data : numpy array
-    :Returns:
-     numpy array, without outliers
-    """
-    first_quart = np.percentile(data, 25)
-    third_quart = np.percentile(data, 75)
-    IQR = third_quart - first_quart
-    idx = (data > first_quart - 1.5 * IQR) & (data < third_quart + 1.5 * IQR)
-    return data[idx]
 
 
 def norm(data, rm_outliers = True):
@@ -532,63 +513,6 @@ def read_info(infile):
     return info
 
 
-def setup_raw_data(animal):
-    """
-    Store the raw data values from the data file location of the animal object
-    into the animal object itself.
-    :Parameters:
-     animal : animal object
-    """
-    # pylint: disable=too-many-locals
-    # Function is complicated, the local variables are necessary.
-    with open(animal.get_data_file_location(), 'r') as infile:
-        print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
-        header = infile.readline()#.replace('\r','').replace('\n','')
-        if '\t' in header:
-            delim = '\t'
-        elif ',' in header:
-            delim = ','
-        else:
-            _throw_error("invalid data format")
-        header = list(map(lambda x: x.strip(), header.split(delim)))
-        try: # verify the file can be parsed
-            reader = csv.reader(infile, delimiter=delim)
-        except FileNotFoundError:
-            _throw_error("invalid data format")
-
-        x_ind = find_col_index(header, 'X')
-        y_ind = find_col_index(header, 'Y')
-        x_vals, y_vals = [], []
-        start, end = animal.get_exp_times()
-        start_frame = calculate_frame_num(animal, start)
-        end_frame = calculate_frame_num(animal, end)
-
-        for line, row in enumerate(reader):
-            if line < start_frame:
-                continue
-            if line == end_frame:
-                break
-            x_val = row[x_ind]
-            y_val = row[y_ind]
-            if len(x_val) == 0 or x_val == ' ' or len(y_val) == 0 or y_val == ' ':
-                print(row)
-                _throw_error("possible truncated data")
-            x_vals.append(float(x_val)/animal.get_pixel_density()) #scaling for pixel density
-            y_vals.append(float(y_val)/animal.get_pixel_density())
-            #DEFN: baseline norm is where we take the stats from the first two minutes of the
-            #      exp to get the "baseline normal" numbers
-            #DEFN: exp norm is where we take the stats from the whole exp duration and take all
-            #      'local data' into consideration
-    animal.add_raw_vals('X', x_vals)
-    animal.add_raw_vals('Y', y_vals)
-
-    baseline_start, baseline_end = animal.get_baseline_times()
-    baseline_start_frame = calculate_frame_num(animal, baseline_start)
-    baseline_end_frame = calculate_frame_num(animal, baseline_end)
-    animal.add_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
-    animal.add_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
-
-
 def setup_animal_objs(infofile, name_list=None):
     """
     Given a json file, generate and return the animal object files.
@@ -606,6 +530,64 @@ def setup_animal_objs(infofile, name_list=None):
     return [_init_animal(item) for item in info]
 
 
+def setup_raw_data(animal):
+    """
+    Store the raw data values from the data file location of the animal object
+    into the animal object itself.
+    :Parameters:
+     animal : animal object
+    """
+    # pylint: disable=too-many-locals
+    # Function is complicated, the local variables are necessary.
+    # TODO: Fix the import + errors.
+    with open(animal.get_data_file_location(), 'r') as infile:
+        print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
+        header = infile.readline()#.replace('\r','').replace('\n','')
+        if '\t' in header:
+            delim = '\t'
+        elif ',' in header:
+            delim = ','
+        else:
+            raise Exception("Incorrect type of Data file in animal object.")
+        header = list(map(lambda x: x.strip(), header.split(delim)))
+        try: # verify the file can be parsed
+            reader = csv.reader(infile, delimiter=delim)
+        except FileNotFoundError:
+            raise Exception("Incorrect type of Data file in animal object.")
+
+        x_ind = find_col_index(header, 'X')
+        y_ind = find_col_index(header, 'Y')
+        x_vals, y_vals = [], []
+        start, end = animal.get_exp_times()
+        start_frame = calculate_frame_num(animal, start)
+        end_frame = calculate_frame_num(animal, end)
+
+        for line, row in enumerate(reader):
+            if line < start_frame:
+                continue
+            if line == end_frame:
+                break
+            x_val = row[x_ind]
+            y_val = row[y_ind]
+            if len(x_val) == 0 or x_val == ' ' or len(y_val) == 0 or y_val == ' ':
+                print(row)
+                raise Exception("Data file in animal object might be truncated.")
+            x_vals.append(float(x_val)/animal.get_pixel_density()) #scaling for pixel density
+            y_vals.append(float(y_val)/animal.get_pixel_density())
+            #DEFN: baseline norm is where we take the stats from the first two minutes of the
+            #      exp to get the "baseline normal" numbers
+            #DEFN: exp norm is where we take the stats from the whole exp duration and take all
+            #      'local data' into consideration
+    animal.add_raw_vals('X', x_vals)
+    animal.add_raw_vals('Y', y_vals)
+
+    baseline_start, baseline_end = animal.get_baseline_times()
+    baseline_start_frame = calculate_frame_num(animal, baseline_start)
+    baseline_end_frame = calculate_frame_num(animal, baseline_end)
+    animal.add_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.add_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
+
+
 def _init_animal(json_item):
     """
     Given a json entry, extracts the relevant information and returns an initialized animal object
@@ -617,3 +599,18 @@ def _init_animal(json_item):
     animal = Animal(json_item)
     setup_raw_data(animal)
     return animal
+
+
+def _remove_outliers(data):
+    """
+    Given a numpy array, removes outliers using 1.5 Interquartile Range standard
+    :Parameters:
+     data : numpy array
+    :Returns:
+     numpy array, without outliers
+    """
+    first_quart = np.percentile(data, 25)
+    third_quart = np.percentile(data, 75)
+    IQR = third_quart - first_quart
+    idx = (data > first_quart - 1.5 * IQR) & (data < third_quart + 1.5 * IQR)
+    return data[idx]
