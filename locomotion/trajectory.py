@@ -20,118 +20,15 @@ import dtw
 from scipy.signal import savgol_filter
 import locomotion.write as write
 import locomotion.animal as animal
-from locomotion.animal import _throw_error
 
 #Static Variables
 SMOOTH_RANGE_MIN = 5 #minimum length of smoothing window in _smooth()
 WINDOW_SCALAR = 2.5 #scalar for smoothing window calculation in _smooth()
 ORDER = 5 #order of smoothing curve used in _smooth()
 
-#############################
-
-def _calculate_derivatives(series, axis=0):
-    """
-    Computes the derivative of the series. Returns a numpy array
-    """
-    derivatives = np.gradient(series, axis=axis)
-    return derivatives
-
-
-def _smooth(sequence, frame_rate):
-    """ Smoothes sequence by applying Savitzky-Golay smoothing
-        :Parameters:
-         sequence : list
-        :Return:
-         smoothed : list
-    """
-    smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * WINDOW_SCALAR)))
-    smooth_range_odd = smooth_range + 1 if smooth_range % 2 == 0 else smooth_range
-    smoothed = savgol_filter(sequence, smooth_range_odd, ORDER)
-    return smoothed
-
-
-def _calculate_velocity(coordinates):
-    """
-    Calculate the velocity
-    :Parameters:
-    coordinates : list
-    :Return:
-    velocity : list
-    """
-    velocity = np.sqrt(np.sum(np.power(coordinates, 2), axis=0))
-    return velocity
-
-
-def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
-    """
-    Given a list of first and second derivatives, return curvature.
-    Note: Currently only works for up to 2 / 3 dimensions.
-
-    :Parameters:
-    first_deriv: numpy array
-    second_deriv: numpy array
-    velocity: numpy array
-    :Return:
-    curvatures : numpy array
-    """
-    if first_deriv.shape != second_deriv.shape:
-        raise Exception("first_deriv and second_deriv should be of the same shape.")
-    n_dims = first_deriv.shape[0]
-    if n_dims == 2:
-        mats = np.transpose(np.array([first_deriv, second_deriv]), (2, 0, 1))
-    elif n_dims == 3:
-        ones = np.ones_like(first_deriv)
-        mats = np.transpose(np.array([ones, first_deriv, second_deriv]), (2, 0, 1))
-    numer = np.linalg.det(mats)
-    denom = np.power(velocity, 3)
-    curvatures = []
-    for i, _ in enumerate(numer):
-        if denom[i] < 0.000125:
-            curve = 0
-        else:
-            curve = numer[i] / denom[i]
-        curvatures.append(curve)
-    return curvatures
-
-
-def setup_curve_data(animal_obj, col_names=None):
-    """ Computes the behavioural curve data such as Velocity and Curvature .
-     Note that we could take in the varnames here and only compute V and C
-     if they are called. However, since velocity and curvature data usually
-     aren't too big, we'll blanket compute for now
-
-     Works only 2 or 3 dimensions.
-
-     :Parameter:
-        animal_obj : animal object, initialized
-        col_names : list, names of data columns.
-    """
-    if col_names is None:
-        col_names = ['X', 'Y']
-    n_dims = len(col_names)
-    if n_dims < 2 or n_dims > 3:
-        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
-    coords = []
-    for col in col_names:
-        try:
-            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
-        except KeyError:
-            raise Exception("column name {} does not exist in animal dataset".format(col))
-    coords = np.array(coords) # MM
-    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
-    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
-    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
-    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
-    velocity = _calculate_velocity(first_deriv)
-    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
-
-    start_time, end_time = animal_obj.get_baseline_times()
-    animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
-    animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
-    return first_deriv, second_deriv, velocity, curvature
-
+######################
+### Main Functions ###
+######################
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
@@ -170,7 +67,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     #quick sanity check for output mode
     if fullmode and outdir is None:
-        _throw_error("Full mode requires the path to output directory")
+        raise Exception("Full mode requires the path to output directory.")
 
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
     seg_end_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_end_time_0)
@@ -423,3 +320,111 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
                                         std_table, outdir, outfilename)
 
     return exp_table, mean_table, std_table
+
+
+def populate_curve_data(animal_obj, col_names=None):
+    """ Computes the behavioural curve data such as Velocity and Curvature .
+     Note that we could take in the varnames here and only compute V and C
+     if they are called. However, since velocity and curvature data usually
+     aren't too big, we'll blanket compute for now
+
+     Works only 2 or 3 dimensions.
+
+     :Parameter:
+        animal_obj : animal object, initialized
+        col_names : list, names of data columns.
+    """
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    if n_dims < 2 or n_dims > 3:
+        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+        except KeyError:
+            raise Exception("column name {} does not exist in animal dataset".format(col))
+    coords = np.array(coords) # MM
+    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
+    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
+    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
+    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
+    velocity = _calculate_velocity(first_deriv)
+    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
+
+    start_time, end_time = animal_obj.get_baseline_times()
+    animal_obj.add_raw_vals('Velocity', velocity)
+    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
+    animal_obj.add_raw_vals('Curvature', curvature)
+    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
+    return first_deriv, second_deriv, velocity, curvature
+
+########################
+### Helper Functions ###
+########################
+
+def _calculate_derivatives(series, axis=0):
+    """
+    Computes the derivative of the series. Returns a numpy array
+    """
+    derivatives = np.gradient(series, axis=axis)
+    return derivatives
+
+
+def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
+    """
+    Given a list of first and second derivatives, return curvature.
+    Note: Currently only works for up to 2 / 3 dimensions.
+
+    :Parameters:
+    first_deriv: numpy array
+    second_deriv: numpy array
+    velocity: numpy array
+    :Return:
+    curvatures : numpy array
+    """
+    if first_deriv.shape != second_deriv.shape:
+        raise Exception("first_deriv and second_deriv should be of the same shape.")
+    n_dims = first_deriv.shape[0]
+    if n_dims == 2:
+        mats = np.transpose(np.array([first_deriv, second_deriv]), (2, 0, 1))
+    elif n_dims == 3:
+        ones = np.ones_like(first_deriv)
+        mats = np.transpose(np.array([ones, first_deriv, second_deriv]), (2, 0, 1))
+    numer = np.linalg.det(mats)
+    denom = np.power(velocity, 3)
+    curvatures = []
+    for i, _ in enumerate(numer):
+        if denom[i] < 0.000125:
+            curve = 0
+        else:
+            curve = numer[i] / denom[i]
+        curvatures.append(curve)
+    return curvatures
+
+
+def _calculate_velocity(coordinates):
+    """
+    Calculate the velocity
+    :Parameters:
+    coordinates : list
+    :Return:
+    velocity : list
+    """
+    velocity = np.sqrt(np.sum(np.power(coordinates, 2), axis=0))
+    return velocity
+
+
+def _smooth(sequence, frame_rate):
+    """ Smoothes sequence by applying Savitzky-Golay smoothing
+        :Parameters:
+         sequence : list
+        :Return:
+         smoothed : list
+    """
+    smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * WINDOW_SCALAR)))
+    smooth_range_odd = smooth_range + 1 if smooth_range % 2 == 0 else smooth_range
+    smoothed = savgol_filter(sequence, smooth_range_odd, ORDER)
+    return smoothed
+
