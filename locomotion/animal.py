@@ -11,7 +11,6 @@ and manipulate the tracked data of the animal. On initialization, the animal obj
 extracts various pieces of information from the JSON files, such as the experiment
 settings and the tracked data of the animal, and prepares them for use.
 """
-import sys
 import os
 import csv
 import re
@@ -275,17 +274,9 @@ class Animal():
         """Getter functions for self.__num_verts"""
         return self.__num_verts
 
-    def get_perturbation(self):
-        """Getter functions for self.__perturbation"""
-        return self.__perturbation
-
     def get_regular_coordinates(self):
         """Getter functions for self.__reg_coords"""
         return self.__reg_coords
-
-    def get_tolerance(self):
-        """Getter functions for self.__tolerance"""
-        return self.__tolerance
 
     def get_triangulation(self):
         """Getter functions for self.__triangulation"""
@@ -390,15 +381,6 @@ class Animal():
         """
         self.__num_verts = num_verts
 
-    def set_perturbation(self, perturbation):
-        """
-        Setter functions for self.__perturbation
-        :Parameters:
-         perturbation : float. A small number. Used to create an offset value
-         from which we can check if an animal's X, Y values are within bounds.
-        """
-        self.__perturbation = perturbation
-
     def set_regular_coordinates(self, coordinates):
         """
         Setter functions for self.__reg_coords
@@ -408,15 +390,6 @@ class Animal():
          animal's heat map.
         """
         self.__reg_coords = coordinates
-
-    def set_tolerance(self, tolerance):
-        """
-        Setter functions for self.__tolerance
-        :Parameters:
-         tolerance : float. A small number. Used to check if an animal's centre
-         of mass is close enough to the origin.
-        """
-        self.__tolerance = tolerance
 
     def set_triangulation(self, triangles):
         """
@@ -572,10 +545,9 @@ def find_col_index(header, col_name):
         if re.match(pat, header[i]):
             return i
     raise Exception("Column name not found: %s" % col_name)
-    return None
 
 
-def norm(data, rm_outliers = True):
+def norm(data, rm_outliers=True):
     """
     Given data, find the mean and standard deviation.
     :Parameters:
@@ -617,7 +589,6 @@ def _remove_outliers(data):
     """
     first_quart = np.percentile(data, 25)
     third_quart = np.percentile(data, 75)
-    IQR = third_quart - first_quart
-    idx = (data > first_quart - 1.5 * IQR) & (data < third_quart + 1.5 * IQR)
+    iqr = third_quart - first_quart
+    idx = (data > first_quart - 1.5 * iqr) & (data < third_quart + 1.5 * iqr)
     return data[idx]
-
