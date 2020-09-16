@@ -21,8 +21,6 @@ import warnings
 from math import ceil
 import numpy as np
 
-SMOOTH_RANGE = 5 #technically (range-1)/2
-
 ################################################################################
 #### Animal class ####
 ################################################################################
@@ -38,40 +36,42 @@ class Animal():
     # pylint: disable=too-many-public-methods
     # Class contains a large number of methods, but is done to improve readability.
     def __init__(self, json_item):
-        self.__name = json_item["name"]
-        self.__data_file = os.path.abspath(json_item["data_file_location"])
-        self.__filename = os.path.basename(self.__data_file)
-        self.__animal_type = json_item["animal_attributes"]["species"]
-        self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__animal_id = json_item["animal_attributes"]["ID"]
-        self.__is_control = json_item["animal_attributes"]["control_group"].lower() == 'true'
-        self.__dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
-        self.__dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
-        self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
-        self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
-        self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
-        self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
+        self.__animal_type = json_item["animal_attributes"]["species"]
         self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
         self.__baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Minutes
+        self.__data_file = os.path.abspath(json_item["data_file_location"])
+        self.__dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
+        self.__dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
+        self.__exp_type = json_item["animal_attributes"]["exp_type"]
+        self.__filename = os.path.basename(self.__data_file)
+        self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
+        self.__is_control = json_item["animal_attributes"]["control_group"].lower() == 'true'
+        self.__name = json_item["name"]
+        self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
+        self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
+        self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
-        self.__grid_size = None
-        self.__num_x_grid = None
-        self.__num_y_grid = None
-        self.__perturbation = None
-        self.__tolerance = None
-        self.__num_verts = None
-        self.__num_triangles = None
-        self.__colors = None
-        self.__reg_coords = None
-        self.__flat_coords = None
-        self.__triangulation = None
         self.__boundary_vertices = None
         self.__boundary_edges = None
         self.__central_vertex = None
-        self.__vertex_bfs = None
+        self.__colors = None
+        self.__flat_coords = None
+        self.__grid_size = None
+        self.__num_verts = None
+        self.__num_triangles = None
+        self.__num_x_grid = None
+        self.__num_y_grid = None
+        self.__reg_coords = None
+        self.__triangulation = None
         self.__triangle_triangle_adjacency = None
+        self.__vertex_bfs = None
+
+    ########################
+    # Population Functions #
+    ########################
 
     def add_raw_vals(self, var_name, val_list):
         """
@@ -112,14 +112,6 @@ class Animal():
         """Getter function for self.__name."""
         return self.__animal_type
 
-    def get_control_boolean(self):
-        """Getter function for self.__is_control."""
-        return self.__is_control
-
-    def get_dims(self):
-        """Getter function for self.__dim_x and self.__dim_y."""
-        return self.__dim_x, self.__dim_y
-
     def get_baseline_times(self):
         """
         Getter function for both self.__baseline_start and self.__baseline_end.
@@ -136,6 +128,10 @@ class Animal():
         """Getter function for self.__baseline_end."""
         return self.__baseline_end
 
+    def get_control_boolean(self):
+        """Getter function for self.__is_control."""
+        return self.__is_control
+
     def get_data_file_location(self):
         """Getter function for self.__data_file."""
         return self.__data_file
@@ -143,6 +139,10 @@ class Animal():
     def get_data_file_name(self):
         """Getter function for self.__filename."""
         return self.__filename
+
+    def get_dims(self):
+        """Getter function for self.__dim_x and self.__dim_y."""
+        return self.__dim_x, self.__dim_y
 
     def get_exp_type(self):
         """Getter function for self.__exp_type."""
@@ -172,6 +172,18 @@ class Animal():
         """Getter function for self.__animal_id."""
         return self.__animal_id
 
+    def get_name(self):
+        """Getter function for self.__name."""
+        return self.__name
+
+    def get_pixel_density(self):
+        """Getter function for self.__pix."""
+        return self.__pix
+
+    ##################################
+    # Functions for modifying values #
+    ##################################
+
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """
         Runs self.get_raw_vals for multiple variables stored in animal object.
@@ -181,14 +193,6 @@ class Animal():
          end_frame : ending frame of portion to extract
         """
         return [self.get_raw_vals(v, start_frame, end_frame) for v in var_names]
-
-    def get_name(self):
-        """Getter function for self.__name."""
-        return self.__name
-
-    def get_pixel_density(self):
-        """Getter function for self.__pix."""
-        return self.__pix
 
     def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
         """
@@ -501,7 +505,7 @@ def normalize(data, mean, std):
     return [0 for d in data]
 
 ################################################################################
-### Meat & Potatoes
+### Initialization Functions
 ################################################################################
 
 def read_info(infile):
@@ -605,6 +609,68 @@ def _init_animal(json_item):
     return animal
 
 
+################################################################################
+### Other Functions
+################################################################################
+
+def calculate_frame_num(animal, time_in_minutes):
+    """
+    Calculate the frame number given the time in minutes using the
+    frame rate stored in the animal object
+    :Parameters:
+     time_in_minutes : float.
+    """
+    return int(animal.get_frame_rate() * time_in_minutes * 60)
+
+
+def find_col_index(header, col_name):
+    """
+    Finds the column index of the given variable in the data
+    :Parameters:
+     header : list of headers in the dataset
+     col_name : name of column to be indexed
+    """
+    # TODO: make this case insensitive
+    pat = re.compile('^(")*%s(")*$' % col_name)
+    for i, _ in enumerate(header):
+        if re.match(pat, header[i]):
+            return i
+    raise Exception("Column name not found: %s" % col_name)
+    return None
+
+
+def norm(data, rm_outliers = True):
+    """
+    Given data, find the mean and standard deviation.
+    :Parameters:
+     data : list of data values
+     rm_outliers : bool. If True, function removes outliers. True by default.
+    :Returns:
+     mean, stds
+    """
+    data_array = np.array(data, dtype=np.float)
+    if rm_outliers:
+        data_array = _remove_outliers(data_array) #Calculate norm without outliers
+    mean = np.mean(data_array)
+    std = np.std(data_array)
+    return mean, std
+
+
+def normalize(data, mean, std):
+    """
+    Normalize data given mean and standard deviation.
+    :Parameters:
+     data : list of data values
+     mean : mean of data values
+     std : standard deviation of data values
+    :Returns:
+     list of normalized data. list of 0 if std == 0
+    """
+    if std != 0:
+        return list(map(lambda x: 1/(1 + math.exp(-(x-mean)/std)), data))
+    return [0 for d in data]
+
+
 def _remove_outliers(data):
     """
     Given a numpy array, removes outliers using 1.5 Interquartile Range standard
@@ -618,3 +684,4 @@ def _remove_outliers(data):
     IQR = third_quart - first_quart
     idx = (data > first_quart - 1.5 * IQR) & (data < third_quart + 1.5 * IQR)
     return data[idx]
+
