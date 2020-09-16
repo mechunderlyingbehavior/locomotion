@@ -203,14 +203,14 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             data_1[i] = np.absolute(data_1[i])
     data_0_t = np.array(data_0).T.tolist()
     data_1_t = np.array(data_1).T.tolist()
-    dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean')
+    dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean', dist_only=fullmode)
     bdd = dtw_obj.normalizedDistance
-    alignment = (dtw_obj.index1, dtw_obj.index2)
     print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name(),
                                                      animal_obj_1.get_name(), bdd))
 
     if fullmode:
         #save alignment graphs in directory specified
+        alignment = (dtw_obj.index1, dtw_obj.index2)
         write.render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir)
         for i in range(num_vars):
             var = varnames[i]
