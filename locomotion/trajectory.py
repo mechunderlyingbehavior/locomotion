@@ -428,4 +428,3 @@ def _smooth(sequence, frame_rate):
     smooth_range_odd = smooth_range + 1 if smooth_range % 2 == 0 else smooth_range
     smoothed = savgol_filter(sequence, smooth_range_odd, ORDER)
     return smoothed
-
