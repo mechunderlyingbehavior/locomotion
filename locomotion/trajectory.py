@@ -30,6 +30,45 @@ ORDER = 5 #order of smoothing curve used in _smooth()
 ### Main Functions ###
 ######################
 
+def populate_curve_data(animal_obj, col_names=None):
+    """ Computes the behavioural curve data such as Velocity and Curvature .
+     Note that we could take in the varnames here and only compute V and C
+     if they are called. However, since velocity and curvature data usually
+     aren't too big, we'll blanket compute for now
+
+     Works only 2 or 3 dimensions.
+
+     :Parameter:
+        animal_obj : animal object, initialized
+        col_names : list, names of data columns.
+    """
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    if n_dims < 2 or n_dims > 3:
+        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+        except KeyError:
+            raise Exception("column name {} does not exist in animal dataset".format(col))
+    coords = np.array(coords) # MM
+    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
+    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
+    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
+    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
+    velocity = _calculate_velocity(first_deriv)
+    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
+
+    start_time, end_time = animal_obj.get_baseline_times()
+    animal_obj.add_raw_vals('Velocity', velocity)
+    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
+    animal_obj.add_raw_vals('Curvature', curvature)
+    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
+    return first_deriv, second_deriv, velocity, curvature
+
+
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
                     norm_mode, fullmode=False, outdir=None):
@@ -321,44 +360,6 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
 
     return exp_table, mean_table, std_table
 
-
-def populate_curve_data(animal_obj, col_names=None):
-    """ Computes the behavioural curve data such as Velocity and Curvature .
-     Note that we could take in the varnames here and only compute V and C
-     if they are called. However, since velocity and curvature data usually
-     aren't too big, we'll blanket compute for now
-
-     Works only 2 or 3 dimensions.
-
-     :Parameter:
-        animal_obj : animal object, initialized
-        col_names : list, names of data columns.
-    """
-    if col_names is None:
-        col_names = ['X', 'Y']
-    n_dims = len(col_names)
-    if n_dims < 2 or n_dims > 3:
-        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
-    coords = []
-    for col in col_names:
-        try:
-            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
-        except KeyError:
-            raise Exception("column name {} does not exist in animal dataset".format(col))
-    coords = np.array(coords) # MM
-    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
-    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
-    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
-    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
-    velocity = _calculate_velocity(first_deriv)
-    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
-
-    start_time, end_time = animal_obj.get_baseline_times()
-    animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
-    animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
-    return first_deriv, second_deriv, velocity, curvature
 
 ########################
 ### Helper Functions ###

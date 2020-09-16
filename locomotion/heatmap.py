@@ -34,7 +34,7 @@ TOLERANCE = 0.00001
 ENABLE_BOUNDARY_WARNINGS = False
 
 ################################################################################
-### METHOD FOR INITIALIZING HEAT MAP AND SURFACE DATA FOR EACH ANIMAL OBJECT ###
+### Main functions
 ################################################################################
 
 def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None):
@@ -64,8 +64,6 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
 
     #store given parameters
     animal_obj.set_grid_size(grid_size)
-    animal_obj.set_perturbation(PERTURBATION)
-    animal_obj.set_tolerance(TOLERANCE)
 
     print("Calculating heatmap for %s..." % animal_obj.get_name())
 
@@ -75,12 +73,12 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
     print("Calculating triangulation for %s..." % animal_obj.get_name())
 
     #get and record vertices
-    original_coordinates = _calculate_vertex_coordinates(animal_obj, frequencies)
+    original_coordinates = _assemble_vertex_coordinates(animal_obj, frequencies)
     animal_obj.set_num_verts(len(original_coordinates))
     animal_obj.set_regular_coordinates(original_coordinates)
 
     #get and record triangles
-    triangles = _calculate_triangles(animal_obj)
+    triangles = _assemble_triangles(animal_obj)
     animal_obj.set_num_triangles(len(triangles))
     animal_obj.set_triangulation(triangles)
 
@@ -91,11 +89,11 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
     print("Calculating flattened coordinates for %s..." % animal_obj.get_name())
 
     #calculate and record boundary vertices
-    boundary_vertices = _calculate_boundary_loop(animal_obj)
+    boundary_vertices = _find_boundary_loop(animal_obj)
     animal_obj.set_boundary_vertices(boundary_vertices)
 
     #calculate and record boundary edges
-    boundary_edges = _calculate_boundary_edges(animal_obj)
+    boundary_edges = _find_boundary_edges(animal_obj)
     animal_obj.set_boundary_edges(boundary_edges)
 
     #calculate and record flattened coordinates of triangulation
@@ -126,78 +124,149 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
     animal_obj.set_triangle_triangle_adjacency(triangle_adjacency_matrix)
 
 
-#####################################################################################
-#### METHODS FOR CALCULATING HEAT MAPS AND THEIR CORRESPONDING TRIANGULATED SURFACES ###
-#####################################################################################
+def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
+    """ Computes the Conformal Spatiotemporal Distance between the heatmaps of two
+        animals
 
+        :Parameters:
+            animal_0/1 : animal objects, initialized with regular/flattened coordinates
+            and triangulation set/updated
+            fullmode : Boolean, writes triangulations and their corresponding flattenings and
+            alignments to .OFF files if True
+            outdir : string, specifying directory to save .OFF files if fullmode is True
 
-def _calculate_frequencies(animal_obj, start_time, end_time):
-    """ Gathers the frequency data for approximating the heat map representing
-            the amount of time an animal spent in each location of the assay
-            chamber over a specified time interval.
-
-     :Parameters:
-        animal_obj : animal object, initialized
-        start_time : float, time in minutes
-        end_time : float, time in minutes
-
-     :Returns:
-         two-dimensional array of ints counting the number of frames the animal
-         spent in each square chamber of the bounding rectangle during the
-         specified time interval
+        :Returns:
+            float, specifying the Conformal Spatiotemporal Distance between the heatmaps of
+            two animals
     """
     # pylint:disable=too-many-locals
 
-    #set or get relevant parameters
-    start_frame = animal.calculate_frame_num(animal_obj, start_time)
-    end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    perturb = animal_obj.get_perturbation()
-    grid_size = animal_obj.get_grid_size()
-    x_dim, y_dim = animal_obj.get_dims()
-    num_x_grid, num_y_grid = animal_obj.get_num_grids()
-    x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
-    y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
+    #check that a directory is specified if fullmode is true
+    if fullmode and outdir is None:
+        raise Exception("Full mode requires a path to output directory.")
 
-    #initialize frequency matrix
-    freqency_matrix = [[0 for j in range(num_y_grid)] for i in range(num_x_grid)]
+    #notify user of progress
+    print("Measuring conformal spatiotemporal distance between heat maps of" \
+          " %s and %s..." % (animal_0.get_name(), animal_1.get_name()))
 
-    #check that coordinate data is within the specified bounds
-    x_max = max(x_vals)
-    x_offset = max(x_max - x_dim, 0) + perturb
-    y_max = max(y_vals)
-    y_offset = max(y_max - y_dim, 0) + perturb
+    #calculate the optimal mapping between both animals
+    theta, rho = _calculate_optimal_mapping(animal_0, animal_1)
 
-    #iterate through each frame, adjust out-of-bounds data, and update frequency matrix
-    for i, _ in enumerate(x_vals):
-        x_val = x_vals[i] - x_offset
-        if x_val < 0:
-            print("WARNING: X data is out of bounds. Frame #%d, x=%f" % (i+1, x_vals[i]))
-            x_val = 0
-        x_index = int(x_val/grid_size)
-        y_val = y_vals[i] - y_offset
-        if y_val < 0:
-            print("WARNING: Y data is out of bounds. Frame #%d, x=%f" % (i+1, y_vals[i]))
-            y_val = 0
-        y_index = int(y_val/grid_size)
-        freqency_matrix[x_index][y_index] += 1
-    return freqency_matrix
+    #store relevant parameters. Note that we assume both animal observations
+    #have the same dimensions
+    x_dim, y_dim = animal_0.get_dims()
+    z_dim = _calculate_z_dim(animal_0)
+    num_verts_0 = animal_0.get_num_verts()
+    reg_coordinates_0 = animal_0.get_regular_coordinates()
+    aligned_coordinates_0 = _calculate_aligned_coordinates(animal_1, animal_0, theta, rho)
+    triangles_0 = animal_0.get_triangulation()
+    num_verts_1 = animal_1.get_num_verts()
+    regular_coordinates_1 = animal_1.get_regular_coordinates()
+    aligned_coordinates_1 = _calculate_aligned_coordinates(animal_0, animal_1, -theta, rho)
+    triangles_1 = animal_1.get_triangulation()
 
+    #Save the triangulation data in .OFF files if fullmode is True
+    if fullmode:
+        write.write_off(animal_0, reg_coordinates_0, outdir,
+                        "heatmap_%s_regular.off" % animal_0.get_name())
+        write.write_off(animal_1, regular_coordinates_1, outdir,
+                        "heatmap_%s_regular.off" % animal_1.get_name())
+        flat_coordinates_0 = [coord + [0] for coord in animal_0.get_flattened_coordinates()]
+        flat_coordinates_1 = [coord + [0] for coord in animal_1.get_flattened_coordinates()]
+        write.write_off(animal_0, flat_coordinates_0, outdir,
+                        "heatmap_%s_flat.off" % animal_0.get_name())
+        write.write_off(animal_1, flat_coordinates_1, outdir,
+                        "heatmap_%s_flat.off" % animal_1.get_name())
+        write.write_off(animal_0, aligned_coordinates_0, outdir,
+                        "heatmap_%s_aligned_to_%s.off" % (animal_0.get_name(), animal_1.get_name()))
+        write.write_off(animal_1, aligned_coordinates_1, outdir,
+                        "heatmap_%s_aligned_to_%s.off" % (animal_1.get_name(), animal_0.get_name()))
 
-def _calculate_z_dim(animal_obj):
-    """ Calculates the vertical bound for a heatmap surface
-        We set it to be the smaller of the two horizontal dimensions, but it
-        can be set to specified value depending on the context.
+    #calculate the distance between the aligned surfaces
+    difference_val_0 = 0
+    change_in_area = 0
+    for vertex in range(num_verts_1):
+        for triangle in triangles_1:
+            if vertex in triangle:
+                change_in_area += _calculate_area(regular_coordinates_1[triangle[0]][0:2],
+                                        regular_coordinates_1[triangle[1]][0:2],
+                                        regular_coordinates_1[triangle[2]][0:2])/3.0
+        difference_val_0 += change_in_area * \
+            (aligned_coordinates_1[vertex][2]-regular_coordinates_1[vertex][2])**2
 
-     :Parameter:
-         animal_obj : animal object, initialized
+    difference_val_1 = 0
+    change_in_area = 0
+    for vertex in range(num_verts_0):
+        for triangle in triangles_0:
+            if vertex in triangle:
+                change_in_area += _calculate_area(reg_coordinates_0[triangle[0]][0:2],
+                                        reg_coordinates_0[triangle[1]][0:2],
+                                        reg_coordinates_0[triangle[2]][0:2])/3.0
+        difference_val_1 += change_in_area * \
+            (aligned_coordinates_0[vertex][2]-reg_coordinates_0[vertex][2])**2
 
-     :Returns:
-         int, value of vertical dimension
+    distance = (difference_val_0**0.5+difference_val_1**0.5)/(2*z_dim*x_dim*y_dim)
+
+    #record distance in terminal
+    print("LOG: distance between aligned surfaces of" \
+          " %s and %s: %.3f" % (animal_0.get_name(), animal_1.get_name(), distance))
+
+    return distance
+
+def compute_all_csd(animal_list):
+    """Computes the Conformal Spatiotemporal Distances between the heatmaps of all
+        pairs in list of animals
+
+        :Parameters:
+            animal_list : list of animal objects, initialized with
+            regular/flattened coordinates and triangulation set/updated
+
+        :Returns:
+            2D array of floats, specifying the Conformal Spatiotemporal
+            Distance between the heatmaps of each pair of animals in the input
+            list
     """
-    return min(animal_obj.get_dims())
+
+    #initialize return array
+    num_animals = len(animal_list)
+    dists = [['' for i in range(num_animals)] for j in range(num_animals)]
+
+    #calculate the CSD between each pair of animals in the input list
+    for i in range(num_animals):
+        for j in range(i+1, num_animals):
+            dists[i][j] = compute_one_csd(animal_list[i], animal_list[j])
+    return dists
+
+#####################################################################################
+#### Assembly Functions
+#####################################################################################
+
+def _assemble_triangles(animal_obj):
+    """ Computes a basic triangulation on the regular coordinates of an animal
+
+        :Parameters:
+            animal_obj : animal object, initialized with regular coordinates set/updated
+
+        :Returns:
+            list of triples of ints, specifying the indices of the vertices for each triangle in
+            in the triangulation of a surface
+    """
+    #store relevant parameters
+    num_x_grid, num_y_grid = animal_obj.get_num_grids()
+
+    #initialize triangle list
+    triangles = []
+
+    #iterate through lower left corners of grid and append canonical triangles
+    for i in range(num_x_grid-1):
+        for j in range(num_y_grid-1):
+            triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+j, (i+1)*num_y_grid+(j+1)])
+            triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+(j+1), i*num_y_grid+(j+1)])
+
+    return triangles
 
 
-def _calculate_vertex_coordinates(animal_obj, freqs):
+def _assemble_vertex_coordinates(animal_obj, freqs):
     """Calculates the vertex coordinates for a triangulation of the surface
             corresponding to a heat map.
 
@@ -233,65 +302,56 @@ def _calculate_vertex_coordinates(animal_obj, freqs):
     return coordinates
 
 
-def _calculate_triangles(animal_obj):
-    """ Computes a basic triangulation on the regular coordinates of an animal
+def _calculate_frequencies(animal_obj, start_time, end_time):
+    """ Gathers the frequency data for approximating the heat map representing
+            the amount of time an animal spent in each location of the assay
+            chamber over a specified time interval.
 
-        :Parameters:
-            animal_obj : animal object, initialized with regular coordinates set/updated
+     :Parameters:
+        animal_obj : animal object, initialized
+        start_time : float, time in minutes
+        end_time : float, time in minutes
 
-        :Returns:
-            list of triples of ints, specifying the indices of the vertices for each triangle in
-            in the triangulation of a surface
+     :Returns:
+         two-dimensional array of ints counting the number of frames the animal
+         spent in each square chamber of the bounding rectangle during the
+         specified time interval
     """
-    #store relevant parameters
+    # pylint:disable=too-many-locals
+
+    #set or get relevant parameters
+    perturb = PERTURBATION
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
+    grid_size = animal_obj.get_grid_size()
+    x_dim, y_dim = animal_obj.get_dims()
     num_x_grid, num_y_grid = animal_obj.get_num_grids()
+    x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
+    y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
 
-    #initialize triangle list
-    triangles = []
+    #initialize frequency matrix
+    freqency_matrix = [[0 for j in range(num_y_grid)] for i in range(num_x_grid)]
 
-    #iterate through lower left corners of grid and append canonical triangles
-    for i in range(num_x_grid-1):
-        for j in range(num_y_grid-1):
-            triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+j, (i+1)*num_y_grid+(j+1)])
-            triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+(j+1), i*num_y_grid+(j+1)])
+    #check that coordinate data is within the specified bounds
+    x_max = max(x_vals)
+    x_offset = max(x_max - x_dim, 0) + perturb
+    y_max = max(y_vals)
+    y_offset = max(y_max - y_dim, 0) + perturb
 
-    return triangles
-
-
-def _calculate_boundary_loop(animal_obj):
-    """Given an animal object, get its boundary vertices in counter-clockwise
-    order. This method is a wrapper for the corresponding IGL function.
-
-    :Parameters:
-     animal_obj : animal object, initialized with regular
-                  coordinates and triangulation set/updated
-    :Returns:
-     array of ints. The indices of the vertices that are on the boundary of this animal
-     in counter clock-wise order.
-    """
-    #convert triangulation to array for IGL
-    triangulation = array(animal_obj.get_triangulation())
-    return boundary_loop(triangulation)
-
-
-def _calculate_boundary_edges(animal_obj):
-    """Given an animal object, get its ordered boundary edges in counter-clockwise
-       order.
-
-       :Parameters: animal_obj : animal object, initialized with regular
-                coordinates and triangulation set/updated
-
-       :Returns: list of int tuple pairs: list of edges ordered as in the
-                boundary loop, where each edge is a tuple of the two vertices it
-                connects
-
-    """
-    boundary_vertices = list(animal_obj.get_boundary_vertices())
-    #zip the boundary vertices with itself with an offset of 1 and its head
-    #appended at the back (so it goes full circle), then cast to a list
-    boundary_edges = list(zip(boundary_vertices, boundary_vertices[1:] +
-                              [boundary_vertices[0]]))
-    return boundary_edges
+    #iterate through each frame, adjust out-of-bounds data, and update frequency matrix
+    for i, _ in enumerate(x_vals):
+        x_val = x_vals[i] - x_offset
+        if x_val < 0:
+            print("WARNING: X data is out of bounds. Frame #%d, x=%f" % (i+1, x_vals[i]))
+            x_val = 0
+        x_index = int(x_val/grid_size)
+        y_val = y_vals[i] - y_offset
+        if y_val < 0:
+            print("WARNING: Y data is out of bounds. Frame #%d, x=%f" % (i+1, y_vals[i]))
+            y_val = 0
+        y_index = int(y_val/grid_size)
+        freqency_matrix[x_index][y_index] += 1
+    return freqency_matrix
 
 
 def _calculate_triangle_colors(animal_obj):
@@ -339,9 +399,41 @@ def _calculate_triangle_colors(animal_obj):
     return colors
 
 
-#####################################################################################
-#   METHODS NEEDED FOR TRIANGLE-TRIANGLE AND VERTEX-VERTEX ADJACENCIES AND BFS    ###
-#####################################################################################
+def _find_boundary_loop(animal_obj):
+    """Given an animal object, get its boundary vertices in counter-clockwise
+    order. This method is a wrapper for the corresponding IGL function.
+
+    :Parameters:
+     animal_obj : animal object, initialized with regular
+                  coordinates and triangulation set/updated
+    :Returns:
+     array of ints. The indices of the vertices that are on the boundary of this animal
+     in counter clock-wise order.
+    """
+    #convert triangulation to array for IGL
+    triangulation = array(animal_obj.get_triangulation())
+    return boundary_loop(triangulation)
+
+
+def _find_boundary_edges(animal_obj):
+    """Given an animal object, get its ordered boundary edges in counter-clockwise
+       order.
+
+       :Parameters: animal_obj : animal object, initialized with regular
+                coordinates and triangulation set/updated
+
+       :Returns: list of int tuple pairs: list of edges ordered as in the
+                boundary loop, where each edge is a tuple of the two vertices it
+                connects
+
+    """
+    boundary_vertices = list(animal_obj.get_boundary_vertices())
+    #zip the boundary vertices with itself with an offset of 1 and its head
+    #appended at the back (so it goes full circle), then cast to a list
+    boundary_edges = list(zip(boundary_vertices, boundary_vertices[1:] +
+                              [boundary_vertices[0]]))
+    return boundary_edges
+
 
 def _find_central_vertex(animal_obj):
     """Finds the index of the vertex coordinate for the triangulation of an animal
@@ -402,374 +494,10 @@ def _find_nbv_triangles(animal_obj):
 
     return interior_triangles
 
+
 ##################################################################################
-#METHODS FOR CALCULATING CONFORMAL FLATTENINGS OF TRIANGULATIONS TO UNIT DISK ###
+### Measurement Functions
 ##################################################################################
-
-def _mobius(p, q):
-    """Applies the mobius transformation, uniquely defined by moving the
-       2D point q to the origin, to the 2D point p.
-
-       :Parameters:
-            p : list of two floats, [u, v]. The coordinate we are applying
-                this transformation to.
-            q : list of two floats, [a, b]. The coordinate that gets sent
-                to the origin by this map.
-
-        :Returns:
-            list pair of floats. The transformed coordinate p after applying
-            the transformation that moves q to the origin.
-    """
-    # pylint:disable=invalid-name
-    # pure math formula
-    u, v = p
-    a, b = q
-    return [-1 * ((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
-            -1 * ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
-
-def _calculate_flat_coordinates(animal_obj):
-    """Calculates the vertex coordinates for the triangulation of an animal from its
-       corresponding circle packing in the unit disk
-
-        :Parameters:
-            animal_obj : animal object, initialized with regular
-            coordinates and triangulation set/updated
-
-        :Returns:
-            list of pairs of floats, specifying the x- and y-coordinates
-            of the vertices of a triangulation that has been conformally
-            flattened to the unit disk
-    """
-
-    # store relevant parameters and convert to arrays
-    tolerance = animal_obj.get_tolerance()
-    reg_coordinates = array(animal_obj.get_regular_coordinates())
-    triangles = array(animal_obj.get_triangulation())
-
-    # get boundary vertice indices (already an array) from the animal
-    boundary_vertices = animal_obj.get_boundary_vertices()
-
-    # map boundary vertices to unit circle, preserving edge proportions, to get
-    # the flattened boundary coordinates
-    flattened_boundary_coordinates = map_vertices_to_circle(reg_coordinates,
-                                                            boundary_vertices)
-
-    # map internal vertices to unit circle
-    flat_coordinates = harmonic_weights(reg_coordinates, triangles,
-                                        boundary_vertices, flattened_boundary_coordinates, 1)
-    flat_coordinates = list(flat_coordinates)
-
-    # apply a conformal automorphism (Mobius transformation) of the unit disk
-    # that moves the center of mass of the flattened coordinates to the origin
-    p_val = mean([c[0] for c in flat_coordinates])
-    q_val = mean([c[1] for c in flat_coordinates])
-
-    while p_val**2+q_val**2 > tolerance:
-        print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
-              "Moving closer to origin.")
-        for i, _ in enumerate(flat_coordinates):
-            flat_coordinates[i] = _mobius(flat_coordinates[i],
-                                          [p_val, q_val])
-        p_val = mean([c[0] for c in flat_coordinates])
-        q_val = mean([c[1] for c in flat_coordinates])
-    return flat_coordinates
-
-#######################################################################
-# METHODS FOR ALIGNING TWO SURFACES VIA THEIR CONFORMAL FLATTENINGS ###
-#######################################################################
-
-
-def _in_unit_interval(x_val):
-    """
-    helper method
-    """
-    return 0 <= x_val <= 1
-
-
-def _is_inside(barycentric_coords):
-    """Given a list of any number of barycentric coordinates, check if each value
-       is between 0 and 1.
-
-        :Parameters:
-            barycentric_coords: list of n lambda values for this point in
-            barycentric coordinates.
-
-        :Returns:
-            boolean: true only if all lambda values are between 0 and 1
-
-    """
-    return all(map(_in_unit_interval, barycentric_coords))
-
-
-def _calculate_barycentric_coordinates(point, simplex, coordinates):
-    """Given a 2D point inside a simplex (a line segment or a triangle), find out
-       its barycentric coordinates. In the case of the line (1-simplex), this
-       would be the point expressed as a linear combination of the two
-       endpoints. In the case of the triangle (2-simplex), this would be the
-       point expressed as a linear combination of three corner coordinates.
-
-       NOTE: This method will not work when finding barycentric coordinates of
-       points within a triangle or line segment in R^3! It is only meant for
-       finding barycentric coordinates of 2D points within 2D line segments or
-       triangles.
-
-       :Parameters:
-           point: float pair list. The 2D coordinates of the flattened
-           vertex of Animal 1. The z-component should be 0. simplex: int pair or
-           triple list. The indices corresponding to coordinates making up the
-           line segment/triangle. coordinates: list of float pairs. The 2D
-           coordinates.
-
-        :Returns:
-           if input point and coordinates are both in R^2 and simplex is
-           valid: list pair/triple of floats corresponding to the barycentric
-           coordinates of the point in the simplex. These are the lambda values
-           i.e the weights used in the linear combination. If all these values
-           are between 0 and 1, the point is in the simplex. Otherwise, it is
-           not. else: empty list.
-    """
-
-    if not len(point) == len(coordinates[0]) == 2:
-        print("WARNING: Invalid coordinate dimensions. This method is only " \
-              "defined to get the barycentric coordinates of a 2D point within a 2D simplex.")
-        #return empty list to standardise output and avoid computation.
-        #Otherwise, the code may still run without throwing an error.
-        return []
-
-    #initialise result
-    result = []
-
-    #if the simplex is a triangle, calculate the barycentric coordinates of the
-    #point in the triangle
-    if len(simplex) == 3:
-        #get coordinates from vertices of simplex
-        triangle_coordinates = [coordinates[i] for i in simplex]
-        (x_0, y_0), (x_1, y_1), (x_2, y_2) = triangle_coordinates
-
-        #find each of the three weights
-        lambda_0 = ((y_1-y_2)*(point[0]-x_2)+(x_2-x_1)*(point[1]-y_2)) / \
-                            ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
-        lambda_1 = ((y_2-y_0)*(point[0]-x_2)+(x_0-x_2)*(point[1]-y_2)) / \
-                            ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
-        lambda_2 = 1 - lambda_0 - lambda_1
-        result = [lambda_0, lambda_1, lambda_2]
-
-    #if the simplex is a line segment, find the proportions of each point in the line segment
-    elif len(simplex) == 2:
-        #since it's linear interpolation, the proportions are the same for both
-        #x and y components, so we just use one of them
-        x_0, x_1 = coordinates[simplex[0]][0], coordinates[simplex[1]][0]
-
-        #find the two weights
-        lambda_1 = (point[0] - x_0) / (x_1 - x_0)
-        lambda_0 = 1 - lambda_1
-        result = [lambda_0, lambda_1]
-
-    else:
-        print("WARNING: Invalid input simplex. " \
-              "This method is only defined for triangles and edges.")
-    return result
-
-
-def _convert_barycentric_to_coordinates(barycentric_coords, simplex, coordinates):
-    """Given barycentric coordinates, a list of coordinates and a simplex (triangle
-       or line segment), return the actual coordinates in R^3 corresponding to
-       the barycentric coordinates.
-
-       NOTE: This method will not work when finding the corresponding
-       coordinates in R^2! We will be trying to access the z-component, which
-       will cause an index error. If this method is needed in such a case,
-       assign 0 as the third coordinate.
-
-       :Parameters:
-            barycentric_coords: float triple or pair list. The
-            barycentric coordinates of a point in the triangle or line segment.
-            simplex: int triple or pair list. The indices corresponding to
-            vertices making up the triangle or line segment. coordinates: list
-            of float triples. If they are flattened coordinates, the third
-            element should be 0.
-
-        :Returns:
-            if input coordinates are in R^3 and the barycentric
-            coordinates match up with the simplex: list of float triple. The
-            corresponding converted coordinates in R^3. else: empty list.
-    """
-
-    if len(coordinates[0]) != 3:
-        print("WARNING: Invalid coordinate dimensions. This method is only defined " \
-              "to find the coordinates of a point in 3D.")
-        #return empty list to standardise output and avoid errors thrown later on
-        return []
-
-    #initialise return value
-    result = []
-
-    #if the simplex is a triangle, get the values of the corresponding
-    #coordinates in R^3 componentwise
-    if len(barycentric_coords) == len(simplex) == 3:
-        x_val = barycentric_coords[0] * coordinates[simplex[0]][0] + \
-            barycentric_coords[1] * coordinates[simplex[1]][0] + \
-            barycentric_coords[2] * coordinates[simplex[2]][0]
-        y_val = barycentric_coords[0] * coordinates[simplex[0]][1] + \
-            barycentric_coords[1] * coordinates[simplex[1]][1] + \
-            barycentric_coords[2] * coordinates[simplex[2]][1]
-        z_val = barycentric_coords[0] * coordinates[simplex[0]][2] + \
-            barycentric_coords[1] * coordinates[simplex[1]][2] + \
-            barycentric_coords[2] * coordinates[simplex[2]][2]
-        result = [x_val, y_val, z_val]
-
-    #if the simplex is a line segment, get the values of the corresponding
-    #coordinates using the equation of a line
-    elif len(barycentric_coords) == len(simplex) == 2:
-        #extract the two coordinates of the line segment and just one of the
-        #barycentric coordinate weights (the gradient of the line)
-        (x_0, y_0, z_0) = coordinates[simplex[0]]
-        (x_1, y_1, z_1) = coordinates[simplex[1]]
-        lambda_1 = barycentric_coords[1]
-
-        x_val = x_0 + lambda_1 * (x_1 - x_0)
-        y_val = y_0 + lambda_1 * (y_1 - y_0)
-        z_val = z_0 + lambda_1 * (z_1 - z_0)
-        result = [x_val, y_val, z_val]
-
-    else:
-        print("WARNING: Invalid barycentric coordinates and/or simplex dimensions. " \
-              "They must both be of length 2 or 3, since this method is only defined " \
-              "for triangles and edges.")
-    return result
-
-
-def _find_aligned_coordinate(point, simplices, simplex_indices,
-                             input_coordinates, output_coordinates):
-    """Given a point in the 2D input coordinate system, search through the given
-        simplices (either triangle or edges) in the input coordinate system to
-        check if it is inside one of them. If it is, convert the point into
-        barycentric coordinates corresponding to the simplex, and use those
-        barycentric coordinates to return the point in the 3D output coordinate
-        system. Otherwise, return an empty list.
-
-        :Parameters:
-            point: float pair list. A point in the input coordinate
-            system. simplices: list of list of float triples or pairs. A list of
-            the triangles or edges we want to search (in indices of vertices)
-            simplex_indices : int list or set. Indices of the simplices above in
-            the input coordinate system. input_coordinates: list of float pairs.
-            The 2D input coordinate system where the point and simplices lie.
-            output_coordinates: list of float triples. The 3D output coordinate
-            system we want to align the point to.
-
-        :Returns:
-            if the point is found in one of the simplices: list of an int
-            and a list of float triple. The int is the index of the simplex we
-            found the point inside. The list of float triple is the point's
-            aligned coordinate in the output coordinate system. else: empty
-            list.
-    """
-
-    #initialise the result
-    result = []
-
-    for simplex_i, simplex in zip(simplex_indices, simplices):
-        #get the barycentric coordinates of this point in this simplex in the
-        #input coordinate system
-        barycentric_coords = _calculate_barycentric_coordinates(point, simplex,
-                                                          input_coordinates)
-        if _is_inside(barycentric_coords):
-            #set the result as the regular coordinates corresponding to the
-            #barycentric coordinates
-            result = [simplex_i,
-                      _convert_barycentric_to_coordinates(barycentric_coords, simplex,
-                                                          output_coordinates)]
-            break
-    return result
-
-
-def _find_closest_vertex(point, vertices, input_coordinates, output_coordinates):
-    """Given a point in the input coordinate system, the vertices in the input
-        coordinate system to search through, the 2D input coordinates and the 3D
-        output coordinates, return the coordinates corresponding to the vertex
-        in the vertices we searched through that is closest to the vertex we
-        input.
-
-        NOTE: This method is used only for emergencies when we cannot find a
-        corresponding boundary edge or triangle when aligning vertices. It
-        should not be called often.
-
-        :Parameters:
-            point: list of float pair. The 2D coordinates of the point
-            whose closest vertex coordinate we want to find. vertices: range
-            object from 0 to the total number of vertices. The vertices (in
-            indices) that we want to search through. input_coordinates: list of
-            float pairs. The 2D input coordinate system where the point and
-            vertices lie. output_coordinates: list of float triples. The 3D
-            output coordinate system we want to align the point to.
-
-        :Returns:
-            [closest_vertex, [x, y, z]]: list of int and float triple
-            list. [x, y, z] corresponds to the coordinates of the vertex in the
-            output coordinates closest to this point.
-    """
-    closest_vertex = 0
-    closest_dist = linalg.norm(array(point)-array(input_coordinates[closest_vertex]))
-    for candidate_vertex in vertices:
-        candidate_dist = linalg.norm(array(point)-array(input_coordinates[candidate_vertex]))
-        if candidate_dist < closest_dist:
-            closest_vertex = candidate_vertex
-            closest_dist = candidate_dist
-    return [closest_vertex, output_coordinates[closest_vertex][:3]]
-
-
-def _find_triangle_containing_vertex(vertex, triangles):
-    """ Given a vertex and the corresponding triangulation it belongs to, return the
-        index of the first triangle that contains the vertex.
-
-        :Parameters:
-            vertex : int. A vertex within a triangulation. triangles :
-            list of list of int triples. The list of all triangles.
-
-        :Returns:
-            if there exists a triangle containing this vertex: int. The
-            index of the first triangle that contains the vertex. else: None
-    """
-    triangle_index = None
-    for triangle_i, triangle in enumerate(triangles):
-        if vertex in triangle:
-            triangle_index = triangle_i
-    return triangle_index
-
-def _find_next_neighbourhood(animal_obj, current_triangles, traversed_triangles):
-    """Given an animal object, a set of triangles whose neighbours we want to get
-        and a set of inner triangles or edges we have already traversed, find
-        the next layer of neighbour triangles that we have not yet traversed.
-
-        :Parameters:
-            animal_obj: the animal object we are looking at.
-            current_triangles: int set. The set of the indices of triangles
-            whose neighbours we want to find.
-            traversed_triangles: int set. The set of indices of triangles which
-            we have already traversed.
-
-        :Returns:
-            int set. the set of all triangles that are in the outer neighbourhood
-    """
-    #initialise return set
-    all_adjacent_triangles = set()
-
-    #use the triangle-triangle adjacency array to find neighbouring triangles
-    triangle_triangle_adjacency_array = animal_obj.get_triangle_triangle_adjacency()
-
-    for triangle_i in current_triangles:
-        #update all adjacent triangles with the triangles adjacent to each triangle
-        adjacent_triangles = triangle_triangle_adjacency_array[triangle_i]
-        all_adjacent_triangles.update(adjacent_triangles)
-
-    #remove -1 (indicating that no triangle is adjacent to that edge) and
-    #traversed triangles from all the adjacent triangles we've found
-    all_adjacent_triangles.difference_update(traversed_triangles)
-    all_adjacent_triangles.discard(-1)
-
-    return all_adjacent_triangles
-
 
 def _calculate_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     """Calculates the vertex coordinates for the triangulation of Animal 1 aligned
@@ -960,7 +688,7 @@ def _calculate_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
     return aligned_coordinates_1
 
 
-def _area(p, q, r):
+def _calculate_area(p, q, r):
     """
     this is a helper method for the _calculate_distortion_energy and compute_one_csd methods
     below. It calculates the area of the triangle spanned by three points in
@@ -1033,7 +761,7 @@ def _calculate_distortion_energy(animal_0, animal_1, theta, rho):
                                                              array(reg_coordinates[vert_1]))
             aligned_edge_lens[vert_0][vert_1] = linalg.norm(array(aligned_coordinates[vert_0]) - \
                                                             array(aligned_coordinates[vert_1]))
-            area_sum[vert_0][vert_1] += _area(reg_coordinates[first],
+            area_sum[vert_0][vert_1] += _calculate_area(reg_coordinates[first],
                                               reg_coordinates[second],
                                               reg_coordinates[third])
     #initialize the return value
@@ -1049,6 +777,53 @@ def _calculate_distortion_energy(animal_0, animal_1, theta, rho):
                 alignment_value += (area_sum[i][j] / 3.0) * \
                     (aligned_edge_lens[i][j] / original_edge_lens[i][j] - 1.0)**2
     return alignment_value**0.5
+
+
+def _calculate_flat_coordinates(animal_obj):
+    """Calculates the vertex coordinates for the triangulation of an animal from its
+       corresponding circle packing in the unit disk
+
+        :Parameters:
+            animal_obj : animal object, initialized with regular
+            coordinates and triangulation set/updated
+
+        :Returns:
+            list of pairs of floats, specifying the x- and y-coordinates
+            of the vertices of a triangulation that has been conformally
+            flattened to the unit disk
+    """
+
+    # store relevant parameters and convert to arrays
+    reg_coordinates = array(animal_obj.get_regular_coordinates())
+    triangles = array(animal_obj.get_triangulation())
+
+    # get boundary vertice indices (already an array) from the animal
+    boundary_vertices = animal_obj.get_boundary_vertices()
+
+    # map boundary vertices to unit circle, preserving edge proportions, to get
+    # the flattened boundary coordinates
+    flattened_boundary_coordinates = map_vertices_to_circle(reg_coordinates,
+                                                            boundary_vertices)
+
+    # map internal vertices to unit circle
+    flat_coordinates = harmonic_weights(reg_coordinates, triangles,
+                                        boundary_vertices, flattened_boundary_coordinates, 1)
+    flat_coordinates = list(flat_coordinates)
+
+    # apply a conformal automorphism (Mobius transformation) of the unit disk
+    # that moves the center of mass of the flattened coordinates to the origin
+    p_val = mean([c[0] for c in flat_coordinates])
+    q_val = mean([c[1] for c in flat_coordinates])
+
+    while p_val**2+q_val**2 > TOLERANCE:
+        print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
+              "Moving closer to origin.")
+        for i, _ in enumerate(flat_coordinates):
+            flat_coordinates[i] = _mobius(flat_coordinates[i],
+                                          [p_val, q_val])
+        p_val = mean([c[0] for c in flat_coordinates])
+        q_val = mean([c[1] for c in flat_coordinates])
+    return flat_coordinates
 
 
 def _calculate_symmetric_distortion_energy(animal_0, animal_1, theta, rho):
@@ -1074,7 +849,148 @@ def _calculate_symmetric_distortion_energy(animal_0, animal_1, theta, rho):
     return _calculate_distortion_energy(animal_0, animal_1, theta, rho) + \
         _calculate_distortion_energy(animal_1, animal_0, -theta, rho)
 
-def _calculate_optimal_mapping(animal_0, animal_1):
+
+def _calculate_z_dim(animal_obj):
+    """ Calculates the vertical bound for a heatmap surface
+        We set it to be the smaller of the two horizontal dimensions, but it
+        can be set to specified value depending on the context.
+
+     :Parameter:
+         animal_obj : animal object, initialized
+
+     :Returns:
+         int, value of vertical dimension
+    """
+    return min(animal_obj.get_dims())
+
+
+##################################################################################
+### Search Functions
+##################################################################################
+
+def _find_aligned_coordinate(point, simplices, simplex_indices,
+                             input_coordinates, output_coordinates):
+    """Given a point in the 2D input coordinate system, search through the given
+        simplices (either triangle or edges) in the input coordinate system to
+        check if it is inside one of them. If it is, convert the point into
+        barycentric coordinates corresponding to the simplex, and use those
+        barycentric coordinates to return the point in the 3D output coordinate
+        system. Otherwise, return an empty list.
+
+        :Parameters:
+            point: float pair list. A point in the input coordinate
+            system. simplices: list of list of float triples or pairs. A list of
+            the triangles or edges we want to search (in indices of vertices)
+            simplex_indices : int list or set. Indices of the simplices above in
+            the input coordinate system. input_coordinates: list of float pairs.
+            The 2D input coordinate system where the point and simplices lie.
+            output_coordinates: list of float triples. The 3D output coordinate
+            system we want to align the point to.
+
+        :Returns:
+            if the point is found in one of the simplices: list of an int
+            and a list of float triple. The int is the index of the simplex we
+            found the point inside. The list of float triple is the point's
+            aligned coordinate in the output coordinate system. else: empty
+            list.
+    """
+    # Define helper functions
+    def in_unit_interval(x_val):
+        return 0 <= x_val <= 1
+
+    def is_inside(barycentric_coords):
+        """Given a list of any number of barycentric coordinates, check if each value
+        is between 0 and 1. Returns true only if all are in the unit interval."""
+        return all(map(in_unit_interval, barycentric_coords))
+
+    #initialise the result
+    result = []
+
+    for simplex_i, simplex in zip(simplex_indices, simplices):
+        #get the barycentric coordinates of this point in this simplex in the
+        #input coordinate system
+        barycentric_coords = _convert_to_barycentric(point, simplex,
+                                                          input_coordinates)
+        if is_inside(barycentric_coords):
+            #set the result as the regular coordinates corresponding to the
+            #barycentric coordinates
+            result = [simplex_i,
+                      _convert_from_barycentric(barycentric_coords, simplex,
+                                                          output_coordinates)]
+            break
+    return result
+
+
+def _find_closest_vertex(point, vertices, input_coordinates, output_coordinates):
+    """Given a point in the input coordinate system, the vertices in the input
+        coordinate system to search through, the 2D input coordinates and the 3D
+        output coordinates, return the coordinates corresponding to the vertex
+        in the vertices we searched through that is closest to the vertex we
+        input.
+
+        NOTE: This method is used only for emergencies when we cannot find a
+        corresponding boundary edge or triangle when aligning vertices. It
+        should not be called often.
+
+        :Parameters:
+            point: list of float pair. The 2D coordinates of the point
+            whose closest vertex coordinate we want to find. vertices: range
+            object from 0 to the total number of vertices. The vertices (in
+            indices) that we want to search through. input_coordinates: list of
+            float pairs. The 2D input coordinate system where the point and
+            vertices lie. output_coordinates: list of float triples. The 3D
+            output coordinate system we want to align the point to.
+
+        :Returns:
+            [closest_vertex, [x, y, z]]: list of int and float triple
+            list. [x, y, z] corresponds to the coordinates of the vertex in the
+            output coordinates closest to this point.
+    """
+    closest_vertex = 0
+    closest_dist = linalg.norm(array(point)-array(input_coordinates[closest_vertex]))
+    for candidate_vertex in vertices:
+        candidate_dist = linalg.norm(array(point)-array(input_coordinates[candidate_vertex]))
+        if candidate_dist < closest_dist:
+            closest_vertex = candidate_vertex
+            closest_dist = candidate_dist
+    return [closest_vertex, output_coordinates[closest_vertex][:3]]
+
+
+def _find_next_neighbourhood(animal_obj, current_triangles, traversed_triangles):
+    """Given an animal object, a set of triangles whose neighbours we want to get
+        and a set of inner triangles or edges we have already traversed, find
+        the next layer of neighbour triangles that we have not yet traversed.
+
+        :Parameters:
+            animal_obj: the animal object we are looking at.
+            current_triangles: int set. The set of the indices of triangles
+            whose neighbours we want to find.
+            traversed_triangles: int set. The set of indices of triangles which
+            we have already traversed.
+
+        :Returns:
+            int set. the set of all triangles that are in the outer neighbourhood
+    """
+    #initialise return set
+    all_adjacent_triangles = set()
+
+    #use the triangle-triangle adjacency array to find neighbouring triangles
+    triangle_triangle_adjacency_array = animal_obj.get_triangle_triangle_adjacency()
+
+    for triangle_i in current_triangles:
+        #update all adjacent triangles with the triangles adjacent to each triangle
+        adjacent_triangles = triangle_triangle_adjacency_array[triangle_i]
+        all_adjacent_triangles.update(adjacent_triangles)
+
+    #remove -1 (indicating that no triangle is adjacent to that edge) and
+    #traversed triangles from all the adjacent triangles we've found
+    all_adjacent_triangles.difference_update(traversed_triangles)
+    all_adjacent_triangles.discard(-1)
+
+    return all_adjacent_triangles
+
+
+def _find_optimal_mapping(animal_0, animal_1):
     """Calculates the optimal rotation of the unit disk that minimizes the
         symmetric distortion energy between the triangulations of two animals
 
@@ -1101,119 +1017,186 @@ def _calculate_optimal_mapping(animal_0, animal_1):
     print("LOG: Found an optimal (theta, rho) mapping of " + str(res.x) + ". ")
     return res.x
 
-##################################################################################
-#METHODS FOR CALCULATING CONFORMAL SPATIOTEMPORAL DISTANCES BETWEEN HEAT MAPS ###
-##################################################################################
 
-def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
-    """ Computes the Conformal Spatiotemporal Distance between the heatmaps of two
-        animals
+def _find_triangle_containing_vertex(vertex, triangles):
+    """ Given a vertex and the corresponding triangulation it belongs to, return the
+        index of the first triangle that contains the vertex.
 
         :Parameters:
-            animal_0/1 : animal objects, initialized with regular/flattened coordinates
-            and triangulation set/updated
-            fullmode : Boolean, writes triangulations and their corresponding flattenings and
-            alignments to .OFF files if True
-            outdir : string, specifying directory to save .OFF files if fullmode is True
+            vertex : int. A vertex within a triangulation. triangles :
+            list of list of int triples. The list of all triangles.
 
         :Returns:
-            float, specifying the Conformal Spatiotemporal Distance between the heatmaps of
-            two animals
+            if there exists a triangle containing this vertex: int. The
+            index of the first triangle that contains the vertex. else: None
     """
-    # pylint:disable=too-many-locals
+    triangle_index = None
+    for triangle_i, triangle in enumerate(triangles):
+        if vertex in triangle:
+            triangle_index = triangle_i
+    return triangle_index
 
-    #check that a directory is specified if fullmode is true
-    if fullmode and outdir is None:
-        raise Exception("Full mode requires a path to output directory.")
 
-    #notify user of progress
-    print("Measuring conformal spatiotemporal distance between heat maps of" \
-          " %s and %s..." % (animal_0.get_name(), animal_1.get_name()))
+#######################################################################
+### Transformation Functions
+#######################################################################
 
-    #calculate the optimal mapping between both animals
-    theta, rho = _calculate_optimal_mapping(animal_0, animal_1)
+def _convert_to_barycentric(point, simplex, coordinates):
+    """Given a 2D point inside a simplex (a line segment or a triangle), find out
+       its barycentric coordinates. In the case of the line (1-simplex), this
+       would be the point expressed as a linear combination of the two
+       endpoints. In the case of the triangle (2-simplex), this would be the
+       point expressed as a linear combination of three corner coordinates.
 
-    #store relevant parameters. Note that we assume both animal observations
-    #have the same dimensions
-    x_dim, y_dim = animal_0.get_dims()
-    z_dim = _calculate_z_dim(animal_0)
-    num_verts_0 = animal_0.get_num_verts()
-    reg_coordinates_0 = animal_0.get_regular_coordinates()
-    aligned_coordinates_0 = _calculate_aligned_coordinates(animal_1, animal_0, theta, rho)
-    triangles_0 = animal_0.get_triangulation()
-    num_verts_1 = animal_1.get_num_verts()
-    regular_coordinates_1 = animal_1.get_regular_coordinates()
-    aligned_coordinates_1 = _calculate_aligned_coordinates(animal_0, animal_1, -theta, rho)
-    triangles_1 = animal_1.get_triangulation()
+       NOTE: This method will not work when finding barycentric coordinates of
+       points within a triangle or line segment in R^3! It is only meant for
+       finding barycentric coordinates of 2D points within 2D line segments or
+       triangles.
 
-    #Save the triangulation data in .OFF files if fullmode is True
-    if fullmode:
-        write.write_off(animal_0, reg_coordinates_0, outdir,
-                        "heatmap_%s_regular.off" % animal_0.get_name())
-        write.write_off(animal_1, regular_coordinates_1, outdir,
-                        "heatmap_%s_regular.off" % animal_1.get_name())
-        flat_coordinates_0 = [coord + [0] for coord in animal_0.get_flattened_coordinates()]
-        flat_coordinates_1 = [coord + [0] for coord in animal_1.get_flattened_coordinates()]
-        write.write_off(animal_0, flat_coordinates_0, outdir,
-                        "heatmap_%s_flat.off" % animal_0.get_name())
-        write.write_off(animal_1, flat_coordinates_1, outdir,
-                        "heatmap_%s_flat.off" % animal_1.get_name())
-        write.write_off(animal_0, aligned_coordinates_0, outdir,
-                        "heatmap_%s_aligned_to_%s.off" % (animal_0.get_name(), animal_1.get_name()))
-        write.write_off(animal_1, aligned_coordinates_1, outdir,
-                        "heatmap_%s_aligned_to_%s.off" % (animal_1.get_name(), animal_0.get_name()))
-
-    #calculate the distance between the aligned surfaces
-    difference_val_0 = 0
-    change_in_area = 0
-    for vertex in range(num_verts_1):
-        for triangle in triangles_1:
-            if vertex in triangle:
-                change_in_area += _area(regular_coordinates_1[triangle[0]][0:2],
-                                        regular_coordinates_1[triangle[1]][0:2],
-                                        regular_coordinates_1[triangle[2]][0:2])/3.0
-        difference_val_0 += change_in_area * \
-            (aligned_coordinates_1[vertex][2]-regular_coordinates_1[vertex][2])**2
-
-    difference_val_1 = 0
-    change_in_area = 0
-    for vertex in range(num_verts_0):
-        for triangle in triangles_0:
-            if vertex in triangle:
-                change_in_area += _area(reg_coordinates_0[triangle[0]][0:2],
-                                        reg_coordinates_0[triangle[1]][0:2],
-                                        reg_coordinates_0[triangle[2]][0:2])/3.0
-        difference_val_1 += change_in_area * \
-            (aligned_coordinates_0[vertex][2]-reg_coordinates_0[vertex][2])**2
-
-    distance = (difference_val_0**0.5+difference_val_1**0.5)/(2*z_dim*x_dim*y_dim)
-
-    #record distance in terminal
-    print("LOG: distance between aligned surfaces of" \
-          " %s and %s: %.3f" % (animal_0.get_name(), animal_1.get_name(), distance))
-
-    return distance
-
-def compute_all_csd(animal_list):
-    """Computes the Conformal Spatiotemporal Distances between the heatmaps of all
-        pairs in list of animals
-
-        :Parameters:
-            animal_list : list of animal objects, initialized with
-            regular/flattened coordinates and triangulation set/updated
+       :Parameters:
+           point: float pair list. The 2D coordinates of the flattened
+           vertex of Animal 1. The z-component should be 0. simplex: int pair or
+           triple list. The indices corresponding to coordinates making up the
+           line segment/triangle. coordinates: list of float pairs. The 2D
+           coordinates.
 
         :Returns:
-            2D array of floats, specifying the Conformal Spatiotemporal
-            Distance between the heatmaps of each pair of animals in the input
-            list
+           if input point and coordinates are both in R^2 and simplex is
+           valid: list pair/triple of floats corresponding to the barycentric
+           coordinates of the point in the simplex. These are the lambda values
+           i.e the weights used in the linear combination. If all these values
+           are between 0 and 1, the point is in the simplex. Otherwise, it is
+           not. else: empty list.
     """
 
-    #initialize return array
-    num_animals = len(animal_list)
-    dists = [['' for i in range(num_animals)] for j in range(num_animals)]
+    if not len(point) == len(coordinates[0]) == 2:
+        print("WARNING: Invalid coordinate dimensions. This method is only " \
+              "defined to get the barycentric coordinates of a 2D point within a 2D simplex.")
+        #return empty list to standardise output and avoid computation.
+        #Otherwise, the code may still run without throwing an error.
+        return []
 
-    #calculate the CSD between each pair of animals in the input list
-    for i in range(num_animals):
-        for j in range(i+1, num_animals):
-            dists[i][j] = compute_one_csd(animal_list[i], animal_list[j])
-    return dists
+    #initialise result
+    result = []
+
+    #if the simplex is a triangle, calculate the barycentric coordinates of the
+    #point in the triangle
+    if len(simplex) == 3:
+        #get coordinates from vertices of simplex
+        triangle_coordinates = [coordinates[i] for i in simplex]
+        (x_0, y_0), (x_1, y_1), (x_2, y_2) = triangle_coordinates
+
+        #find each of the three weights
+        lambda_0 = ((y_1-y_2)*(point[0]-x_2)+(x_2-x_1)*(point[1]-y_2)) / \
+                            ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
+        lambda_1 = ((y_2-y_0)*(point[0]-x_2)+(x_0-x_2)*(point[1]-y_2)) / \
+                            ((y_1-y_2)*(x_0-x_2)+(x_2-x_1)*(y_0-y_2))
+        lambda_2 = 1 - lambda_0 - lambda_1
+        result = [lambda_0, lambda_1, lambda_2]
+
+    #if the simplex is a line segment, find the proportions of each point in the line segment
+    elif len(simplex) == 2:
+        #since it's linear interpolation, the proportions are the same for both
+        #x and y components, so we just use one of them
+        x_0, x_1 = coordinates[simplex[0]][0], coordinates[simplex[1]][0]
+
+        #find the two weights
+        lambda_1 = (point[0] - x_0) / (x_1 - x_0)
+        lambda_0 = 1 - lambda_1
+        result = [lambda_0, lambda_1]
+
+    else:
+        print("WARNING: Invalid input simplex. " \
+              "This method is only defined for triangles and edges.")
+    return result
+
+
+def _convert_from_barycentric(barycentric_coords, simplex, coordinates):
+    """Given barycentric coordinates, a list of coordinates and a simplex (triangle
+       or line segment), return the actual coordinates in R^3 corresponding to
+       the barycentric coordinates.
+
+       NOTE: This method will not work when finding the corresponding
+       coordinates in R^2! We will be trying to access the z-component, which
+       will cause an index error. If this method is needed in such a case,
+       assign 0 as the third coordinate.
+
+       :Parameters:
+            barycentric_coords: float triple or pair list. The
+            barycentric coordinates of a point in the triangle or line segment.
+            simplex: int triple or pair list. The indices corresponding to
+            vertices making up the triangle or line segment. coordinates: list
+            of float triples. If they are flattened coordinates, the third
+            element should be 0.
+
+        :Returns:
+            if input coordinates are in R^3 and the barycentric
+            coordinates match up with the simplex: list of float triple. The
+            corresponding converted coordinates in R^3. else: empty list.
+    """
+
+    if len(coordinates[0]) != 3:
+        print("WARNING: Invalid coordinate dimensions. This method is only defined " \
+              "to find the coordinates of a point in 3D.")
+        #return empty list to standardise output and avoid errors thrown later on
+        return []
+
+    #initialise return value
+    result = []
+
+    #if the simplex is a triangle, get the values of the corresponding
+    #coordinates in R^3 componentwise
+    if len(barycentric_coords) == len(simplex) == 3:
+        x_val = barycentric_coords[0] * coordinates[simplex[0]][0] + \
+            barycentric_coords[1] * coordinates[simplex[1]][0] + \
+            barycentric_coords[2] * coordinates[simplex[2]][0]
+        y_val = barycentric_coords[0] * coordinates[simplex[0]][1] + \
+            barycentric_coords[1] * coordinates[simplex[1]][1] + \
+            barycentric_coords[2] * coordinates[simplex[2]][1]
+        z_val = barycentric_coords[0] * coordinates[simplex[0]][2] + \
+            barycentric_coords[1] * coordinates[simplex[1]][2] + \
+            barycentric_coords[2] * coordinates[simplex[2]][2]
+        result = [x_val, y_val, z_val]
+
+    #if the simplex is a line segment, get the values of the corresponding
+    #coordinates using the equation of a line
+    elif len(barycentric_coords) == len(simplex) == 2:
+        #extract the two coordinates of the line segment and just one of the
+        #barycentric coordinate weights (the gradient of the line)
+        (x_0, y_0, z_0) = coordinates[simplex[0]]
+        (x_1, y_1, z_1) = coordinates[simplex[1]]
+        lambda_1 = barycentric_coords[1]
+
+        x_val = x_0 + lambda_1 * (x_1 - x_0)
+        y_val = y_0 + lambda_1 * (y_1 - y_0)
+        z_val = z_0 + lambda_1 * (z_1 - z_0)
+        result = [x_val, y_val, z_val]
+
+    else:
+        print("WARNING: Invalid barycentric coordinates and/or simplex dimensions. " \
+              "They must both be of length 2 or 3, since this method is only defined " \
+              "for triangles and edges.")
+    return result
+
+
+def _mobius(p, q):
+    """Applies the mobius transformation, uniquely defined by moving the
+       2D point q to the origin, to the 2D point p.
+
+       :Parameters:
+            p : list of two floats, [u, v]. The coordinate we are applying
+                this transformation to.
+            q : list of two floats, [a, b]. The coordinate that gets sent
+                to the origin by this map.
+
+        :Returns:
+            list pair of floats. The transformed coordinate p after applying
+            the transformation that moves q to the origin.
+    """
+    # pylint:disable=invalid-name
+    # pure math formula
+    u, v = p
+    a, b = q
+    return [-1 * ((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
+            -1 * ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
+
