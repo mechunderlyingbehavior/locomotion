@@ -512,6 +512,10 @@ def normalize(data, mean, std):
      list of normalized data. list of 0 if std == 0
     """
     if std != 0:
+        if std < 1:
+            std = 1
+            print("WARNING: Normalization attempted for data with std < 1. " +
+                  "Normalization done with std set to 1.")
         return list(map(lambda x: 1/(1 + math.exp(-(x-mean)/std)), data))
     return [0 for d in data]
 
