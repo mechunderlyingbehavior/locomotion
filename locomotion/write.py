@@ -59,7 +59,7 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
                        zmax=color_max)
     figure['data'].append(trace)
     figure['layout'] = dict(height=600, width=630,
-                            margin=go.Margin(l=100, r=100, b=100, t=100),
+                            margin=go.layout.Margin(l=100, r=100, b=100, t=100),
                             showlegend=False,
                             xaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
                             yaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
