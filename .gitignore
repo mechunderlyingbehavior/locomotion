@@ -13,6 +13,7 @@ scripts/compute*.py
 tests/robustness_tests/results/
 tests/robustness_tests/figures/
 tests/heatmap
+tests/write_and_window
 data/
 dtw_test.ipynb
 dist/

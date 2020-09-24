@@ -611,38 +611,6 @@ def find_col_index(header, col_name):
     raise Exception("Column name not found: %s" % col_name)
 
 
-def norm(data, rm_outliers=True):
-    """
-    Given data, find the mean and standard deviation.
-    :Parameters:
-     data : list of data values
-     rm_outliers : bool. If True, function removes outliers. True by default.
-    :Returns:
-     mean, stds
-    """
-    data_array = np.array(data, dtype=np.float)
-    if rm_outliers:
-        data_array = _remove_outliers(data_array) #Calculate norm without outliers
-    mean = np.mean(data_array)
-    std = np.std(data_array)
-    return mean, std
-
-
-def normalize(data, mean, std):
-    """
-    Normalize data given mean and standard deviation.
-    :Parameters:
-     data : list of data values
-     mean : mean of data values
-     std : standard deviation of data values
-    :Returns:
-     list of normalized data. list of 0 if std == 0
-    """
-    if std != 0:
-        return list(map(lambda x: 1/(1 + math.exp(-(x-mean)/std)), data))
-    return [0 for d in data]
-
-
 def _remove_outliers(data):
     """
     Given a numpy array, removes outliers using 1.5 Interquartile Range standard
