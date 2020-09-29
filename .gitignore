@@ -13,10 +13,12 @@ scripts/compute*.py
 tests/robustness_tests/results/
 tests/robustness_tests/figures/
 tests/heatmap
+tests/write_and_window
 data/
 dtw_test.ipynb
 dist/
 locomotion.egg-info/
+testing_notebook.ipynb
 
 # Git Ignore taken from https://github.com/github/gitignore/blob/master/Python.gitignore
 

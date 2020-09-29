@@ -59,27 +59,27 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
                        zmax=color_max)
     figure['data'].append(trace)
     figure['layout'] = dict(height=600, width=630,
-                            margin=go.Margin(l=100, r=100, b=100, t=100),
+                            margin=go.layout.Margin(l=100, r=100, b=100, t=100),
                             showlegend=False,
                             xaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
                             yaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
                             annotations=[dict(x=j+0.5,
                                               y=nums+1.0,
                                               text=animal_list[j].get_name()[4:]
-                                              if animal_list[j].in_control_group()
+                                              if animal_list[j].get_control_boolean()
                                               else animal_list[j].get_name()[4:]+' ',
                                               font={'color':'cyan'
-                                                            if animal_list[j].in_control_group()
+                                                            if animal_list[j].get_control_boolean()
                                                             else 'magenta',
                                                     'size':7},
                                               textangle=-45, showarrow=False)
                                          for j in range(nums)]
                             +[dict(x=nums+1.0, y=i+0.0,
                                    text=animal_list[nums-i-1].get_name()[4:]
-                                   if animal_list[nums-i-1].in_control_group()
+                                   if animal_list[nums-i-1].get_control_boolean()
                                    else animal_list[nums-i-1].get_name()[4:]+' ',
                                    font={'color':'cyan'
-                                                 if animal_list[nums-i-1].in_control_group()
+                                                 if animal_list[nums-i-1].get_control_boolean()
                                                  else 'magenta', 'size':7},
                                    textangle=0, showarrow=False)
                               for i in range(nums)])
