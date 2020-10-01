@@ -20,9 +20,77 @@ import plotly
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
+def post_process(animal_list, dists, outdir, outfilename, sort_table,
+                 square_table, color_min=0.0, color_max=1.0):
     """
     To be documented.
+    """
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-branches
+    num_animals = len(animal_list)
+    if square_table:
+        for i in range(num_animals):
+            for j in range(i):
+                dists[i][j] = dists[j][i]
+        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
+        write_dist_table_to_heatmap(animal_list, dists, outdir,
+                                    outfilename+".html", color_min, color_max)
+    else:
+        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
+        write_dist_table_to_heatmap(animal_list, dists, outdir,
+                                    outfilename+".html", color_min, color_max)
+    if sort_table:
+        dist_means = {}
+        for i in range(num_animals):
+            dlist = [dists[j][i] for j in range(i)] + \
+                [dists[i][j] for j in range(i+1, num_animals)]
+            dist_means.update({animal_list[i]:np.mean(dlist)})
+        sorted_dists = sorted(dist_means.items(), key=operator.itemgetter(1))
+        sorted_indices = [animal_list.index(sorted_dists[i][0])
+                          for i in range(num_animals)]
+        new_dists = [['' for i in range(num_animals)] for j in range(num_animals)]
+        for i in range(num_animals):
+            for j in range(i+1, num_animals):
+                if sorted_indices[j] > sorted_indices[i]:
+                    new_dists[i][j] = dists[sorted_indices[i]][sorted_indices[j]]
+                else:
+                    new_dists[i][j] = dists[sorted_indices[j]][sorted_indices[i]]
+        dists = new_dists
+        animal_list = [animal_list[sorted_indices[i]] for i in range(num_animals)]
+
+        if square_table:
+            for i in range(num_animals):
+                for j in range(i):
+                    dists[i][j] = dists[j][i]
+        write_dist_table_to_csv(animal_list, dists, outdir,
+                                "%s" % outfilename+"_sorted.csv")
+        write_dist_table_to_heatmap(animal_list, dists, outdir,
+                                    "%s" % outfilename+"_sorted.html",
+                                    color_min, color_max)
+
+
+def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
+    """ Render the alignment plot between 2 animal objects based on the BDD
+    calculation.
+
+    Arguments
+    ---------
+    alignment : 2-tuple of numpy arrays. Contains the arrays of indices for
+        the BDD alignment. Each array should be of the same length, and should
+        correspond to the respective animal.
+    animal_obj_0/1 : Animal object. For each respective animal.
+    varnames : List of str. Each string should be linked to the variable names
+        in the animal objects.
+    outdir : Str. Location of the out-directory of the file.
+
+    Returns
+    -------
+    None.
+
+    Outputs
+    -------
+    html file. Offline plotly plot of the alignment between the two animals.
     """
     filename = "figure_%s-%s_%s_alignment.html" % (animal_obj_0.get_name(),
                                                    animal_obj_1.get_name(),
@@ -55,8 +123,28 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
 
 def render_aligned_graphs(points_0, points_1, alignment,
                           animal_obj_0, animal_obj_1, seg_len, varname, outdir):
-    """
-    To be documented.
+    """ Render the aligned graphs based on a certain variable between both animals.
+
+    Arguments
+    ---------
+    points_0/1 : np.array of floats. Correspond to the values of the given variable
+        on each frame for each respective animal.
+    alignment : 2-tuple of numpy arrays. Contains the arrays of indices for
+        the BDD alignment. Each array should be of the same length, and should
+        correspond to the respective animal.
+    animal_obj_0/1 : Animal object. For each respective animal.
+    seg_len : float. Length of the segment (in minutes).
+    varnames : List of str. Each string should be linked to the variable names
+        in the animal objects.
+    outdir : Str. Location of the out-directory of the file.
+
+    Returns
+    -------
+    None.
+
+    Outputs
+    -------
+    html file. Offline plotly plot of the alignment between the two animals.
     """
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-locals
@@ -199,7 +287,19 @@ def render_aligned_graphs(points_0, points_1, alignment,
     print("Saved the alignment graphs in directory %s" % outdir)
 
 
-# ----------------------------
+def render_single_animal_graph(points, animal_obj, varname, outdir):
+    """
+    To be documented.
+    """
+    filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
+    outpath = os.path.join(outdir, filename).replace(' ', '')
+    num_points = len(points)
+    trace = go.Scatter(x=range(num_points)/animal_obj.get_frame_rate(), y=points,
+                       mode='lines', showlegend=False, line={'width':4})
+    data = [trace]
+    plotly.offline.plot(data, filename=outpath, auto_open=False)
+    print("Saved single animal graph in %s" % outpath)
+
 
 def write_dist_table_to_csv(animal_list, results, outdir, outfilename):
     """
@@ -269,6 +369,26 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
     print("LOG: Plot the heatmap in %s" % outpath)
 
 
+def write_off(animal_obj, coordinates, outdir, filename):
+    """
+    To be documented.
+    """
+    outpath = os.path.join(outdir, filename).replace(' ', '')
+    triangles = animal_obj.get_triangulation()
+    colors = animal_obj.get_colors()
+    print("Writing triangulation to file %s..." % outpath)
+    with open(outpath, 'w') as outfile:
+        outfile.write("OFF\n")
+        outfile.write("%d %d %d\n" % (len(coordinates), len(triangles), 0))
+        for coord in coordinates:
+            outfile.write("%f %f %f\n" % (coord[0], coord[1], coord[2]))
+        for triangle in triangles:
+            color = colors[triangles.index(triangle)]
+            outfile.write("%d %d %d %d %f %f %f\n" % (3, triangle[0],
+                                                      triangle[1], triangle[2],
+                                                      color[0], color[1], color[2]))
+
+
 def write_segment_exps_to_csv(animal_list, results, means, stds, outdir, outfilename):
     """
     Writes the results from trajectory.runRandomSegmentComparisons() to CSV
@@ -322,88 +442,3 @@ def write_segment_exps_to_csv(animal_list, results, means, stds, outdir, outfile
                 row = [stds[0][i][0]] + [stds[j][i][1] for j in range(num_animals)]
                 csvwriter.writerow(row)
         print("Saved the table in %s" % outfile)
-
-
-def render_single_animal_graph(points, animal_obj, varname, outdir):
-    """
-    To be documented.
-    """
-    filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
-    outpath = os.path.join(outdir, filename).replace(' ', '')
-    num_points = len(points)
-    trace = go.Scatter(x=range(num_points), y=points, mode='lines',
-                       showlegend=False, line={'width':4})
-    data = [trace]
-    plotly.offline.plot(data, filename=outpath, auto_open=False)
-
-    print("Saved single animal graph in %s" % outpath)
-
-
-def write_off(animal_obj, coordinates, outdir, filename):
-    """
-    To be documented.
-    """
-    outpath = os.path.join(outdir, filename).replace(' ', '')
-    triangles = animal_obj.get_triangulation()
-    colors = animal_obj.get_colors()
-    print("Writing triangulation to file %s..." % outpath)
-    with open(outpath, 'w') as outfile:
-        outfile.write("OFF\n")
-        outfile.write("%d %d %d\n" % (len(coordinates), len(triangles), 0))
-        for coord in coordinates:
-            outfile.write("%f %f %f\n" % (coord[0], coord[1], coord[2]))
-        for triangle in triangles:
-            color = colors[triangles.index(triangle)]
-            outfile.write("%d %d %d %d %f %f %f\n" % (3, triangle[0],
-                                                      triangle[1], triangle[2],
-                                                      color[0], color[1], color[2]))
-
-
-def post_process(animal_list, dists, outdir, outfilename, sort_table,
-                 square_table, color_min=0.0, color_max=1.0):
-    """
-    To be documented.
-    """
-    # pylint:disable=too-many-arguments
-    # pylint:disable=too-many-locals
-    # pylint:disable=too-many-branches
-    num_animals = len(animal_list)
-    if square_table:
-        for i in range(num_animals):
-            for j in range(i):
-                dists[i][j] = dists[j][i]
-        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
-        write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    outfilename+".html", color_min, color_max)
-    else:
-        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
-        write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    outfilename+".html", color_min, color_max)
-    if sort_table:
-        dist_means = {}
-        for i in range(num_animals):
-            dlist = [dists[j][i] for j in range(i)] + \
-                [dists[i][j] for j in range(i+1, num_animals)]
-            dist_means.update({animal_list[i]:np.mean(dlist)})
-        sorted_dists = sorted(dist_means.items(), key=operator.itemgetter(1))
-        sorted_indices = [animal_list.index(sorted_dists[i][0])
-                          for i in range(num_animals)]
-        new_dists = [['' for i in range(num_animals)] for j in range(num_animals)]
-        for i in range(num_animals):
-            for j in range(i+1, num_animals):
-                if sorted_indices[j] > sorted_indices[i]:
-                    new_dists[i][j] = dists[sorted_indices[i]][sorted_indices[j]]
-                else:
-                    new_dists[i][j] = dists[sorted_indices[j]][sorted_indices[i]]
-        dists = new_dists
-        animal_list = [animal_list[sorted_indices[i]] for i in range(num_animals)]
-
-        if square_table:
-            for i in range(num_animals):
-                for j in range(i):
-                    dists[i][j] = dists[j][i]
-        write_dist_table_to_csv(animal_list, dists, outdir,
-                                "%s" % outfilename+"_sorted.csv")
-        write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    "%s" % outfilename+"_sorted.html",
-                                    color_min, color_max)
