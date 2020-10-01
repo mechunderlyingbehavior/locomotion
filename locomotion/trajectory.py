@@ -104,9 +104,11 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     # pylint: disable=too-many-locals
     # function is long, requires many local variables
 
-    #quick sanity check for output mode
+    # Argument Validation
     if fullmode and outdir is None:
-        raise Exception("Full mode requires the path to output directory.")
+        raise Exception("COMPUTE_ONE_BDD: Full mode requires the path to output directory.")
+    if seg_end_time_0 - seg_start_time_0 != seg_end_time_1 - seg_start_time_1:
+        raise Exception("COMPUTE_ONE_BDD: segments need to be of the same length.")
 
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
     seg_end_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_end_time_0)
@@ -148,12 +150,13 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
         #save alignment graphs in directory specified
         alignment = (dtw_obj.index1, dtw_obj.index2)
         write.render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir)
+        seg_len = seg_end_time_0 - seg_start_time_0
         for i in range(num_vars):
             var = varnames[i]
             if not os.path.exists(outdir):
                 os.makedirs(outdir)
             write.render_aligned_graphs(data_0[i], data_1[i], alignment,
-                                        animal_obj_0, animal_obj_1, var, outdir)
+                                        animal_obj_0, animal_obj_1, seg_len, var, outdir)
 
             #For individual plots, enable the following two lines
             #write.render_single_animal_graph(data_0[i], animal_obj_0, var, outdir)
