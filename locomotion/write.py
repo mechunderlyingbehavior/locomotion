@@ -76,13 +76,15 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
 
     Arguments
     ---------
-    alignment : 2-tuple of numpy arrays. Contains the arrays of indices for
-        the BDD alignment. Each array should be of the same length, and should
-        correspond to the respective animal.
-    animal_obj_0/1 : Animal object. For each respective animal.
-    varnames : List of str. Each string should be linked to the variable names
-        in the animal objects.
-    outdir : Str. Location of the out-directory of the file.
+    alignment : 2-tuple of numpy arrays.
+        Contains the arrays of indices for the BDD alignment. Each array should
+        be of the same length, and should correspond to the respective animal.
+    animal_obj_0/1 : Animal object.
+        For each respective animal.
+    varnames : List of str.
+        Each string should be linked to the variable names in the animal objects.
+    outdir : Str.
+        Location of the out-directory of the file.
 
     Returns
     -------
@@ -127,16 +129,20 @@ def render_aligned_graphs(points_0, points_1, alignment,
 
     Arguments
     ---------
-    points_0/1 : np.array of floats. Correspond to the values of the given variable
-        on each frame for each respective animal.
-    alignment : 2-tuple of numpy arrays. Contains the arrays of indices for
-        the BDD alignment. Each array should be of the same length, and should
-        correspond to the respective animal.
-    animal_obj_0/1 : Animal object. For each respective animal.
-    seg_len : float. Length of the segment (in minutes).
-    varnames : List of str. Each string should be linked to the variable names
-        in the animal objects.
-    outdir : Str. Location of the out-directory of the file.
+    points_0/1 : np.array of floats.
+        Correspond to the values of the given variable on each frame for each
+        respective animal.
+    alignment : 2-tuple of numpy arrays.
+        Contains the arrays of indices for the BDD alignment. Each array should be
+        of the same length, and should correspond to the respective animal.
+    animal_obj_0/1 : Animal object.
+        For each respective animal.
+    seg_len : float.
+        Length of the segment (in minutes).
+    varnames : List of str.
+        Each string should be linked to the variable names in the animal objects.
+    outdir : Str.
+        Location of the out-directory of the file.
 
     Returns
     -------
@@ -144,7 +150,8 @@ def render_aligned_graphs(points_0, points_1, alignment,
 
     Outputs
     -------
-    html file. Offline plotly plot of the alignment between the two animals.
+    html file.
+        Offline plotly plot of the alignment between the two animals.
     """
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-locals
