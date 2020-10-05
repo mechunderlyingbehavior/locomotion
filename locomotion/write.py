@@ -237,49 +237,49 @@ def render_aligned_graphs(points_0, points_1, alignment,
     # Matched Plots
     for trace in original_data_pair:
         fig.add_trace(trace, row=1, col=1)
-    fig.update_xaxes(title_text='Real Time', row=1, col=1,
+    fig.update_xaxes(title_text='Real Time (s)', row=1, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
-    fig.update_yaxes(title_text=varname, range=[0, 1], row=1, col=1,
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=1, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
 
     # Aligned Plots
     for trace in reparam_data_pair:
         fig.add_trace(trace, row=2, col=1)
-    fig.update_xaxes(title_text='Warped Time', row=2, col=1,
+    fig.update_xaxes(title_text='Warped Time (s)', row=2, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
-    fig.update_yaxes(title_text=varname, range=[0, 1], row=2, col=1,
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=2, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
 
     # Animal 0 Regular Plot
     for trace in original_data_0:
         fig.add_trace(trace, row=3, col=1)
-    fig.update_xaxes(title_text='%s Time' % animal_obj_0.get_name(), row=3, col=1,
+    fig.update_xaxes(title_text='%s Time (s)' % animal_obj_0.get_name(), row=3, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
-    fig.update_yaxes(title_text=varname, range=[0, 1], row=3, col=1,
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=3, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
 
     # Animal 0 Warped Plot
     for trace in reparam_data_0:
         fig.add_trace(trace, row=4, col=1)
-    fig.update_xaxes(title_text='Warped Time', row=4, col=1,
+    fig.update_xaxes(title_text='Warped Time (s)', row=4, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
-    fig.update_yaxes(title_text=varname, range=[0, 1], row=4, col=1,
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=4, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
 
     # Animal 1 Regular Plot
     for trace in original_data_1:
         fig.add_trace(trace, row=5, col=1)
-    fig.update_xaxes(title_text='%s Time' % animal_obj_1.get_name(), row=5, col=1,
+    fig.update_xaxes(title_text='%s Time (s)' % animal_obj_1.get_name(), row=5, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
-    fig.update_yaxes(title_text=varname, range=[0, 1], row=5, col=1,
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=5, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
 
     # Animal 0 Warped Plot
     for trace in reparam_data_1:
         fig.add_trace(trace, row=6, col=1)
-    fig.update_xaxes(title_text='Warped Time', row=6, col=1,
+    fig.update_xaxes(title_text='Warped Time (s)', row=6, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
-    fig.update_yaxes(title_text=varname, range=[0, 1], row=6, col=1,
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=6, col=1,
                      linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
 
     fig.update_layout(height=2400, width=1000,
