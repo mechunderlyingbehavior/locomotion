@@ -14,8 +14,8 @@ to look into the results with greater detail.
 import os
 import csv
 import itertools
-import numpy as np
 import operator
+import numpy as np
 import plotly
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -98,17 +98,17 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
                                                    animal_obj_1.get_name(),
                                                    '-'.join(varnames))
     outpath = os.path.join(outdir, filename).replace(' ', '')
-    FR_0 = animal_obj_0.get_frame_rate()
-    FR_1 = animal_obj_1.get_frame_rate()
+    fr_0 = animal_obj_0.get_frame_rate()
+    fr_1 = animal_obj_1.get_frame_rate()
     nums = len(alignment[0])
     data = []
     for i in range(nums):
-        data.append(go.Scatter(x=[0, alignment[0][i]/FR_0, alignment[0][i]/FR_0],
-                               y=[alignment[1][i]/FR_1, alignment[1][i]/FR_1, 0],
+        data.append(go.Scatter(x=[0, alignment[0][i]/fr_0, alignment[0][i]/fr_0],
+                               y=[alignment[1][i]/fr_1, alignment[1][i]/fr_1, 0],
                                mode='lines',
                                marker={'color':'black'},
                                showlegend=False, opacity=0.1))
-    trace = go.Scatter(x=alignment[0]/FR_0, y=alignment[1]/FR_1, mode='lines',
+    trace = go.Scatter(x=alignment[0]/fr_0, y=alignment[1]/fr_1, mode='lines',
                        showlegend=False, line={'width':4},
                        marker={'color':'yellow'})
     data.append(trace)
@@ -162,23 +162,23 @@ def render_aligned_graphs(points_0, points_1, alignment,
     fulloutpath = os.path.join(outdir, filename).replace(' ', '')
     nums = len(alignment[0])
 
-    FR_0 = animal_obj_0.get_frame_rate()
-    FR_1 = animal_obj_1.get_frame_rate()
-    FR_param = nums/(seg_len * 60)
+    fr_0 = animal_obj_0.get_frame_rate()
+    fr_1 = animal_obj_1.get_frame_rate()
+    fr_param = nums/(seg_len * 60)
 
-    original_trace_0 = go.Scatter(x=[alignment[0][k]/FR_0 for k in range(nums)],
+    original_trace_0 = go.Scatter(x=[alignment[0][k]/fr_0 for k in range(nums)],
                                   y=[points_0[alignment[0][k]] for k in range(nums)],
                                   mode='lines', showlegend=False, marker={'color':'cyan'},
                                   line={'width':3}, name=animal_obj_0.get_name())
-    original_trace_1 = go.Scatter(x=[alignment[1][k]/FR_1 for k in range(nums)],
+    original_trace_1 = go.Scatter(x=[alignment[1][k]/fr_1 for k in range(nums)],
                                   y=[points_1[alignment[1][k]] for k in range(nums)],
                                   mode='lines', showlegend=False, marker={'color':'magenta'},
                                   line={'width':3}, name=animal_obj_1.get_name())
-    reparam_trace_0 = go.Scatter(x=[k/FR_param for k in range(nums)],
+    reparam_trace_0 = go.Scatter(x=[k/fr_param for k in range(nums)],
                                  y=[points_0[alignment[0][k]] for k in range(nums)],
                                  mode='lines', showlegend=False, marker={'color':'cyan'},
                                  line={'width':3}, name=animal_obj_0.get_name())
-    reparam_trace_1 = go.Scatter(x=[k/FR_param for k in range(nums)],
+    reparam_trace_1 = go.Scatter(x=[k/fr_param for k in range(nums)],
                                  y=[points_1[alignment[1][k]] for k in range(nums)],
                                  mode='lines', showlegend=False, marker={'color':'magenta'},
                                  line={'width':3}, name=animal_obj_1.get_name())
@@ -190,29 +190,29 @@ def render_aligned_graphs(points_0, points_1, alignment,
     reparam_data_1 = []
 
     for i in range(nums):
-        original_data_pair.append(go.Scatter(x=[alignment[0][i]/FR_0, alignment[1][i]/FR_1],
+        original_data_pair.append(go.Scatter(x=[alignment[0][i]/fr_0, alignment[1][i]/fr_1],
                                              y=[points_0[alignment[0][i]],
                                                 points_1[alignment[1][i]]],
                                              mode='lines', marker={'color':'black'},
                                              showlegend=False, opacity=0.1))
-        reparam_data_pair.append(go.Scatter(x=[i/FR_param, i/FR_param],
+        reparam_data_pair.append(go.Scatter(x=[i/fr_param, i/fr_param],
                                             y=[points_0[alignment[0][i]],
                                                points_1[alignment[1][i]]],
                                             mode='lines', marker={'color':'black'},
                                             showlegend=False, opacity=0.1))
-        original_data_0.append(go.Scatter(x=[alignment[0][i]/FR_0, alignment[0][i]/FR_0],
+        original_data_0.append(go.Scatter(x=[alignment[0][i]/fr_0, alignment[0][i]/fr_0],
                                           y=[0, points_0[alignment[0][i]]],
                                           mode='lines', marker={'color':'black'},
                                           showlegend=False, opacity=0.1))
-        original_data_1.append(go.Scatter(x=[alignment[1][i]/FR_1, alignment[1][i]/FR_1],
+        original_data_1.append(go.Scatter(x=[alignment[1][i]/fr_1, alignment[1][i]/fr_1],
                                           y=[0, points_1[alignment[1][i]]],
                                           mode='lines', marker={'color':'black'},
                                           showlegend=False, opacity=0.1))
-        reparam_data_0.append(go.Scatter(x=[i/FR_param, i/FR_param],
+        reparam_data_0.append(go.Scatter(x=[i/fr_param, i/fr_param],
                                          y=[0, points_0[alignment[0][i]]],
                                          mode='lines', marker={'color':'black'},
                                          showlegend=False, opacity=0.1))
-        reparam_data_1.append(go.Scatter(x=[i/FR_param, i/FR_param],
+        reparam_data_1.append(go.Scatter(x=[i/fr_param, i/fr_param],
                                          y=[0, points_1[alignment[1][i]]],
                                          mode='lines', marker={'color':'black'},
                                          showlegend=False, opacity=0.1))
