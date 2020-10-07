@@ -20,6 +20,8 @@ import plotly
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+COLORS = plotly.colors.qualitative.Plotly
+
 def post_process(animal_list, dists, outdir, outfilename, sort_table,
                  square_table, color_min=0.0, color_max=1.0):
     """
@@ -352,24 +354,17 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
                             showlegend=False,
                             xaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
                             yaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
-                            annotations=[dict(x=j+0.5,
+                            annotations=[dict(x=j+0.0,
                                               y=nums+1.0,
-                                              text=animal_list[j].get_name()[4:]
-                                              if animal_list[j].get_control_boolean()
-                                              else animal_list[j].get_name()[4:]+' ',
-                                              font={'color':'cyan'
-                                                            if animal_list[j].get_control_boolean()
-                                                            else 'magenta',
+                                              text=animal_list[j].get_name(),
+                                              font={'color':COLORS[animal_list[j].get_group()],
                                                     'size':7},
                                               textangle=-45, showarrow=False)
                                          for j in range(nums)]
                             +[dict(x=nums+1.0, y=i+0.0,
-                                   text=animal_list[nums-i-1].get_name()[4:]
-                                   if animal_list[nums-i-1].get_control_boolean()
-                                   else animal_list[nums-i-1].get_name()[4:]+' ',
-                                   font={'color':'cyan'
-                                                 if animal_list[nums-i-1].get_control_boolean()
-                                                 else 'magenta', 'size':7},
+                                   text=animal_list[nums-i-1].get_name(),
+                                   font={'color':COLORS[animal_list[nums-i-1].get_group()],
+                                         'size':7},
                                    textangle=0, showarrow=False)
                               for i in range(nums)])
     plotly.offline.plot(figure, filename=outpath)

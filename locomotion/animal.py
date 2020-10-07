@@ -45,7 +45,7 @@ class Animal():
         self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__filename = os.path.basename(self.__data_file)
         self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
-        self.__is_control = json_item["animal_attributes"]["control_group"].lower() == 'true'
+        self.__group = None
         self.__name = json_item["name"]
         self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
@@ -127,9 +127,9 @@ class Animal():
         """Getter function for self.__baseline_end."""
         return self.__baseline_end
 
-    def get_control_boolean(self):
-        """Getter function for self.__is_control."""
-        return self.__is_control
+    def get_group(self):
+        """Getter function for self.__group."""
+        return self.__group
 
     def get_data_file_location(self):
         """Getter function for self.__data_file."""
@@ -178,6 +178,10 @@ class Animal():
     def get_pixel_density(self):
         """Getter function for self.__pix."""
         return self.__pix
+
+    def set_group(self, group_no):
+        """Setter function for self.__group."""
+        self.__group = group_no
 
     ##################################
     # Functions for modifying values #
@@ -494,24 +498,32 @@ def read_info(infile):
     return info
 
 
-def setup_animal_objs(infofile, name_list=None):
+def setup_animal_objs(infofiles, name_list=None):
     """
     Given a json file, generate and return the animal object files.
     If name_list is given, only generate the animal objects for animals in name_list
     :Parameters:
-     infofile : json file. Should contain an entry for each animal.
+     infofile : list of json files. Each group of animals should have a corresponding
+         .json file, which should contain an entry for each animal in the group.
      name_list : list of str. Names of animals to be generated.
     :Returns:
      list of animal objects
     """
-    info = read_info(infofile)
-    if name_list is not None:
-        objs = [_init_animal(item) for item in info if item["name"] in name_list]
-        return objs
-    return [_init_animal(item) for item in info]
+    # check if infofiles is a list:
+    if type(infofiles) != type([]):
+        raise Exception("setup_animal_objs: infofiles variable needs to be a list.")
+    objs = []
+    for group_no, infofile in enumerate(infofiles):
+        info = read_info(infofile)
+        if name_list is not None:
+            objs += [_init_animal(item, group_no) for item in info
+                     if item["name"] in name_list]
+        else:
+            objs += [_init_animal(item, group_no) for item in info]
+    return objs
 
 
-def setup_raw_data(animal):
+def setup_raw_data(animal, group_no):
     """
     Store the raw data values from the data file location of the animal object
     into the animal object itself.
@@ -567,9 +579,10 @@ def setup_raw_data(animal):
     baseline_end_frame = calculate_frame_num(animal, baseline_end)
     animal.add_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
     animal.add_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.set_group(group_no)
 
 
-def _init_animal(json_item):
+def _init_animal(json_item, group_no):
     """
     Given a json entry, extracts the relevant information and returns an initialized animal object
     :Parameters:
@@ -578,7 +591,7 @@ def _init_animal(json_item):
      animal : Animal object.
     """
     animal = Animal(json_item)
-    setup_raw_data(animal)
+    setup_raw_data(animal, group_no)
     return animal
 
 
