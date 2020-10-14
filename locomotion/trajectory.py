@@ -31,16 +31,34 @@ ORDER = 5 #order of smoothing curve used in _smooth()
 ######################
 
 def populate_curve_data(animal_obj, col_names=None):
-    """ Computes the behavioural curve data such as Velocity and Curvature .
-     Note that we could take in the varnames here and only compute V and C
-     if they are called. However, since velocity and curvature data usually
-     aren't too big, we'll blanket compute for now
+    """ Computes the behavioural curve data such as Velocity and Curvature.
 
-     Works only 2 or 3 dimensions.
+    This function computes and stores the Velocity and Curvature given the coordinate
+    data stored in animal_obj. The data used to calculate this is given by col_names,
+    the list of column names.
 
-     :Parameter:
-        animal_obj : animal object, initialized
-        col_names : list, names of data columns.
+    Currently only works in 2 or 3 dimensions.
+
+    Parameter
+    ---------
+    animal_obj : Animal() object
+        Initialized Animal() object, which should already contain coordinate data.
+    col_names : list of str, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals. If not given, defaults to ['X', 'Y']
+
+    Returns
+    -------
+    first_deriv : list of numpy array
+        Each numpy array corresponds to the first derivative of the respective coordinate
+        data as ordered by col_names.
+    second_deriv : list of numpy array
+        Each numpy array corresponds to the second derivative of the respective coordinate
+        data as ordered by col_names.
+    velocity : numpy array
+        The computed velocity at each frame.
+    curvature: numpy array
+        The computed curvature at each frame.
     """
     if col_names is None:
         col_names = ['X', 'Y']
@@ -72,32 +90,36 @@ def populate_curve_data(animal_obj, col_names=None):
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
                     norm_mode, fullmode=False, outdir=None):
-    """ Computes the Behavioural Distortion Distance (BDD) between
-     two animal trajectories by applying Dynamic Time Warping (DTW),
-     each starting and ending at the respective time frame given in
-     the function call.
+    """ Compute the Behavioural Distortion Distance (BDD) between two Animal() objects.
 
-    :Parameters:
-        animal_obj_0/1 : animal object
-         from animal.py, initialized
-        varnames : list
-         variable names (str)
-        seg_start/end_time_0/1 : int or float
-            time in minutes
-        norm_mode : str, either 'baseline' or 'spec'
-         baseline mode uses the mean and standard deviation from the
-         baseline observation time to normalize each variable data,
-         whereas the spec mode uses the mean and standard deivation
-         from the time period specified for this comparison.
-        fullmode : bool
-         if True, the method first obtains the full suite of returns
-         from dtw_ext and writes several path graphs
-        outdir : string
-         path to the output directory
+    Computes the Behavioural Distortion Distance (BDD) between two animal trajectories
+    by applying Dynamic Time Warping (DTW), each starting and ending at the respective
+    time frame given in the function call.
 
-    :Returns:
-        bdd : float
-         behavioural distortion distance
+    Parameters
+    ----------
+    animal_obj_0/1 : Animal() object
+        The initialized Animal() objects to be compared.
+    varnames : list of str
+        List of hashable keys pointing to values stored in the Animal() objects to be used
+        to calculate the BDD.
+    seg_start/end_time_0/1 : int or float
+        Segment start / end time in minutes.
+    norm_mode : str, either 'baseline' or 'spec'
+        Baseline mode uses the mean and standard deviation from the baseline observation
+        time to normalize each variable data, whereas the spec mode uses the mean and
+        standard deivation from the time period specified for this comparison.
+    fullmode : bool, optional
+        If True, the method first obtains the full suite of returns from dtw_ext and
+        writes several path graphs. Default value : False.
+    outdir : str, optional
+        Path to the output directory. If fullmode is True, outdir must given. Default
+        value : None.
+
+    Returns
+    -------
+    bdd : float
+        behavioural distortion distance
     """
     # pylint: disable=too-many-arguments
     # required for now, consider using tuples for time pairs?
@@ -157,7 +179,6 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                 os.makedirs(outdir)
             write.render_aligned_graphs(data_0[i], data_1[i], alignment,
                                         animal_obj_0, animal_obj_1, seg_len, var, outdir)
-
             #For individual plots, enable the following two lines
             #write.render_single_animal_graph(data_0[i], animal_obj_0, var, outdir)
             #write.render_single_animal_graph(data_1[i], animal_obj_1, var, outdir)
@@ -166,26 +187,29 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
 
 def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mode):
-    """ Computes the BDD of each pair of trajectories in animal_list, all
-     starting and ending at the respective time frame given in the function call.
+    """ Computes pairwise BDDs given a list of Animal() objects.
 
-    :Parameters:
-        animal_list : list
-         from animal.py, initialized
-        varnames : list
-         variable names (str)
-        seg_start/end_time : int or float
-            time in minutes
-        norm_mode : str, either 'baseline' or 'spec'
-         baseline mode uses the mean and standard deviation from the
-         baseline observation time to normalize each variable data,
-         whereas the spec mode uses the mean and standard deivation
-         from the time period specified for this comparison.
+    Computes the BDD of each pair of trajectories in animal_list using compute_one_bdd(),
+    all starting and ending at the respective time frame given in the function call.
 
-    :Returns:
-        bdds : 2D array of float (upper-triangular, empty diagonal)
-         bdds[i][j] is the bdd between trajectories of animal[i] and
-         animal[j]
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        List of initialized Animal() objects to be compared.
+    varnames : list
+        List of hashable keys pointing to values stored in the Animal() objects to be used
+        to calculate the BDD.
+    seg_start/end_time : int or float
+        Segment start / end ime in minutes.
+    norm_mode : str, either 'baseline' or 'spec'
+        Baseline mode uses the mean and standard deviation from the baseline observation
+        time to normalize each variable data, whereas the spec mode uses the mean and
+        standard deivation from the time period specified for this comparison.
+
+    Returns
+    -------
+    bdds : 2D array of float (upper-triangular, empty diagonal)
+        i,j-th entry bdds[i][j] is the bdd between trajectories of animal[i] and animal[j].
     """
     num_animals = len(animal_list)
     bdds = [['' for i in range(num_animals)] for j in range(num_animals)]
@@ -200,28 +224,36 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
 
 def compute_one_iibdd(animal_obj, varnames, norm_mode,
                       interval_length=None, start_time=None, end_time=None):
-    """ Computes Behavioural Distortion Distance (BDD) from an animal's
-        trajectory to itself over a random pair of non-overlapping intervals.
+    """ Computes the BDD between two intervals of an animal's trajectory.
 
-     :Parameters:
-        animal_obj : animal object, initialized
-        varnames : list
-         variable names (str)
-        norm_mode : str, either 'baseline' or 'spec'
-         baseline mode uses the mean and standard deviation from the
-         baseline observation time to normalize each variable data,
-         whereas the spec mode uses the mean and standard deivation
-         from the time period specified for this comparison.
-        interval_legth : length of the interval to use. If unspecified, it will
-         be chosen at random.
-        start_time : float, time in minutes
-         time where the intervals can start. If omitted, exp start time is used
-        end_time : float, time in minutes
-         time where the intervals can end. If omitted, exp end time is used.
+    Computes the Behavioural Distortion Distance (BDD) of an animal's trajectory to
+    itself over a random pair of non-overlapping intervals.
 
-     :Returns:
-         list with two entries containing the length of the time interval
-         for comparison, distance (BDD) returned
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object to be compared.
+    varnames : list of str
+        List of hashable keys pointing to values stored in the Animal() objects to be used
+        to calculate the BDD.
+    norm_mode : str, either 'baseline' or 'spec'
+        Baseline mode uses the mean and standard deviation from the baseline observation
+        time to normalize each variable data, whereas the spec mode uses the mean and
+        standard deivation from the time period specified for this comparison.
+    interval_legth : int or float
+        length of the interval to use. If unspecified, it will be chosen at random.
+    start_time : float
+        Time in minutes where the intervals can start. If omitted, exp start time is used.
+    end_time : float
+        Time in minutes where the intervals can end. If omitted, exp end time is used.
+
+    Returns
+    -------
+    list : [interval_length, bdd]
+        interval_length : int or float
+            Length of time interval used for comparison.
+        bdd : float
+            Computed BDD.
     """
     # pylint: disable=too-many-arguments
     # all arguments are necessary
@@ -255,50 +287,57 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
 def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
                       interval_lengths=None, outdir=None, outfilename=None,
                       start_time=None, end_time=None):
-    """ Computes the intra-individual Behavioural Distortion Distance (IIBDD) for
-     each trajectory in animal_list, all starting and ending at the respective
-     time frame given in the function call.
+    """ Computes the intra-individual BDD for each trajectory in list of Animal() objects.
 
-     :Parameters:
-        animal_obj : animal object, initialized
-        varnames : list
-         variable names (str)
-        norm_mode : str, either 'baseline' or 'spec'
-         baseline mode uses the mean and standard deviation from the
-         baseline observation time to normalize each variable data,
-         whereas the spec mode uses the mean and standard deivation
-         from the time period specified for this comparison.
-        num_exps : int
-         number of times to repeat the experiments
-        interval_legths :    List or None
-         list - list of length of the time interval length to use.
-                    num_exps comparisons will be made for each length in the list
-         None - a interval length for each test will be chosen at random to
-                    be between 0.01 and half the total time
-        outdir : str for output directory path
-         if specified, the results will be written to a file (outfilename)
-        outfilename : str for output file name
-        start_time : float, time in minutes
-         time where the intervals can start. If omitted, exp start time will
-         be used.
-        end_time : float, time in minutes
-         time where the intervals can end. If omitted, exp end time will be
-         used.
+    Computes the intra-individual Behavioural Distortion Distance (IIBDD) for each
+    trajectory in a list of Animal() objects, all starting and ending at the respective
+    time frame given in the function call. Computes the IIBDD using compute_one_iibdd()
+    function.
 
-     :Returns:
-        exp_table : 2D list
-             exp_table[i][j] is the j-th interval comparison for the i-th animal in animal_list
-             each entry is a double [interval lenth, distance].
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        List of initialized Animal() object to be compared.
+    varnames : list of str
+        List of hashable keys pointing to values stored in the Animal() objects to be used
+        to calculate the BDD.
+    norm_mode : str, either 'baseline' or 'spec'
+        Baseline mode uses the mean and standard deviation from the baseline observation
+        time to normalize each variable data, whereas the spec mode uses the mean and
+        standard deivation from the time period specified for this comparison.
+    num_exps : int
+        Number of times to repeat the experiments for each Animal() objects.
+    interval_legths : List of int or float, or None. Optional.
+        list - list of length of the time interval length to use.
+               num_exps comparisons will be made for each length in the list
+        None - a interval length for each test will be chosen at random to
+               be between 0.01 and half the total time
+        Default value : None.
+    outdir : str, optional
+        The output directory path. If specified, the results will be written to a file
+        (outfilename). Default value : None.
+    outfilename : str, optional
+        For output file name. Default value : None.
+    start_time : float
+        Time in minutes where the intervals can start. If omitted, exp start time will be
+        used as start time.
+    end_time : float
+        Time in minutes where the intervals can end. If omitted, exp end time will be used
+        as end time.
 
-        additional returns if interval_lengths is given in the function call
-         mean_table : 2D list
-             mean_table[i][j][0] is the j-th interval_length, and
-             mean_table[i][j][1] is the mean of the distances from tests using
-             the j-th interval_length and i-th animal.
-         std_table : 2D list
-             std_table[i][j][0] is the j-th interval_length
-             std_table[i][j][1] is the std of the distances from tests using
-             the j-th interval_length and i-th animal
+    Returns
+    -------
+    exp_table : list of list
+        i,j-th entry exp_table[i][j] is the j-th interval comparison for the i-th animal
+        in animal_list each entry is a double [interval lenth, distance].
+
+    If interval_lengths is given, the function additionally returns:
+    mean_table : list of list of pairs
+        mean_table[i][j][0] is the j-th interval_length, and mean_table[i][j][1] is the
+        mean of the distances from tests using the j-th interval_length and i-th animal.
+    std_table : list of list of pairs
+        std_table[i][j][0] is the j-th interval_length, and std_table[i][j][1] is the std
+        of the distances from tests using the j-th interval_length and i-th animal.
     """
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
@@ -381,12 +420,21 @@ def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
     Given a list of first and second derivatives, return curvature.
     Note: Currently only works for up to 2 / 3 dimensions.
 
-    :Parameters:
-    first_deriv: numpy array
-    second_deriv: numpy array
-    velocity: numpy array
-    :Return:
+    Parameters
+    ----------
+    first_deriv : list of numpy array
+        Each numpy array corresponds to the first derivative of the respective coordinate
+        data as ordered by col_names.
+    second_deriv : list of numpy array
+        Each numpy array corresponds to the second derivative of the respective coordinate
+        data as ordered by col_names.
+    velocity : numpy array
+        The computed velocity at each frame.
+
+    Returns
+    -------
     curvatures : numpy array
+        The computed curvature at each frame.
     """
     if first_deriv.shape != second_deriv.shape:
         raise Exception("first_deriv and second_deriv should be of the same shape.")
@@ -409,23 +457,35 @@ def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
 
 
 def _calculate_velocity(coordinates):
-    """
-    Calculate the velocity
-    :Parameters:
-    coordinates : list
-    :Return:
-    velocity : list
+    """ Calculates the velocity.
+
+    Parameters
+    ----------
+    coordinates : numpy array
+        Numpy matrix where each row corresponds to the coordinates in one axis.
+    Returns
+    -------
+    velocity : numpy array
+        The computed velocity at each frame.
     """
     velocity = np.sqrt(np.sum(np.power(coordinates, 2), axis=0))
     return velocity
 
 
 def _smooth(sequence, frame_rate):
-    """ Smoothes sequence by applying Savitzky-Golay smoothing
-        :Parameters:
-         sequence : list
-        :Return:
-         smoothed : list
+    """ Smooths sequence by applying Savitzky-Golay smoothing.
+
+    Note: this function makes use of global variables SMOOTH_RANGE_MIN and WINDOW_SCALAR.
+
+    Parameters
+    ----------
+    sequence : list
+        Sequence to be smoothed.
+
+    Returns
+    -------
+    smoothed : list
+        Smoothed sequence.
     """
     smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * WINDOW_SCALAR)))
     smooth_range_odd = smooth_range + 1 if smooth_range % 2 == 0 else smooth_range
