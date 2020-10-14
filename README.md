@@ -130,10 +130,10 @@ Example script:
 
 ```python
 import locomotion
-info_file = "/path/to/animal_info.json"
-animals = locomotion.get_animal_objs( info_file )
+info_files = ["/path/to/animal_info.json"]
+animals = locomotion.setup_animal_objs( info_files )
 for a in animals:
-  locomotion.trajectory.get_curve_data( a )
+  locomotion.trajectory.populate_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 start_time, end_time = 0, 1
 norm_mode = 'spec'
@@ -167,10 +167,10 @@ specified info sheet, one can run a script like the following:
 
 ```python
 import locomotion
-info_file = "/path/to/animal_info.json"
-animals = locomotion.get_animal_objs( info_file )
+info_files = ["/path/to/animal_info.json"]
+animals = locomotion.setup_animal_objs( info_files )
 for a in animals:
-  locomotion.trajectory.get_curve_data( a )
+  locomotion.trajectory.populate_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 norm_mode = 'spec'
 number_of_comparisons_per_animal, specified_durations = 100, None
@@ -203,11 +203,11 @@ Example script:
 
 ```python
 import locomotion
-info_file = "/path/to/animal_info.json"
-animals = locomotion.get_animal_objs( info_file )
+info_files = ["/path/to/animal_info.json"]
+animals = locomotion.setup_animal_objs( info_files )
 grid_size, start_time, end_time = 10, 0, 2
 for a in animals:
-  locomotion.heatmap.get_surface_data( a, grid_size, start_time, end_time )
+  locomotion.heatmap.populate_surface_data( a, grid_size, start_time, end_time )
 distances = locomotion.heatmap.compute_all_csd( animals )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False

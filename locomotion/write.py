@@ -15,9 +15,300 @@ import os
 import csv
 import itertools
 import operator
+import numpy as np
 import plotly
 import plotly.graph_objs as go
-import numpy as np
+from plotly.subplots import make_subplots
+
+COLORS = plotly.colors.qualitative.Plotly
+
+def post_process(animal_list, dists, outdir, outfilename, sort_table,
+                 square_table, color_min=0.0, color_max=1.0):
+    """
+    To be documented.
+    """
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-branches
+    num_animals = len(animal_list)
+    if square_table:
+        for i in range(num_animals):
+            for j in range(i):
+                dists[i][j] = dists[j][i]
+        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
+        write_dist_table_to_heatmap(animal_list, dists, outdir,
+                                    outfilename+".html", color_min, color_max)
+    else:
+        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
+        write_dist_table_to_heatmap(animal_list, dists, outdir,
+                                    outfilename+".html", color_min, color_max)
+    if sort_table:
+        dist_means = {}
+        for i in range(num_animals):
+            dlist = [dists[j][i] for j in range(i)] + \
+                [dists[i][j] for j in range(i+1, num_animals)]
+            dist_means.update({animal_list[i]:np.mean(dlist)})
+        sorted_dists = sorted(dist_means.items(), key=operator.itemgetter(1))
+        sorted_indices = [animal_list.index(sorted_dists[i][0])
+                          for i in range(num_animals)]
+        new_dists = [['' for i in range(num_animals)] for j in range(num_animals)]
+        for i in range(num_animals):
+            for j in range(i+1, num_animals):
+                if sorted_indices[j] > sorted_indices[i]:
+                    new_dists[i][j] = dists[sorted_indices[i]][sorted_indices[j]]
+                else:
+                    new_dists[i][j] = dists[sorted_indices[j]][sorted_indices[i]]
+        dists = new_dists
+        animal_list = [animal_list[sorted_indices[i]] for i in range(num_animals)]
+
+        if square_table:
+            for i in range(num_animals):
+                for j in range(i):
+                    dists[i][j] = dists[j][i]
+        write_dist_table_to_csv(animal_list, dists, outdir,
+                                "%s" % outfilename+"_sorted.csv")
+        write_dist_table_to_heatmap(animal_list, dists, outdir,
+                                    "%s" % outfilename+"_sorted.html",
+                                    color_min, color_max)
+
+
+def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
+    """ Render the alignment plot between 2 animal objects based on the BDD
+    calculation.
+
+    Arguments
+    ---------
+    alignment : 2-tuple of numpy arrays.
+        Contains the arrays of indices for the BDD alignment. Each array should
+        be of the same length, and should correspond to the respective animal.
+    animal_obj_0/1 : Animal object.
+        For each respective animal.
+    varnames : List of str.
+        Each string should be linked to the variable names in the animal objects.
+    outdir : Str.
+        Location of the out-directory of the file.
+
+    Returns
+    -------
+    None.
+
+    Outputs
+    -------
+    html file. Offline plotly plot of the alignment between the two animals.
+    """
+    filename = "figure_%s-%s_%s_alignment.html" % (animal_obj_0.get_name(),
+                                                   animal_obj_1.get_name(),
+                                                   '-'.join(varnames))
+    outpath = os.path.join(outdir, filename).replace(' ', '')
+    fr_0 = animal_obj_0.get_frame_rate()
+    fr_1 = animal_obj_1.get_frame_rate()
+    nums = len(alignment[0])
+    data = []
+    for i in range(nums):
+        data.append(go.Scatter(x=[0, alignment[0][i]/fr_0, alignment[0][i]/fr_0],
+                               y=[alignment[1][i]/fr_1, alignment[1][i]/fr_1, 0],
+                               mode='lines',
+                               marker={'color':'black'},
+                               showlegend=False, opacity=0.1))
+    trace = go.Scatter(x=alignment[0]/fr_0, y=alignment[1]/fr_1, mode='lines',
+                       showlegend=False, line={'width':4},
+                       marker={'color':'yellow'})
+    data.append(trace)
+    figure = {'data':data,
+              'layout':{'height':500, 'width':500,
+                        'title' : '%s - %s Alignment Graph' % (animal_obj_0.get_name(),
+                                                               animal_obj_1.get_name()),
+                        'plot_bgcolor' : 'white',
+                        'xaxis':{'title': '%s Time (s)' % animal_obj_0.get_name()},
+                        'yaxis': {'title': '%s Time (s)' % animal_obj_1.get_name()}}}
+    plotly.offline.plot(figure, filename=outpath, auto_open=False)
+    print("Saved alignment graph in %s" % outpath)
+
+
+def render_aligned_graphs(points_0, points_1, alignment,
+                          animal_obj_0, animal_obj_1, seg_len, varname, outdir):
+    """ Render the aligned graphs based on a certain variable between both animals.
+
+    Arguments
+    ---------
+    points_0/1 : np.array of floats.
+        Correspond to the values of the given variable on each frame for each
+        respective animal.
+    alignment : 2-tuple of numpy arrays.
+        Contains the arrays of indices for the BDD alignment. Each array should be
+        of the same length, and should correspond to the respective animal.
+    animal_obj_0/1 : Animal object.
+        For each respective animal.
+    seg_len : float.
+        Length of the segment (in minutes).
+    varnames : List of str.
+        Each string should be linked to the variable names in the animal objects.
+    outdir : Str.
+        Location of the out-directory of the file.
+
+    Returns
+    -------
+    None.
+
+    Outputs
+    -------
+    html file.
+        Offline plotly plot of the alignment between the two animals.
+    """
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-statements
+    filename = "figure_%s-%s_%s_plots.html" % (animal_obj_0.get_name(),
+                                               animal_obj_1.get_name(),
+                                               varname)
+    fulloutpath = os.path.join(outdir, filename).replace(' ', '')
+    nums = len(alignment[0])
+
+    fr_0 = animal_obj_0.get_frame_rate()
+    fr_1 = animal_obj_1.get_frame_rate()
+    fr_param = nums/(seg_len * 60)
+
+    original_trace_0 = go.Scatter(x=[alignment[0][k]/fr_0 for k in range(nums)],
+                                  y=[points_0[alignment[0][k]] for k in range(nums)],
+                                  mode='lines', showlegend=False, marker={'color':'cyan'},
+                                  line={'width':3}, name=animal_obj_0.get_name())
+    original_trace_1 = go.Scatter(x=[alignment[1][k]/fr_1 for k in range(nums)],
+                                  y=[points_1[alignment[1][k]] for k in range(nums)],
+                                  mode='lines', showlegend=False, marker={'color':'magenta'},
+                                  line={'width':3}, name=animal_obj_1.get_name())
+    reparam_trace_0 = go.Scatter(x=[k/fr_param for k in range(nums)],
+                                 y=[points_0[alignment[0][k]] for k in range(nums)],
+                                 mode='lines', showlegend=False, marker={'color':'cyan'},
+                                 line={'width':3}, name=animal_obj_0.get_name())
+    reparam_trace_1 = go.Scatter(x=[k/fr_param for k in range(nums)],
+                                 y=[points_1[alignment[1][k]] for k in range(nums)],
+                                 mode='lines', showlegend=False, marker={'color':'magenta'},
+                                 line={'width':3}, name=animal_obj_1.get_name())
+    original_data_pair = []
+    reparam_data_pair = []
+    original_data_0 = []
+    original_data_1 = []
+    reparam_data_0 = []
+    reparam_data_1 = []
+
+    for i in range(nums):
+        original_data_pair.append(go.Scatter(x=[alignment[0][i]/fr_0, alignment[1][i]/fr_1],
+                                             y=[points_0[alignment[0][i]],
+                                                points_1[alignment[1][i]]],
+                                             mode='lines', marker={'color':'black'},
+                                             showlegend=False, opacity=0.1))
+        reparam_data_pair.append(go.Scatter(x=[i/fr_param, i/fr_param],
+                                            y=[points_0[alignment[0][i]],
+                                               points_1[alignment[1][i]]],
+                                            mode='lines', marker={'color':'black'},
+                                            showlegend=False, opacity=0.1))
+        original_data_0.append(go.Scatter(x=[alignment[0][i]/fr_0, alignment[0][i]/fr_0],
+                                          y=[0, points_0[alignment[0][i]]],
+                                          mode='lines', marker={'color':'black'},
+                                          showlegend=False, opacity=0.1))
+        original_data_1.append(go.Scatter(x=[alignment[1][i]/fr_1, alignment[1][i]/fr_1],
+                                          y=[0, points_1[alignment[1][i]]],
+                                          mode='lines', marker={'color':'black'},
+                                          showlegend=False, opacity=0.1))
+        reparam_data_0.append(go.Scatter(x=[i/fr_param, i/fr_param],
+                                         y=[0, points_0[alignment[0][i]]],
+                                         mode='lines', marker={'color':'black'},
+                                         showlegend=False, opacity=0.1))
+        reparam_data_1.append(go.Scatter(x=[i/fr_param, i/fr_param],
+                                         y=[0, points_1[alignment[1][i]]],
+                                         mode='lines', marker={'color':'black'},
+                                         showlegend=False, opacity=0.1))
+
+    original_data_pair.append(original_trace_0)
+    original_data_pair.append(original_trace_1)
+    reparam_data_pair.append(reparam_trace_0)
+    reparam_data_pair.append(reparam_trace_1)
+    original_data_0.append(original_trace_0)
+    original_data_1.append(original_trace_1)
+    reparam_data_0.append(reparam_trace_0)
+    reparam_data_1.append(reparam_trace_1)
+
+    fig = make_subplots(rows=6, cols=1,
+                        subplot_titles=["Matched %s" % varname,
+                                        "Aligned %s" % varname,
+                                        "%s - %s" % (animal_obj_0.get_name(), varname),
+                                        "%s - Warped %s" % (animal_obj_0.get_name(), varname),
+                                        "%s - %s" % (animal_obj_1.get_name(), varname),
+                                        "%s - Warped %s" % (animal_obj_1.get_name(), varname)])
+
+    # Matched Plots
+    for trace in original_data_pair:
+        fig.add_trace(trace, row=1, col=1)
+    fig.update_xaxes(title_text='Real Time (s)', row=1, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=1, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+
+    # Aligned Plots
+    for trace in reparam_data_pair:
+        fig.add_trace(trace, row=2, col=1)
+    fig.update_xaxes(title_text='Warped Time (s)', row=2, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=2, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+
+    # Animal 0 Regular Plot
+    for trace in original_data_0:
+        fig.add_trace(trace, row=3, col=1)
+    fig.update_xaxes(title_text='%s Time (s)' % animal_obj_0.get_name(), row=3, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=3, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+
+    # Animal 0 Warped Plot
+    for trace in reparam_data_0:
+        fig.add_trace(trace, row=4, col=1)
+    fig.update_xaxes(title_text='Warped Time (s)', row=4, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=4, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+
+    # Animal 1 Regular Plot
+    for trace in original_data_1:
+        fig.add_trace(trace, row=5, col=1)
+    fig.update_xaxes(title_text='%s Time (s)' % animal_obj_1.get_name(), row=5, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=5, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+
+    # Animal 0 Warped Plot
+    for trace in reparam_data_1:
+        fig.add_trace(trace, row=6, col=1)
+    fig.update_xaxes(title_text='Warped Time (s)', row=6, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+    fig.update_yaxes(title_text='Normalized %s (au)' % varname, range=[0, 1], row=6, col=1,
+                     linecolor='#555', gridcolor='#DDD', gridwidth=0.5)
+
+    fig.update_layout(height=2400, width=1000,
+                      title='%s-%s %s Alignment Figures' % (animal_obj_0.get_name(),
+                                                            animal_obj_1.get_name(),
+                                                            varname),
+                      title_font_size=24,
+                      plot_bgcolor='white',
+                      showlegend=False)
+
+    plotly.offline.plot(fig, filename=fulloutpath, auto_open=False)
+    print("Saved the alignment graphs in directory %s" % outdir)
+
+
+def render_single_animal_graph(points, animal_obj, varname, outdir):
+    """
+    To be documented.
+    """
+    filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
+    outpath = os.path.join(outdir, filename).replace(' ', '')
+    num_points = len(points)
+    trace = go.Scatter(x=range(num_points)/animal_obj.get_frame_rate(), y=points,
+                       mode='lines', showlegend=False, line={'width':4})
+    data = [trace]
+    plotly.offline.plot(data, filename=outpath, auto_open=False)
+    print("Saved single animal graph in %s" % outpath)
+
 
 def write_dist_table_to_csv(animal_list, results, outdir, outfilename):
     """
@@ -63,28 +354,41 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
                             showlegend=False,
                             xaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
                             yaxis={'showticklabels':False, 'showgrid':False, 'ticks':''},
-                            annotations=[dict(x=j+0.5,
+                            annotations=[dict(x=j+0.0,
                                               y=nums+1.0,
-                                              text=animal_list[j].get_name()[4:]
-                                              if animal_list[j].get_control_boolean()
-                                              else animal_list[j].get_name()[4:]+' ',
-                                              font={'color':'cyan'
-                                                            if animal_list[j].get_control_boolean()
-                                                            else 'magenta',
+                                              text=animal_list[j].get_name(),
+                                              font={'color':COLORS[animal_list[j].get_group()],
                                                     'size':7},
                                               textangle=-45, showarrow=False)
                                          for j in range(nums)]
                             +[dict(x=nums+1.0, y=i+0.0,
-                                   text=animal_list[nums-i-1].get_name()[4:]
-                                   if animal_list[nums-i-1].get_control_boolean()
-                                   else animal_list[nums-i-1].get_name()[4:]+' ',
-                                   font={'color':'cyan'
-                                                 if animal_list[nums-i-1].get_control_boolean()
-                                                 else 'magenta', 'size':7},
+                                   text=animal_list[nums-i-1].get_name(),
+                                   font={'color':COLORS[animal_list[nums-i-1].get_group()],
+                                         'size':7},
                                    textangle=0, showarrow=False)
                               for i in range(nums)])
     plotly.offline.plot(figure, filename=outpath)
     print("LOG: Plot the heatmap in %s" % outpath)
+
+
+def write_off(animal_obj, coordinates, outdir, filename):
+    """
+    To be documented.
+    """
+    outpath = os.path.join(outdir, filename).replace(' ', '')
+    triangles = animal_obj.get_triangulation()
+    colors = animal_obj.get_colors()
+    print("Writing triangulation to file %s..." % outpath)
+    with open(outpath, 'w') as outfile:
+        outfile.write("OFF\n")
+        outfile.write("%d %d %d\n" % (len(coordinates), len(triangles), 0))
+        for coord in coordinates:
+            outfile.write("%f %f %f\n" % (coord[0], coord[1], coord[2]))
+        for triangle in triangles:
+            color = colors[triangles.index(triangle)]
+            outfile.write("%d %d %d %d %f %f %f\n" % (3, triangle[0],
+                                                      triangle[1], triangle[2],
+                                                      color[0], color[1], color[2]))
 
 
 def write_segment_exps_to_csv(animal_list, results, means, stds, outdir, outfilename):
@@ -140,250 +444,3 @@ def write_segment_exps_to_csv(animal_list, results, means, stds, outdir, outfile
                 row = [stds[0][i][0]] + [stds[j][i][1] for j in range(num_animals)]
                 csvwriter.writerow(row)
         print("Saved the table in %s" % outfile)
-
-
-def render_single_animal_graph(points, animal_obj, varname, outdir):
-    """
-    To be documented.
-    """
-    filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
-    outpath = os.path.join(outdir, filename).replace(' ', '')
-    num_points = len(points)
-    trace = go.Scatter(x=range(num_points), y=points, mode='lines',
-                       showlegend=False, line={'width':4})
-    data = [trace]
-    plotly.offline.plot(data, filename=outpath, auto_open=False)
-
-    print("Saved single animal graph in %s" % outpath)
-
-
-def render_aligned_graphs(points_0, points_1, alignment,
-                          animal_obj_0, animal_obj_1, varname, outdir):
-    """
-    To be documented.
-    """
-    # pylint:disable=too-many-arguments
-    # pylint:disable=too-many-locals
-    # pylint:disable=too-many-statements
-    matched_filename = "figure_%s-%s_matched_%s.html" % (animal_obj_0.get_name(),
-                                                         animal_obj_1.get_name(),
-                                                         varname)
-    aligned_filename = "figure_%s-%s_aligned_%s.html" % (animal_obj_0.get_name(),
-                                                         animal_obj_1.get_name(),
-                                                         varname)
-    original_filename_0 = "figure_%s_%s.html" % (animal_obj_0.get_name(), varname)
-    original_filename_1 = "figure_%s_%s.html" % (animal_obj_1.get_name(), varname)
-    reparam_filename_0 = "figure_%s_%s_warped_by_%s.html" % (animal_obj_0.get_name(),
-                                                             varname,
-                                                             animal_obj_1.get_name())
-    reparam_filename_1 = "figure_%s_%s_warped_by_%s.html" % (animal_obj_1.get_name(),
-                                                             varname,
-                                                             animal_obj_0.get_name())
-    fulloutpath_matched = os.path.join(outdir, matched_filename).replace(' ', '')
-    fulloutpath_aligned = os.path.join(outdir, aligned_filename).replace(' ', '')
-    fulloutpath_original_0 = os.path.join(outdir, original_filename_0).replace(' ', '')
-    fulloutpath_original_1 = os.path.join(outdir, original_filename_1).replace(' ', '')
-    fulloutpath_reparam_0 = os.path.join(outdir, reparam_filename_0).replace(' ', '')
-    fulloutpath_reparam_1 = os.path.join(outdir, reparam_filename_1).replace(' ', '')
-    nums = len(alignment[0])
-    original_trace_0 = go.Scatter(x=[alignment[0][k] for k in range(nums)],
-                                  y=[points_0[alignment[0][k]] for k in range(nums)],
-                                  mode='lines', showlegend=False,
-                                  line={'width':3}, name=animal_obj_0.get_name())
-    original_trace_1 = go.Scatter(x=[alignment[1][k] for k in range(nums)],
-                                  y=[points_1[alignment[1][k]] for k in range(nums)],
-                                  mode='lines', showlegend=False,
-                                  line={'width':3}, name=animal_obj_1.get_name())
-    reparam_trace_0 = go.Scatter(x=[k*alignment[0][-1]/nums for k in range(nums)],
-                                 y=[points_0[alignment[0][k]] for k in range(nums)],
-                                 mode='lines', showlegend=False,
-                                 line={'width':3}, name=animal_obj_0.get_name())
-    reparam_trace_1 = go.Scatter(x=[k*alignment[1][-1]/nums for k in range(nums)],
-                                 y=[points_1[alignment[1][k]] for k in range(nums)],
-                                 mode='lines', showlegend=False,
-                                 line={'width':3}, name=animal_obj_1.get_name())
-    original_data_pair = []
-    reparam_data_pair = []
-    original_data_0 = []
-    original_data_1 = []
-    reparam_data_0 = []
-    reparam_data_1 = []
-
-    for i in range(nums):
-        original_data_pair.append(go.Scatter(x=[alignment[0][i], alignment[1][i]],
-                                             y=[points_0[alignment[0][i]],
-                                                points_1[alignment[1][i]]],
-                                             mode='lines', marker={'color':'black'},
-                                             showlegend=False, opacity=0.1))
-        reparam_data_pair.append(go.Scatter(x=[i*alignment[0][-1]/nums, i*alignment[0][-1]/nums],
-                                            y=[points_0[alignment[0][i]],
-                                               points_1[alignment[1][i]]],
-                                            mode='lines', marker={'color':'black'},
-                                            showlegend=False, opacity=0.1))
-        original_data_0.append(go.Scatter(x=[alignment[0][i], alignment[0][i]],
-                                          y=[0, points_0[alignment[0][i]]],
-                                          mode='lines', marker={'color':'black'},
-                                          showlegend=False, opacity=0.1))
-        original_data_1.append(go.Scatter(x=[alignment[1][i], alignment[1][i]],
-                                          y=[0, points_1[alignment[1][i]]],
-                                          mode='lines', marker={'color':'black'},
-                                          showlegend=False, opacity=0.1))
-        reparam_data_0.append(go.Scatter(x=[i*alignment[0][-1]/nums, i*alignment[0][-1]/nums],
-                                         y=[0, points_0[alignment[0][i]]],
-                                         mode='lines', marker={'color':'black'},
-                                         showlegend=False, opacity=0.1))
-        reparam_data_1.append(go.Scatter(x=[i*alignment[0][-1]/nums, i*alignment[0][-1]/nums],
-                                         y=[0, points_1[alignment[1][i]]],
-                                         mode='lines', marker={'color':'black'},
-                                         showlegend=False, opacity=0.1))
-
-    original_data_pair.append(original_trace_0)
-    original_data_pair.append(original_trace_1)
-    reparam_data_pair.append(reparam_trace_0)
-    reparam_data_pair.append(reparam_trace_1)
-    original_data_0.append(original_trace_0)
-    original_data_1.append(original_trace_1)
-    reparam_data_0.append(reparam_trace_0)
-    reparam_data_1.append(reparam_trace_1)
-
-    matched_figure = {'data':original_data_pair,
-                      'layout':{'height':350, 'width':1000,
-                                'xaxis':{'title': 'Real Time'},
-                                'yaxis':{'title': varname, 'range':[0, 1]}},
-                      'frames':[]}
-    aligned_figure = {'data':reparam_data_pair,
-                      'layout':{'height':350, 'width':1000,
-                                'xaxis':{'title': 'Warped Time'},
-                                'yaxis':{'title': varname, 'range':[0, 1]}},
-                      'frames':[]}
-    original_figure_0 = {'data':original_data_0,
-                         'layout':{'height':350, 'width':1000,
-                                   'xaxis':{'title': '%s Time' % animal_obj_0.get_name()},
-                                   'yaxis':{'title': varname, 'range':[0, 1]}},
-                         'frames':[]}
-    original_figure_1 = {'data':original_data_1,
-                         'layout':{'height':350, 'width':1000,
-                                   'xaxis':{'title': '%s Time' % animal_obj_1.get_name()},
-                                   'yaxis':{'title': varname, 'range':[0, 1]}},
-                         'frames':[]}
-    reparam_figure_0 = {'data':reparam_data_0,
-                        'layout':{'height':350, 'width':1000,
-                                  'xaxis':{'title': 'Warped Time'},
-                                  'yaxis':{'title': varname, 'range':[0, 1]}},
-                        'frames':[]}
-    reparam_figure_1 = {'data':reparam_data_1,
-                        'layout':{'height':350, 'width':1000,
-                                  'xaxis':{'title': 'Warped Time'},
-                                  'yaxis':{'title': varname, 'range':[0, 1]}},
-                        'frames':[]}
-
-    plotly.offline.plot(matched_figure,
-                        filename=fulloutpath_matched, auto_open=False)
-    plotly.offline.plot(aligned_figure,
-                        filename=fulloutpath_aligned, auto_open=False)
-    plotly.offline.plot(original_figure_0,
-                        filename=fulloutpath_original_0, auto_open=False)
-    plotly.offline.plot(original_figure_1,
-                        filename=fulloutpath_original_1, auto_open=False)
-    plotly.offline.plot(reparam_figure_0,
-                        filename=fulloutpath_reparam_0, auto_open=False)
-    plotly.offline.plot(reparam_figure_1,
-                        filename=fulloutpath_reparam_1, auto_open=False)
-    print("Saved the alignment graphs in directory %s" % outdir)
-
-
-def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
-    """
-    To be documented.
-    """
-    filename = "figure_%s-%s_%s_alignment.html" % (animal_obj_0.get_name(),
-                                                   animal_obj_1.get_name(),
-                                                   '-'.join(varnames))
-    outpath = os.path.join(outdir, filename).replace(' ', '')
-    nums = len(alignment[0])
-    data = []
-    for i in range(nums):
-        data.append(go.Scatter(x=[0, alignment[0][i], alignment[0][i]],
-                               y=[alignment[1][i], alignment[1][i], 0],
-                               mode='lines',
-                               marker={'color':'black'},
-                               showlegend=False, opacity=0.1))
-    trace = go.Scatter(x=alignment[0], y=alignment[1], mode='lines',
-                       showlegend=False, line={'width':4})
-    data.append(trace)
-    figure = {'data':data,
-              'layout':{'height':500, 'width':500,
-                        'xaxis':{'title': '%s Time' % animal_obj_0.get_name()},
-                        'yaxis': {'title': '%s Time' % animal_obj_1.get_name()}}}
-    plotly.offline.plot(figure, filename=outpath+".html", auto_open=False)
-    print("Saved alignment graph in %s" % outpath)
-
-
-def write_off(animal_obj, coordinates, outdir, filename):
-    """
-    To be documented.
-    """
-    outpath = os.path.join(outdir, filename).replace(' ', '')
-    triangles = animal_obj.get_triangulation()
-    colors = animal_obj.get_colors()
-    print("Writing triangulation to file %s..." % outpath)
-    with open(outpath, 'w') as outfile:
-        outfile.write("OFF\n")
-        outfile.write("%d %d %d\n" % (len(coordinates), len(triangles), 0))
-        for coord in coordinates:
-            outfile.write("%f %f %f\n" % (coord[0], coord[1], coord[2]))
-        for triangle in triangles:
-            color = colors[triangles.index(triangle)]
-            outfile.write("%d %d %d %d %f %f %f\n" % (3, triangle[0],
-                                                      triangle[1], triangle[2],
-                                                      color[0], color[1], color[2]))
-
-
-def post_process(animal_list, dists, outdir, outfilename, sort_table,
-                 square_table, color_min=0.0, color_max=1.0):
-    """
-    To be documented.
-    """
-    # pylint:disable=too-many-arguments
-    # pylint:disable=too-many-locals
-    # pylint:disable=too-many-branches
-    num_animals = len(animal_list)
-    if square_table:
-        for i in range(num_animals):
-            for j in range(i):
-                dists[i][j] = dists[j][i]
-        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
-        write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    outfilename+".html", color_min, color_max)
-    else:
-        write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
-        write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    outfilename+".html", color_min, color_max)
-    if sort_table:
-        dist_means = {}
-        for i in range(num_animals):
-            dlist = [dists[j][i] for j in range(i)] + \
-                [dists[i][j] for j in range(i+1, num_animals)]
-            dist_means.update({animal_list[i]:np.mean(dlist)})
-        sorted_dists = sorted(dist_means.items(), key=operator.itemgetter(1))
-        sorted_indices = [animal_list.index(sorted_dists[i][0])
-                          for i in range(num_animals)]
-        new_dists = [['' for i in range(num_animals)] for j in range(num_animals)]
-        for i in range(num_animals):
-            for j in range(i+1, num_animals):
-                if sorted_indices[j] > sorted_indices[i]:
-                    new_dists[i][j] = dists[sorted_indices[i]][sorted_indices[j]]
-                else:
-                    new_dists[i][j] = dists[sorted_indices[j]][sorted_indices[i]]
-        dists = new_dists
-        animal_list = [animal_list[sorted_indices[i]] for i in range(num_animals)]
-
-        if square_table:
-            for i in range(num_animals):
-                for j in range(i):
-                    dists[i][j] = dists[j][i]
-        write_dist_table_to_csv(animal_list, dists, outdir,
-                                "%s" % outfilename+"_sorted.csv")
-        write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    "%s" % outfilename+"_sorted.html",
-                                    color_min, color_max)
