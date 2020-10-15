@@ -297,7 +297,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
     Parameters
     ----------
     animal_list : list of Animal() objects
-        List of initialized Animal() object to be compared.
+        List of initialized Animal() objects to be compared.
     varnames : list of str
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.

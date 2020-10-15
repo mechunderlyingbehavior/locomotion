@@ -24,8 +24,28 @@ COLORS = plotly.colors.qualitative.Plotly
 
 def post_process(animal_list, dists, outdir, outfilename, sort_table,
                  square_table, color_min=0.0, color_max=1.0):
-    """
-    To be documented.
+    """ MATT: Need to add description.
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        List of initialized Animal() objects to be compared. Should coincide with the
+        Animal() objects used to calculate dists, and the order should match dists.
+    dists : 2D array of float (upper-triangular, empty diagonal)
+        dists[i][j] is the distances between trajectories of animal[i] and animal[j].
+    outdir : str
+        Absolute path to the output directory for the .csv and the .html files exported by
+        the function.
+    outfilename : str
+        Name that will be given to the files printed by this function.
+    sort_table : bool
+        MATT: I'm not 100% certain of the logic behind the sorts
+    square_table: bool
+        If True, dists will be mirrored along the diagonal to fill up the empty entries.
+    color_min : float, optional
+        Defines the minimum value on the color scale. Default value: 0.0.
+    color_max : float, optional
+        Defines the maximum value on the color scale. Default value: 1.0.
     """
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-locals
@@ -73,28 +93,23 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
 
 
 def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
-    """ Render the alignment plot between 2 animal objects based on the BDD
-    calculation.
+    """ Prints the alignment plot between 2 animal objects.
 
-    Arguments
-    ---------
+    Given the alignment arrays and the respective animal objects, generates and
+    exports the alignment graph between the two objects. Outputs a .html file of the
+    Plotly plot.
+
+    Parameters
+    ----------
     alignment : 2-tuple of numpy arrays.
-        Contains the arrays of indices for the BDD alignment. Each array should
-        be of the same length, and should correspond to the respective animal.
-    animal_obj_0/1 : Animal object.
+        Contains the arrays of indices for the alignment. Each array should be of the same
+        length, and should correspond to the respective animal.
+    animal_obj_0/1 : Animal() object.
         For each respective animal.
     varnames : List of str.
         Each string should be linked to the variable names in the animal objects.
     outdir : Str.
-        Location of the out-directory of the file.
-
-    Returns
-    -------
-    None.
-
-    Outputs
-    -------
-    html file. Offline plotly plot of the alignment between the two animals.
+        Absolute path to the output directory for the .html file.
     """
     filename = "figure_%s-%s_%s_alignment.html" % (animal_obj_0.get_name(),
                                                    animal_obj_1.get_name(),
@@ -127,33 +142,28 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
 
 def render_aligned_graphs(points_0, points_1, alignment,
                           animal_obj_0, animal_obj_1, seg_len, varname, outdir):
-    """ Render the aligned graphs based on a certain variable between both animals.
+    """ Prints the aligned graphs based on a certain variable between both animals.
 
-    Arguments
+    Exports a series of Plotly plots as .html files corresponding to various comparison
+    plots for two Animal() objects on a given variable, considering the original values
+    and the distorted values obtained by using the alignment.
+
+    Parameters
     ---------
-    points_0/1 : np.array of floats.
+    points_0/1 : numpy array of floats
         Correspond to the values of the given variable on each frame for each
         respective animal.
-    alignment : 2-tuple of numpy arrays.
-        Contains the arrays of indices for the BDD alignment. Each array should be
-        of the same length, and should correspond to the respective animal.
-    animal_obj_0/1 : Animal object.
+    alignment : 2-tuple of numpy arrays
+        Contains the arrays of indices for the alignment. Each array should be of the same
+        length, and should correspond to the respective animal.
+    animal_obj_0/1 : Animal() object
         For each respective animal.
-    seg_len : float.
+    seg_len : float
         Length of the segment (in minutes).
-    varnames : List of str.
-        Each string should be linked to the variable names in the animal objects.
-    outdir : Str.
-        Location of the out-directory of the file.
-
-    Returns
-    -------
-    None.
-
-    Outputs
-    -------
-    html file.
-        Offline plotly plot of the alignment between the two animals.
+    varname : str
+        The name of the variable to be plotted.
+    outdir : str.
+        Absolute path to the output directory for the .html files.
     """
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-locals
@@ -297,8 +307,20 @@ def render_aligned_graphs(points_0, points_1, alignment,
 
 
 def render_single_animal_graph(points, animal_obj, varname, outdir):
-    """
-    To be documented.
+    """ Renders the time-series graph for the variables of a given Animal() object.
+
+    Exports an offline Plotly plot of variable over frame for the given Animal() object.
+
+    Parameters
+    ----------
+    points : np.array of floats
+        Correspond to the values of the given variable on each frame for the animal.
+    animal_obj : Animal() object
+        The Animal() object corresponding to the given animal.
+    varname : str
+        The name of the variable to be plotted.
+    outdir : str.
+        Absolute path to the output directory for the .html file.
     """
     filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
     outpath = os.path.join(outdir, filename).replace(' ', '')
@@ -311,9 +333,22 @@ def render_single_animal_graph(points, animal_obj, varname, outdir):
 
 
 def write_dist_table_to_csv(animal_list, results, outdir, outfilename):
-    """
-    Takes in a matrix of DTW results in order specified in fileList
-    Writes the results in the specified outfile name (expects absolute/full path)
+    """ Exports the matrix of distances to a .csv file.
+
+    Takes in a matrix of pair-wise distances between a list of animals and writes the
+    results in the specified outfile name (expects absolute/full path).
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        Corresponds to the animals that the pair-wise distances were calculated for.
+        Order is assumed to match the order of the results.
+    results : 2D array of float (upper-triangular, empty diagonal)
+        results[i][j] is the distances between trajectories of animal[i] and animal[j].
+    outdir : str
+        Absolute path to the output directory for the .csv files exported by the function.
+    outfilename : str
+        Name that will be given to the files printed by this function.
     """
     num_animals = len(animal_list)
     outpath = os.path.join(outdir, outfilename)
@@ -330,9 +365,26 @@ def write_dist_table_to_csv(animal_list, results, outdir, outfilename):
 
 def write_dist_table_to_heatmap(animal_list, results, outdir,
                                 outfilename, color_min=0.0, color_max=1.0):
-    """
-    Takes in a matrix of DTW results in order specified in fileList
-    Writes the results in the specified outfile name (expects absolute/full path)
+    """ Exports the matrix of distances to a Plotly heatmap.
+
+    Takes in a matrix of pair-wise distances between a list of animals and produces a
+    Plotly heatmap that visually represents the distance between each animal.
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        Corresponds to the animals that the pair-wise distances were calculated for.
+        Order is assumed to match the order of the results.
+    results : 2D array of float (upper-triangular, empty diagonal)
+        results[i][j] is the distances between trajectories of animal[i] and animal[j].
+    outdir : str
+        Absolute path to the output directory for the .csv files exported by the function.
+    outfilename : str
+        Name that will be given to the files printed by this function.
+    color_min : float, optional
+        Defines the minimum value on the color scale. Default value: 0.0.
+    color_max : float, optional
+        Defines the maximum value on the color scale. Default value: 1.0.
     """
     # pylint:disable=too-many-arguments
     nums = len(animal_list)
@@ -372,8 +424,21 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
 
 
 def write_off(animal_obj, coordinates, outdir, filename):
-    """
-    To be documented.
+    """ Exports triangulation of a given Animal() object to an .off file.
+
+    MATT: Further explanation might be useful, like what the .off file is used for.
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        Corresponds to the animals that the pair-wise distances were calculated for.
+        Order is assumed to match the order of the results.
+    coordinates : MATT: Not sure what this exactly is
+        MATT: help!
+    outdir : str
+        Absolute path to the output directory for the .csv files exported by the function.
+    outfilename : str
+        Name that will be given to the files printed by this function.
     """
     outpath = os.path.join(outdir, filename).replace(' ', '')
     triangles = animal_obj.get_triangulation()
@@ -392,11 +457,27 @@ def write_off(animal_obj, coordinates, outdir, filename):
 
 
 def write_segment_exps_to_csv(animal_list, results, means, stds, outdir, outfilename):
-    """
-    Writes the results from trajectory.runRandomSegmentComparisons() to CSV
-    results is a table where results[i][j] is the j-th segment comparison for
-    the i-th animal in animal_list. Note that the entry is a double, (segment
-    lenth, distance).
+    """ Exports the results from trajectory.compute_all_iibdd() to CSV.
+
+    Parameters
+    ----------
+
+    animal_list : list of Animal() objects
+        Corresponds to the animals that the intra-individual BDD was calculated for. Order
+        is assumed to match the order of the results i.e. dim 0 of results
+    results : 2D array of 2-tuples (segment length, distance)
+        The matrix of results of the compute_all_iibdd() function. The matrix should have
+        dimensions n x m, where n is the number of animals and m is the number of
+        comparisons. Each entry contains the segment length and the computed distance for
+        each comparison.
+    means : MATT: Not sure what this should be. Means of the distances?
+        MATT: help!
+    stds : MATT: same here.
+        MATT: help!
+    outdir : str
+        Absolute path to the output directory for the .csv files exported by the function.
+    outfilename : str
+        Name that will be given to the files printed by this function.
     """
     # pylint:disable=too-many-arguments
     num_animals = len(animal_list)
