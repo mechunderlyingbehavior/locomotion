@@ -39,8 +39,8 @@ def populate_curve_data(animal_obj, col_names=None):
 
     Currently only works in 2 or 3 dimensions.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     animal_obj : Animal() object
         Initialized Animal() object, which should already contain coordinate data.
     col_names : list of str, optional
