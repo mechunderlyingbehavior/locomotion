@@ -35,6 +35,13 @@ class Animal():
     # pylint: disable=too-many-public-methods
     # Class contains a large number of methods, but is done to improve readability.
     def __init__(self, json_item):
+        """ Initiates the Animal() object.
+
+        Parameters
+        ----------
+        json_item : dict
+            Deserialised JSON file, with the necessary animal information.
+        """
         self.__animal_id = json_item["animal_attributes"]["ID"]
         self.__animal_type = json_item["animal_attributes"]["species"]
         self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
@@ -81,7 +88,7 @@ class Animal():
         ----------
         var_name : str
             Hashable key that will be used to point to variable in self.__raw_vals.
-        val_list : list
+        val_list : list of floats
             List of data values corresponding to var_name to be stored in self.__raw_vals.
         """
         self.__raw_vals.update({var_name:val_list})
@@ -219,7 +226,7 @@ class Animal():
 
         Parameters
         ----------
-        var_names : list of str
+        var_names : list of strs
             List of hashable keys pointing to variables stored in self.__raw_vals.
         start_frame : int, optional
             Starting frame of portion to extract. Default value : None.
@@ -281,8 +288,13 @@ class Animal():
         float
             Standard deviation of var_name over scope period.
         """
-        # TODO: Add error handling for unseen scope.
-        return self.__means[var_name][scope], self.__stds[var_name][scope]
+        try:
+            means = self.__means[var_name][scope]
+            stds = self.__stds[var_name][scope]
+        except KeyError as wrong_key:
+            raise KeyError("get_stats : %s is not a valid variable name or scope."
+                           % wrong_key)
+        return means, stds
 
     ############################
     # Functions for heatmap.py #
@@ -499,7 +511,7 @@ def norm(data, rm_outliers = True):
 
     Parameters
     ----------
-    data : list
+    data : list of floats
         List of data values for on which to calculate the mean and standard deviation.
     rm_outliers : bool.
         If True, function removes outliers. Default value : True.
@@ -527,7 +539,7 @@ def normalize(data, mean, std):
 
     Parameters
     ----------
-    data : list
+    data : list of floats
         List of data values to normalize.
     mean : float
         Mean of data values.
@@ -536,7 +548,7 @@ def normalize(data, mean, std):
 
     Returns
     -------
-    list
+    list of floats
         List of normalized data. If std == 0, then returns a list of 0.
     """
     if std != 0:
@@ -582,7 +594,7 @@ def setup_animal_objs(infofiles, name_list=None):
     infofile : list of dicts
         Each group of animals should have a corresponding deserialized .json file, stored
         as a dict, which should contain an entry for each animal in the group.
-    name_list : list of str, optional
+    name_list : list of strs, optional
         Names of animals to be generated.
 
     Returns
@@ -618,7 +630,6 @@ def setup_raw_data(animal):
     """
     # pylint: disable=too-many-locals
     # Function is complicated, the local variables are necessary.
-    # TODO: Fix the import + errors.
     with open(animal.get_data_file_location(), 'r') as infile:
         print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
         header = infile.readline()#.replace('\r','').replace('\n','')
@@ -627,12 +638,12 @@ def setup_raw_data(animal):
         elif ',' in header:
             delim = ','
         else:
-            raise Exception("Incorrect type of Data file in animal object.")
+            raise Exception("setup_raw_data : Incorrect type of Data file in animal object.")
         header = list(map(lambda x: x.strip(), header.split(delim)))
         try: # verify the file can be parsed
             reader = csv.reader(infile, delimiter=delim)
         except FileNotFoundError:
-            raise Exception("Incorrect type of Data file in animal object.")
+            raise Exception("setup_raw_data : Data file not found in animal object.")
 
         x_ind = find_col_index(header, 'X')
         y_ind = find_col_index(header, 'Y')
@@ -719,7 +730,7 @@ def find_col_index(header, col_name):
 
     Parameters
     ----------
-    header : list of str
+    header : list of strs
         List of headers in the dataset.
     col_name : str
         Name of column to be indexed.

@@ -439,7 +439,7 @@ def _find_nbv_triangles(animal_obj):
 
     Returns
     -------
-    list of triples if float
+    list of triples of floats
         List of all triangles in the animal that do not contain boundary vertices.
     """
     #get relevant parameters
@@ -644,13 +644,14 @@ def _find_aligned_coordinate(point, simplices, simplex_indices,
     ----------
     point: 2-tuple of float
         A point in the input coordinate system.
-    simplices: list of triples or pairs of triples of float
+    simplices: list of triples or pairs of ints
         A list of the triangles or edges we want to search (in indices of vertices).
     simplex_indices : list or set of int
         Indices corresponding to the simplices above in the input coordinate system.
-    input_coordinates: list of pair of float
+        MATT: Can we just use enumerate() instead? Seems redundant.
+    input_coordinates: list of pairs of floats
         The 2D input coordinate system where the point and simplices lie.
-    output_coordinates: list of triples of float
+    output_coordinates: list of triples of floats
         The 3D output coordinate system we want to align the point to.
 
     Returns
@@ -699,7 +700,7 @@ def _find_boundary_edges(animal_obj):
 
     Returns
     -------
-    list of 2-tuple of int
+    list of 2-tuples of ints
         List of edges ordered as in the boundary loop, where each edge is a tuple of the
         two indices of the adjacent vertices.
     """
@@ -776,19 +777,19 @@ def _find_closest_vertex(point, vertices, input_coordinates, output_coordinates)
 
     Parameters
     ----------
-    point: list of pair of float
+    point: list of pairs of floats
         The 2D coordinates of the point whose closest vertex coordinate we want to find.
     vertices: iterator
         Range from 0 to the total number of vertices. The vertices (in indices) that we
         want to search through.
-    input_coordinates: list of pair of float
+    input_coordinates: list of pairs of floats
         The 2D input coordinate system where the point and vertices lie.
-    output_coordinates: list of triple of float
+    output_coordinates: list of triples of floats
         The 3D output coordinate system we want to align the point to.
 
     Returns
     -------
-    [int, triple of float]
+    [int, triple of floats]
         int corresponds to the index of the closest vertex, and triple of floats
         corresponds to the coordinates of the vertex in the output coordinates closest
         to this point.
@@ -888,7 +889,7 @@ def _find_triangle_containing_vertex(vertex, triangles):
     vertex : int
         An index of the vertex of interest. Index is in relation to the corresponding
         coordinates stored in the animal object.
-    triangles : list of triples of int
+    triangles : list of triples of ints
         List of all the triangles to be searched. Each triple represents the indices of
         the points of a triangle.
 
@@ -924,16 +925,16 @@ def _convert_to_barycentric(point, simplex, coordinates):
 
     Parameters
     ----------
-    point: list of float, length 2
+    point: list of floats, length 2
         The 2D coordinates of the flattened vertex. The z-component should be 0.
-    simplex: list of int, length 2 or 3
+    simplex: list of ints, length 2 or 3
         The indices corresponding to coordinates making up the line segment/triangle.
-    coordinates: list of pairs of float
+    coordinates: list of pairs of floats
         The 2D coordinate system in which the point and simplex lie.
 
     Returns
     -------
-    list of float, length 2 or 3
+    list of floats, length 2 or 3
         The lambda values (i.e. the weights used in the linear combination) corresponding
         to the barycentric coordinates of the point in the simplex. Length depends on the
         type of simplex - 2 if a line, 3 if a triangle. If all values are between 0 and 1,
@@ -991,17 +992,17 @@ def _convert_from_barycentric(barycentric_coords, simplex, coordinates):
 
     Parameters
     ----------
-    barycentric_coords : list of float, length 2 or 3
+    barycentric_coords : list of floats, length 2 or 3
         The barycentric coordinates of a point in the triangle or line segment.
-    simplex: list of int, length 2 or 3
+    simplex: list of ints, length 2 or 3
         The indices corresponding to vertices making up the triangle or line segment.
-    coordinates: list of triples of float
+    coordinates: list of triples of floats
         Coordinate system in which the vertices exist in. If they are flattened
         coordinates, the third element should be 0.
 
     Returns
     -------
-    list of float, length 3
+    list of floats, length 3
         Converted coordinates of the point defined by the barycentric coordinates and the
         given simplex.
     """
@@ -1294,14 +1295,14 @@ def _mobius(p, q):
 
     Parameters
     ----------
-    p : list of float, length 2
+    p : list of floats, length 2
         The coordinate we are applying this transformation to.
-    q : list of float, length 2
+    q : list of floats, length 2
         The coordinate that gets sent to the origin by this map.
 
     Returns
     -------
-    list of float, length 2
+    list of floats, length 2
         The transformed coordinate p after applying the transformation that moves q to the
         origin.
     """

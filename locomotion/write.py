@@ -31,7 +31,7 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
     animal_list : list of Animal() objects
         List of initialized Animal() objects to be compared. Should coincide with the
         Animal() objects used to calculate dists, and the order should match dists.
-    dists : 2D array of float (upper-triangular, empty diagonal)
+    dists : 2D array of floats (upper-triangular, empty diagonal)
         dists[i][j] is the distances between trajectories of animal[i] and animal[j].
     outdir : str
         Absolute path to the output directory for the .csv and the .html files exported by
@@ -101,14 +101,14 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
 
     Parameters
     ----------
-    alignment : 2-tuple of numpy arrays.
+    alignment : 2-tuple of numpy arrays
         Contains the arrays of indices for the alignment. Each array should be of the same
         length, and should correspond to the respective animal.
-    animal_obj_0/1 : Animal() object.
+    animal_obj_0/1 : Animal() object
         For each respective animal.
-    varnames : List of str.
+    varnames : list of strs
         Each string should be linked to the variable names in the animal objects.
-    outdir : Str.
+    outdir : str
         Absolute path to the output directory for the .html file.
     """
     filename = "figure_%s-%s_%s_alignment.html" % (animal_obj_0.get_name(),
@@ -162,7 +162,7 @@ def render_aligned_graphs(points_0, points_1, alignment,
         Length of the segment (in minutes).
     varname : str
         The name of the variable to be plotted.
-    outdir : str.
+    outdir : str
         Absolute path to the output directory for the .html files.
     """
     # pylint:disable=too-many-arguments
@@ -319,7 +319,7 @@ def render_single_animal_graph(points, animal_obj, varname, outdir):
         The Animal() object corresponding to the given animal.
     varname : str
         The name of the variable to be plotted.
-    outdir : str.
+    outdir : str
         Absolute path to the output directory for the .html file.
     """
     filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
@@ -343,7 +343,7 @@ def write_dist_table_to_csv(animal_list, results, outdir, outfilename):
     animal_list : list of Animal() objects
         Corresponds to the animals that the pair-wise distances were calculated for.
         Order is assumed to match the order of the results.
-    results : 2D array of float (upper-triangular, empty diagonal)
+    results : 2D array of floats (upper-triangular, empty diagonal)
         results[i][j] is the distances between trajectories of animal[i] and animal[j].
     outdir : str
         Absolute path to the output directory for the .csv files exported by the function.
@@ -375,7 +375,7 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
     animal_list : list of Animal() objects
         Corresponds to the animals that the pair-wise distances were calculated for.
         Order is assumed to match the order of the results.
-    results : 2D array of float (upper-triangular, empty diagonal)
+    results : 2D array of floats (upper-triangular, empty diagonal)
         results[i][j] is the distances between trajectories of animal[i] and animal[j].
     outdir : str
         Absolute path to the output directory for the .csv files exported by the function.

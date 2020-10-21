@@ -43,16 +43,16 @@ def populate_curve_data(animal_obj, col_names=None):
     ----------
     animal_obj : Animal() object
         Initialized Animal() object, which should already contain coordinate data.
-    col_names : list of str, optional
+    col_names : list of strs, optional
         Names of data columns used for calculations. Must coincide with data stored in
         animal_obj.__raw_vals. If not given, defaults to ['X', 'Y']
 
     Returns
     -------
-    first_deriv : list of numpy array
+    first_deriv : list of numpy arrays
         Each numpy array corresponds to the first derivative of the respective coordinate
         data as ordered by col_names.
-    second_deriv : list of numpy array
+    second_deriv : list of numpy arrays
         Each numpy array corresponds to the second derivative of the respective coordinate
         data as ordered by col_names.
     velocity : numpy array
@@ -100,7 +100,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     ----------
     animal_obj_0/1 : Animal() object
         The initialized Animal() objects to be compared.
-    varnames : list of str
+    varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     seg_start/end_time_0/1 : int or float
@@ -128,9 +128,9 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     # Argument Validation
     if fullmode and outdir is None:
-        raise Exception("COMPUTE_ONE_BDD: Full mode requires the path to output directory.")
+        raise Exception("compute_one_bdd : Full mode requires the path to output directory.")
     if seg_end_time_0 - seg_start_time_0 != seg_end_time_1 - seg_start_time_1:
-        raise Exception("COMPUTE_ONE_BDD: segments need to be of the same length.")
+        raise Exception("compute_one_bdd : segments need to be of the same length.")
 
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
     seg_end_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_end_time_0)
@@ -196,7 +196,7 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
     ----------
     animal_list : list of Animal() objects
         List of initialized Animal() objects to be compared.
-    varnames : list
+    varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     seg_start/end_time : int or float
@@ -233,7 +233,7 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
     ----------
     animal_obj : Animal() object
         Initialized Animal() object to be compared.
-    varnames : list of str
+    varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     norm_mode : str, either 'baseline' or 'spec'
@@ -298,7 +298,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
     ----------
     animal_list : list of Animal() objects
         List of initialized Animal() objects to be compared.
-    varnames : list of str
+    varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     norm_mode : str, either 'baseline' or 'spec'
@@ -307,7 +307,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
         standard deivation from the time period specified for this comparison.
     num_exps : int
         Number of times to repeat the experiments for each Animal() objects.
-    interval_legths : List of int or float, or None. Optional.
+    interval_legths : List of ints or floats, or None. Optional.
         list - list of length of the time interval length to use.
                num_exps comparisons will be made for each length in the list
         None - a interval length for each test will be chosen at random to
@@ -327,15 +327,15 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
 
     Returns
     -------
-    exp_table : list of list
+    exp_table : 2D-array of tuples of floats
         i,j-th entry exp_table[i][j] is the j-th interval comparison for the i-th animal
         in animal_list each entry is a double [interval lenth, distance].
 
     If interval_lengths is given, the function additionally returns:
-    mean_table : list of list of pairs
+    mean_table : 2D-array of pairs
         mean_table[i][j][0] is the j-th interval_length, and mean_table[i][j][1] is the
         mean of the distances from tests using the j-th interval_length and i-th animal.
-    std_table : list of list of pairs
+    std_table : 2D-array of pairs
         std_table[i][j][0] is the j-th interval_length, and std_table[i][j][1] is the std
         of the distances from tests using the j-th interval_length and i-th animal.
     """
@@ -422,10 +422,10 @@ def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
 
     Parameters
     ----------
-    first_deriv : list of numpy array
+    first_deriv : list of numpy arrays
         Each numpy array corresponds to the first derivative of the respective coordinate
         data as ordered by col_names.
-    second_deriv : list of numpy array
+    second_deriv : list of numpy arrays
         Each numpy array corresponds to the second derivative of the respective coordinate
         data as ordered by col_names.
     velocity : numpy array
@@ -479,12 +479,12 @@ def _smooth(sequence, frame_rate):
 
     Parameters
     ----------
-    sequence : list
+    sequence : list of floats
         Sequence to be smoothed.
 
     Returns
     -------
-    smoothed : list
+    smoothed : list of floats
         Smoothed sequence.
     """
     smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * WINDOW_SCALAR)))
