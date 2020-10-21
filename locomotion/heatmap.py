@@ -648,7 +648,6 @@ def _find_aligned_coordinate(point, simplices, simplex_indices,
         A list of the triangles or edges we want to search (in indices of vertices).
     simplex_indices : list or set of int
         Indices corresponding to the simplices above in the input coordinate system.
-        MATT: Can we just use enumerate() instead? Seems redundant.
     input_coordinates: list of pairs of floats
         The 2D input coordinate system where the point and simplices lie.
     output_coordinates: list of triples of floats
