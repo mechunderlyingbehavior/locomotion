@@ -60,6 +60,7 @@ def populate_curve_data(animal_obj, col_names=None):
     curvature: numpy array
         The computed curvature at each frame.
     """
+    # Extract and smoothens coordinate data
     if col_names is None:
         col_names = ['X', 'Y']
     n_dims = len(col_names)
@@ -71,11 +72,15 @@ def populate_curve_data(animal_obj, col_names=None):
             coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
         except KeyError:
             raise Exception("column name {} does not exist in animal dataset".format(col))
+
+    # Calculate derivatives and adjust units
     coords = np.array(coords) # MM
     first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
     first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
     second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
     second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
+
+    # Calculate velocity and curvature and adds to Animal() object
     velocity = _calculate_velocity(first_deriv)
     curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
 
@@ -132,6 +137,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     if seg_end_time_0 - seg_start_time_0 != seg_end_time_1 - seg_start_time_1:
         raise Exception("compute_one_bdd : segments need to be of the same length.")
 
+    # Extract relevant information from Animal() objects
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
     seg_end_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_end_time_0)
     data_0 = animal_obj_0.get_mult_raw_vals(varnames, seg_start_frame_0, seg_end_frame_0)
@@ -143,8 +149,8 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     print("LOG: Applying DTW to the data from files %s and %s..." % (animal_obj_0.get_name(),
                                                                      animal_obj_1.get_name()))
 
+    # Normalize and convert data to fit the dtw function
     num_vars = len(varnames)
-
     if norm_mode == 'baseline':
         for i in range(num_vars):
             means, stds = animal_obj_0.get_stats(varnames[i], 'baseline')
@@ -163,11 +169,14 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             data_1[i] = np.absolute(data_1[i])
     data_0_t = np.array(data_0).T.tolist()
     data_1_t = np.array(data_1).T.tolist()
+
+    # Calculate dtw
     dtw_obj = dtw.dtw(x=data_0_t, y=data_1_t, dist_method='euclidean', distance_only=(not fullmode))
     bdd = dtw_obj.normalizedDistance
     print("LOG: distance between %s and %s: %.5f" % (animal_obj_0.get_name(),
                                                      animal_obj_1.get_name(), bdd))
 
+    # Fullmode to render alignment between the two animal objects
     if fullmode:
         #save alignment graphs in directory specified
         alignment = (dtw_obj.index1, dtw_obj.index2)
@@ -211,6 +220,7 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
     bdds : 2D array of float (upper-triangular, empty diagonal)
         i,j-th entry bdds[i][j] is the bdd between trajectories of animal[i] and animal[j].
     """
+    # Runs compute_one_bdd() for each pair of Animal() objects
     num_animals = len(animal_list)
     bdds = [['' for i in range(num_animals)] for j in range(num_animals)]
     for i in range(num_animals):
@@ -258,13 +268,14 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
     # pylint: disable=too-many-arguments
     # all arguments are necessary
 
+    # Extract experiment times if not given
     if start_time is None:
         start_time = animal_obj.get_exp_start_time()
     if end_time is None:
         end_time = animal_obj.get_exp_end_time()
 
+    # if no interval lengths are specified, generate random interval lengths
     if interval_length is None:
-    # No interval lengths are specified, so we are going to generate random interval lengths
         intervals = sorted([random.uniform(start_time, end_time) for i in range(3)])
         interval_length = (intervals[0] - start_time) / 2
     else:
@@ -272,11 +283,13 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
                            [random.uniform(2 * interval_length + start_time, end_time)
                             for i in range(2)])
 
+    # with generated interval lengths, produce 2 non-overlapping intervals
     interval_start_time_0 = intervals[1] - 2 * interval_length
     interval_end_time_0 = intervals[1] - interval_length
     interval_start_time_1 = intervals[2] - interval_length
     interval_end_time_1 = intervals[2]
 
+    # compute bdd between 2 intervals
     bdd = compute_one_bdd(animal_obj, animal_obj, varnames,
                           interval_start_time_0, interval_end_time_0,
                           interval_start_time_1, interval_end_time_1, norm_mode)
@@ -344,8 +357,9 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
     # function is long, requires many arguments and local variables
 
     exp_table = []
+
+    # If interval_length is not specified, run random segment tests for each animal
     if interval_lengths is None:
-    #lengths not specified => run random seg tests
         for animal_obj in animal_list:
             exp_list = []
             for _ in range(num_exps):
@@ -356,7 +370,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
             write.write_segment_exps_to_csv(animal_list, exp_table, None, None, outdir, outfilename)
         return exp_table
 
-    #lengths given => run num_exps comparisons per length
+    # Else, run num_exps comparisons per length
     mean_table = []
     std_table = []
 
@@ -365,11 +379,13 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
         mean_list = []
         std_list = []
 
+        # If timings aren't given, use experiment timings
         if start_time is None:
             start_time = animal_obj.get_exp_start_time()
         if end_time is None:
             end_time = animal_obj.get_exp_end_time()
 
+        # Generate intervals
         slice_areas = [0.5 * ((end_time - start_time) - 2 * length) ** 2
                        for length in interval_lengths]
         total_area = sum(slice_areas)
@@ -378,8 +394,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
         cum_exps_per_slice = [0] + [sum(num_exps_per_slice[:i+1])
                                     for i, _ in enumerate(interval_lengths)]
 
-        for j, _ in enumerate(interval_lengths):
-            interval_length = interval_lengths[j]
+        for j, interval_length in enumerate(interval_lengths):
             num_slice_exps = num_exps_per_slice[j]
             for _ in range(num_slice_exps):
                 res = compute_one_iibdd(animal_obj, varnames, norm_mode,
@@ -396,7 +411,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
                 std_table.append(std_list)
 
     if outdir:
-        #Time to write the results into a file
+        # Write results to directory if out directory is given
         write.write_segment_exps_to_csv(animal_list, exp_table, mean_table,
                                         std_table, outdir, outfilename)
 
