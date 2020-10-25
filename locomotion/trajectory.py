@@ -1,16 +1,15 @@
 """Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-trajectory.py is part of the locomotion package comparing
-animal behaviours, developed to support the work discussed
-in paper Computational Geometric Tools for Modeling Inherent
-Variability in Animal Behavior (MT Stamps, S Go, and AS Mathuru)
+is part of the locomotion python package for analyzing locomotory animal 
+behaviors via the techniques presented in the paper "Computational geometric tools  
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+(https://doi.org/10.1038/s41598-019-52300-8).
 
-This python script contains methods for running Dynamic Time Warping on pairs of
-animal trajectories. The DTW implementation used in this package is the one
-provided in the dtw-python package (T. Giorgino. Computing and Visualizing
-Dynamic Time Warping Alignments in R: The dtw Package. J. Stat. Soft.,
-doi:10.18637/jss.v031.i07.).
+This python script contains methods for computing behavioral distortion distances
+(BDD). The DTW implementation used in this package is the one provided in the 
+dtw-python package (T. Giorgino. Computing and Visualizing Dynamic Time Warping 
+Alignments in R: The dtw Package. J. Stat. Soft., doi:10.18637/jss.v031.i07.).
 """
 
 import os
@@ -33,7 +32,7 @@ ORDER = 5 #order of smoothing curve used in _smooth()
 def populate_curve_data(animal_obj, col_names=None):
     """ Computes the behavioural curve data such as Velocity and Curvature.
 
-    This function computes and stores the Velocity and Curvature given the coordinate
+    This function computes and stores the Velocity and Curvature of the coordinate
     data stored in animal_obj. The data used to calculate this is given by col_names,
     the list of column names.
 
@@ -95,11 +94,13 @@ def populate_curve_data(animal_obj, col_names=None):
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
                     norm_mode, fullmode=False, outdir=None):
-    """ Compute the Behavioural Distortion Distance (BDD) between two Animal() objects.
+    """ Computes the BDD between a pair of animal trajectories.
 
-    Computes the Behavioural Distortion Distance (BDD) between two animal trajectories
-    by applying Dynamic Time Warping (DTW), each starting and ending at the respective
-    time frame given in the function call.
+    Computes the Behavioral Distortion Distance (BDD) between two animal trajectories
+    for a prescribed set of variables over a specified pair of time intervals and
+    normalization mode. 
+    
+    Both distance-only and full alignment options are available.
 
     Parameters
     ----------
@@ -196,10 +197,11 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
 
 def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mode):
-    """ Computes pairwise BDDs given a list of Animal() objects.
+    """ Computes all pairwise BDDs given a list of animal trajectories.
 
-    Computes the BDD of each pair of trajectories in animal_list using compute_one_bdd(),
-    all starting and ending at the respective time frame given in the function call.
+    Computes the BDD of each pair of trajectories in animal_list using compute_one_bdd()
+    with a prescribed set of variables and normalization mode over a common time interval
+    given in the function call.
 
     Parameters
     ----------
@@ -234,10 +236,11 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
 
 def compute_one_iibdd(animal_obj, varnames, norm_mode,
                       interval_length=None, start_time=None, end_time=None):
-    """ Computes the BDD between two intervals of an animal's trajectory.
+    """ Computes the IIBDD for an animal trajectory.
 
-    Computes the Behavioural Distortion Distance (BDD) of an animal's trajectory to
-    itself over a random pair of non-overlapping intervals.
+    Computes the Intra-Individual Behavioral Distortion Distance (IIBDD) from an animal
+    trajectory to itself for a prescribed set of variables and normalization mode over
+    a pair of randomly generated non-overlapping time intervals.
 
     Parameters
     ----------
@@ -300,12 +303,11 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
 def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
                       interval_lengths=None, outdir=None, outfilename=None,
                       start_time=None, end_time=None):
-    """ Computes the intra-individual BDD for each trajectory in list of Animal() objects.
+    """ Computes all IIBDDs given a list of animal trajectories.
 
-    Computes the intra-individual Behavioural Distortion Distance (IIBDD) for each
-    trajectory in a list of Animal() objects, all starting and ending at the respective
-    time frame given in the function call. Computes the IIBDD using compute_one_iibdd()
-    function.
+    Computes the average IIBDD of each trajectory in animal_list using compute_one_iibdd()
+    with a prescribed set of variables, normalization mode, and number of randomly 
+    generated non-overlapping time intervals.
 
     Parameters
     ----------
@@ -424,7 +426,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
 
 def _calculate_derivatives(series, axis=0):
     """
-    Computes the derivative of the series. Returns a numpy array
+    Computes the derivative of the series. Returns a numpy array.
     """
     derivatives = np.gradient(series, axis=axis)
     return derivatives
@@ -433,7 +435,7 @@ def _calculate_derivatives(series, axis=0):
 def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
     """
     Given a list of first and second derivatives, return curvature.
-    Note: Currently only works for up to 2 / 3 dimensions.
+    Note: Currently only works for 2 or 3 dimensions.
 
     Parameters
     ----------
@@ -490,7 +492,7 @@ def _calculate_velocity(coordinates):
 def _smooth(sequence, frame_rate):
     """ Smooths sequence by applying Savitzky-Golay smoothing.
 
-    Note: this function makes use of global variables SMOOTH_RANGE_MIN and WINDOW_SCALAR.
+    Note: This function makes use of global variables SMOOTH_RANGE_MIN and WINDOW_SCALAR.
 
     Parameters
     ----------
