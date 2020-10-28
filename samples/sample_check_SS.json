@@ -5,8 +5,7 @@
         "animal_attributes": {
             "species": "medaka",
             "exp_type": "SS",
-            "ID": "01",
-            "control_group": "False"
+            "ID": "01"
         },
         "capture_attributes": {
             "dim_x": 200,
@@ -14,9 +13,9 @@
             "pixels_per_mm": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
-            "end_time": 10,
+            "end_time": 2,
             "baseline_start_time": 0,
-            "baseline_end_time": 2
+            "baseline_end_time": 1
         }
     },
     {
@@ -25,8 +24,7 @@
         "animal_attributes": {
             "species": "medaka",
             "exp_type": "SS",
-            "ID": "02",
-            "control_group": "False"
+            "ID": "02"
         },
         "capture_attributes": {
             "dim_x": 200,
@@ -34,9 +32,9 @@
             "pixels_per_mm": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
-            "end_time": 10,
+            "end_time": 2,
             "baseline_start_time": 0,
-            "baseline_end_time": 2
+            "baseline_end_time": 1
         }
     }
 ]

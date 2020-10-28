@@ -1029,6 +1029,7 @@ def _convert_from_barycentric(barycentric_coords, simplex, coordinates):
         raise Exception("_convert_from_barycentric: Invalid dimensions for barycentric " \
                         "coordinates and/or simplex. They must both be of either length " \
                         "2 or 3, since the method is only defined for triangles and edges.")
+    return result
 
 
 def _determine_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):

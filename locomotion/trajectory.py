@@ -21,6 +21,7 @@ import locomotion.write as write
 import locomotion.animal as animal
 
 #Static Variables
+EPSILON = 0.0001
 SMOOTH_RANGE_MIN = 5 #minimum length of smoothing window in _smooth()
 WINDOW_SCALAR = 2.5 #scalar for smoothing window calculation in _smooth()
 ORDER = 5 #order of smoothing curve used in _smooth()
@@ -135,7 +136,8 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     # Argument Validation
     if fullmode and outdir is None:
         raise Exception("compute_one_bdd : Full mode requires the path to output directory.")
-    if seg_end_time_0 - seg_start_time_0 != seg_end_time_1 - seg_start_time_1:
+    seg_diff = abs((seg_end_time_0 - seg_start_time_0) - (seg_end_time_1 - seg_start_time_1))
+    if seg_diff >= EPSILON:
         raise Exception("compute_one_bdd : segments need to be of the same length.")
 
     # Extract relevant information from Animal() objects
@@ -311,7 +313,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     """ Computes all IIBDDs given a list of animal trajectories.
 
     Computes the average IIBDD of each trajectory in animal_list using compute_one_iibdd()
-    with a prescribed set of variables, normalization mode, and number of randomly 
+    with a prescribed set of variables, normalization mode, and number of randomly
     generated non-overlapping time intervals.
 
     Parameters
@@ -345,7 +347,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     for animal in animal_list:
         bdd = compute_one_iibdd(animal, varnames, norm_mode, num_samples,
                                 interval_length, start_time, end_time)
-            bdds.append(bdd)
+        bdds.append(bdd)
     return bdds
 
 

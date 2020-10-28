@@ -20,6 +20,7 @@ import json
 import warnings
 from math import ceil
 import numpy as np
+from scipy.special import expit
 
 ####################
 ### Animal class ###
