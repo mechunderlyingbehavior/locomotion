@@ -433,8 +433,8 @@ def write_off(animal_obj, coordinates, outdir, filename):
     animal_list : list of Animal() objects
         Corresponds to the animals that the pair-wise distances were calculated for.
         Order is assumed to match the order of the results.
-    coordinates : MATT: Not sure what this exactly is
-        MATT: help!
+    coordinates : list of triples of floats
+        Regular (3D) coordinates that the animal's triangulation is defined for.
     outdir : str
         Absolute path to the output directory for the .csv files exported by the function.
     outfilename : str
