@@ -457,72 +457,30 @@ def write_off(animal_obj, coordinates, outdir, filename):
                                                       color[0], color[1], color[2]))
 
 
-def write_segment_exps_to_csv(animal_list, results, means, stds, outdir, outfilename):
-    """ Exports the results from trajectory.compute_all_iibdd() to CSV.
+def write_iibdd_to_csv(animal_list, results, outdir, outfilename):
+    """ Exports IIBDD results into a .csv file.
+
+    Given the results from running compute_all_iibdd() over animal_list, exports the
+    results into a .csv file.
 
     Parameters
     ----------
-
     animal_list : list of Animal() objects
-        Corresponds to the animals that the intra-individual BDD was calculated for. Order
-        is assumed to match the order of the results i.e. dim 0 of results
-    results : 2D array of 2-tuples (segment length, distance)
-        The matrix of results of the compute_all_iibdd() function. The matrix should have
-        dimensions n x m, where n is the number of animals and m is the number of
-        comparisons. Each entry contains the segment length and the computed distance for
-        each comparison.
-    means : MATT: Not sure what this should be. Means of the distances?
-        MATT: help!
-    stds : MATT: same here.
-        MATT: help!
+        Corresponds to the animals that the intra-individual BDD was calculated for.
+    results : list of floats
+        List of IIBDD calculated for each animal in animal_list. Should have the same
+        length as animal_list, and the order should also match.
     outdir : str
         Absolute path to the output directory for the .csv files exported by the function.
     outfilename : str
         Name that will be given to the files printed by this function.
     """
-    # pylint:disable=too-many-arguments
-    num_animals = len(animal_list)
-    if means is None:
-        header_top = list(itertools.chain.from_iterable([[animal_obj.get_name(), ""]
-                                                         for animal_obj in animal_list]))
-        header_bottom = ["Segment Length", "Distance"] * num_animals
-        num_exps = len(results[0])
-        with open(os.path.join(outdir, outfilename), 'w') as outfile:
-            csvwriter = csv.writer(outfile, delimiter=',')
-            csvwriter.writerow(header_top)
-            csvwriter.writerow(header_bottom)
-            for i in range(num_exps):
-                row = list(itertools.chain.from_iterable([results[j][i]
-                                                          for j in range(num_animals)]))
-                csvwriter.writerow(row)
-
-    else: #if means is not None:
-        header_top = [""]+[animal_obj.get_name() for animal_obj in animal_list]
-        header_bottom = ["Segment Length"] + ["Distance"]*num_animals
-        num_exps = len(results[0])
-        with open(os.path.join(outdir, outfilename), 'w') as outfile:
-            csvwriter = csv.writer(outfile, delimiter=',')
-            csvwriter.writerow(header_top)
-            csvwriter.writerow(header_bottom)
-            for i in range(num_exps):
-                row = [results[0][i][0]] + [results[j][i][1] for j in range(num_animals)]
-                csvwriter.writerow(row)
-                num_segs = len(means[0])
-
-            #write the mean information
-            csvwriter.writerow([""])
-            csvwriter.writerow(["Means"])
-            csvwriter.writerow(header_top)
-            csvwriter.writerow(header_bottom)
-            for i in range(num_segs):
-                row = [means[0][i][0]] + [means[j][i][1] for j in range(num_animals)]
-                csvwriter.writerow(row)
-            #write the std information
-            csvwriter.writerow([""])
-            csvwriter.writerow(["Standard Deviations"])
-            csvwriter.writerow(header_top)
-            csvwriter.writerow(header_bottom)
-            for i in range(num_segs):
-                row = [stds[0][i][0]] + [stds[j][i][1] for j in range(num_animals)]
-                csvwriter.writerow(row)
-        print("Saved the table in %s" % outfile)
+    # ensure animal_list and results have same length
+    if len(animal_list) != len(results):
+        raise Exception("write_iibdd_to_csv : animal_list and results must have same length.")
+    header = [animal_obj.get_name() for animal_obj in animal_list]
+    with open(os.path.join(outdir, outfilename), 'w') as outfile:
+        csvwriter = csv.writer(outfile, delimiter=',')
+        csvwriter.writerow(header)
+        csvwriter.writerow(results)
+    print("Saved results into %s" % outfilename)

@@ -98,8 +98,8 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     Computes the Behavioral Distortion Distance (BDD) between two animal trajectories
     for a prescribed set of variables over a specified pair of time intervals and
-    normalization mode. 
-    
+    normalization mode.
+
     Both distance-only and full alignment options are available.
 
     Parameters
@@ -234,7 +234,7 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
     return bdds
 
 
-def compute_one_iibdd(animal_obj, varnames, norm_mode,
+def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
                       interval_length=None, start_time=None, end_time=None):
     """ Computes the IIBDD for an animal trajectory.
 
@@ -253,20 +253,19 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
         Baseline mode uses the mean and standard deviation from the baseline observation
         time to normalize each variable data, whereas the spec mode uses the mean and
         standard deivation from the time period specified for this comparison.
-    interval_legth : int or float
-        length of the interval to use. If unspecified, it will be chosen at random.
-    start_time : float
+    num_samples : int
+        Number of samples generated and used in calculating the average bdd.
+    interval_legth : int or float, optional
+        Length of the interval to use, in minutes. If unspecified, generate at random.
+    start_time : float, optional
         Time in minutes where the intervals can start. If omitted, exp start time is used.
-    end_time : float
+    end_time : float, optional
         Time in minutes where the intervals can end. If omitted, exp end time is used.
 
     Returns
     -------
-    list : [interval_length, bdd]
-        interval_length : int or float
-            Length of time interval used for comparison.
-        bdd : float
-            Computed BDD.
+    float
+        Average bdd calculated across all samples.
     """
     # pylint: disable=too-many-arguments
     # all arguments are necessary
@@ -277,32 +276,38 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode,
     if end_time is None:
         end_time = animal_obj.get_exp_end_time()
 
-    # if no interval lengths are specified, generate random interval lengths
-    if interval_length is None:
-        intervals = sorted([random.uniform(start_time, end_time) for i in range(3)])
-        interval_length = (intervals[0] - start_time) / 2
-    else:
-        intervals = sorted([2 * interval_length + start_time] +
-                           [random.uniform(2 * interval_length + start_time, end_time)
-                            for i in range(2)])
+    # Run compute_one_bdd() num_samples times
+    bdds = []
+    for _ in range(num_samples):
+        # if no interval lengths are specified, generate random interval lengths
+        if interval_length is None:
+            intervals = sorted([random.uniform(start_time, end_time) for i in range(3)])
+            interval_length = (intervals[0] - start_time) / 2
+        else:
+            # sanity check for interval_length
+            if 2 * interval_length > end_time - start_time:
+                raise Exception("compute_one_iibdd : interval length too long.")
+            intervals = sorted([2 * interval_length + start_time] +
+                               [random.uniform(2 * interval_length + start_time, end_time)
+                                for i in range(2)])
 
-    # with generated interval lengths, produce 2 non-overlapping intervals
-    interval_start_time_0 = intervals[1] - 2 * interval_length
-    interval_end_time_0 = intervals[1] - interval_length
-    interval_start_time_1 = intervals[2] - interval_length
-    interval_end_time_1 = intervals[2]
+        # with generated interval lengths, produce 2 non-overlapping intervals
+        interval_start_time_0 = intervals[1] - 2 * interval_length
+        interval_end_time_0 = intervals[1] - interval_length
+        interval_start_time_1 = intervals[2] - interval_length
+        interval_end_time_1 = intervals[2]
 
-    # compute bdd between 2 intervals
-    bdd = compute_one_bdd(animal_obj, animal_obj, varnames,
-                          interval_start_time_0, interval_end_time_0,
-                          interval_start_time_1, interval_end_time_1, norm_mode)
+        # compute bdd between 2 intervals
+        bdd = compute_one_bdd(animal_obj, animal_obj, varnames,
+                              interval_start_time_0, interval_end_time_0,
+                              interval_start_time_1, interval_end_time_1, norm_mode)
+        bdds.append(bdd)
 
-    return [interval_length, bdd]
+    return np.mean(bdds)
 
 
-def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
-                      interval_lengths=None, outdir=None, outfilename=None,
-                      start_time=None, end_time=None):
+def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
+                      interval_length=None, start_time=None, end_time=None):
     """ Computes all IIBDDs given a list of animal trajectories.
 
     Computes the average IIBDD of each trajectory in animal_list using compute_one_iibdd()
@@ -320,104 +325,28 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_exps,
         Baseline mode uses the mean and standard deviation from the baseline observation
         time to normalize each variable data, whereas the spec mode uses the mean and
         standard deivation from the time period specified for this comparison.
-    num_exps : int
-        Number of times to repeat the experiments for each Animal() objects.
-    interval_legths : List of ints or floats, or None. Optional.
-        list - list of length of the time interval length to use.
-               num_exps comparisons will be made for each length in the list
-        None - a interval length for each test will be chosen at random to
-               be between 0.01 and half the total time
-        Default value : None.
-    outdir : str, optional
-        The output directory path. If specified, the results will be written to a file
-        (outfilename). Default value : None.
-    outfilename : str, optional
-        For output file name. Default value : None.
-    start_time : float
-        Time in minutes where the intervals can start. If omitted, exp start time will be
-        used as start time.
-    end_time : float
-        Time in minutes where the intervals can end. If omitted, exp end time will be used
-        as end time.
+    num_samples : int
+        Number of samples generated and used in calculating the average bdd.
+    interval_legth : int or float, optional
+        Length of the interval to use, in minutes. If unspecified, generate at random.
+    start_time : float, optional
+        Time in minutes where the intervals can start. If omitted, exp start time is used.
+    end_time : float, optional
+        Time in minutes where the intervals can end. If omitted, exp end time is used.
 
     Returns
     -------
-    exp_table : 2D-array of tuples of floats
-        i,j-th entry exp_table[i][j] is the j-th interval comparison for the i-th animal
-        in animal_list each entry is a double [interval lenth, distance].
-
-    If interval_lengths is given, the function additionally returns:
-    mean_table : 2D-array of pairs
-        mean_table[i][j][0] is the j-th interval_length, and mean_table[i][j][1] is the
-        mean of the distances from tests using the j-th interval_length and i-th animal.
-    std_table : 2D-array of pairs
-        std_table[i][j][0] is the j-th interval_length, and std_table[i][j][1] is the std
-        of the distances from tests using the j-th interval_length and i-th animal.
+    list of floats
+        List of average iibdds calculated for each animal in animal_list. i-th entry is
+        the iibdd of the i-th animal in animal_list.
     """
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-locals
-    # function is long, requires many arguments and local variables
-
-    exp_table = []
-
-    # If interval_length is not specified, run random segment tests for each animal
-    if interval_lengths is None:
-        for animal_obj in animal_list:
-            exp_list = []
-            for _ in range(num_exps):
-                res = compute_one_iibdd(animal_obj, varnames, norm_mode, None, start_time, end_time)
-                exp_list.append(res)
-            exp_table.append(exp_list)
-        if outdir:
-            write.write_segment_exps_to_csv(animal_list, exp_table, None, None, outdir, outfilename)
-        return exp_table
-
-    # Else, run num_exps comparisons per length
-    mean_table = []
-    std_table = []
-
-    for animal_obj in animal_list:
-        exp_list = []
-        mean_list = []
-        std_list = []
-
-        # If timings aren't given, use experiment timings
-        if start_time is None:
-            start_time = animal_obj.get_exp_start_time()
-        if end_time is None:
-            end_time = animal_obj.get_exp_end_time()
-
-        # Generate intervals
-        slice_areas = [0.5 * ((end_time - start_time) - 2 * length) ** 2
-                       for length in interval_lengths]
-        total_area = sum(slice_areas)
-        num_exps_per_slice = [int(num_exps*slice_area / total_area)
-                              for slice_area in slice_areas]
-        cum_exps_per_slice = [0] + [sum(num_exps_per_slice[:i+1])
-                                    for i, _ in enumerate(interval_lengths)]
-
-        for j, interval_length in enumerate(interval_lengths):
-            num_slice_exps = num_exps_per_slice[j]
-            for _ in range(num_slice_exps):
-                res = compute_one_iibdd(animal_obj, varnames, norm_mode,
-                                        interval_length, start_time, end_time)
-                exp_list.append(res)
-                mean = np.mean(map(lambda x: x[1],
-                                   exp_list[cum_exps_per_slice[j]: cum_exps_per_slice[j+1]]))
-                std = np.std(map(lambda x: x[1],
-                                 exp_list[cum_exps_per_slice[j]: cum_exps_per_slice[j+1]]))
-                mean_list.append([interval_length, mean])
-                std_list.append([interval_length, std])
-                exp_table.append(exp_list)
-                mean_table.append(mean_list)
-                std_table.append(std_list)
-
-    if outdir:
-        # Write results to directory if out directory is given
-        write.write_segment_exps_to_csv(animal_list, exp_table, mean_table,
-                                        std_table, outdir, outfilename)
-
-    return exp_table, mean_table, std_table
+    bdds = []
+    for animal in animal_list:
+        bdd = compute_one_iibdd(animal, varnames, norm_mode, num_samples,
+                                interval_length, start_time, end_time)
+            bdds.append(bdd)
+    return bdds
 
 
 ########################
