@@ -548,16 +548,18 @@ def normalize(data, mean, std):
 
     Returns
     -------
-    list of floats
-        List of normalized data. If std == 0, then returns a list of 0.
+    np.array of floats
+        Array of normalized data. If std == 0, then returns an array of 0.
     """
+    data = np.array(data)
     if std != 0:
         if std < 1:
             std = 1
-            print("WARNING: Normalization attempted for data with std < 1. " +
-                  "Normalization done with std set to 1.")
-        return list(map(lambda x: 1/(1 + math.exp(-(x-mean)/std)), data))
-    return [0 for d in data]
+            # print("WARNING: Normalization attempted for data with std < 1. " +
+            #       "Normalization done with std set to 1.")
+        norm_data = (data - mean)/std
+        return expit(norm_data)
+    return np.zeros_like(data)
 
 ################################
 ### Initialization Functions ###
