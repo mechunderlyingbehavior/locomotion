@@ -1,15 +1,15 @@
 """Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-write.py is part of the locomotion package comparing
-animal behaviours, developed to support the work discussed
-in paper Computational Geometric Tools for Modeling Inherent
-Variability in Animal Behavior (MT Stamps, S Go, and AS Mathuru)
+write.py is part of the locomotion python package for analyzing locomotory animal 
+behaviors via the techniques presented in the paper "Computational geometric tools  
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+(https://doi.org/10.1038/s41598-019-52300-8).
 
-This python script contains methods for displaying the results from the
-functions defined in trajectory.py and heatmap.pt. Current implementation makes
-use of plotly to plot the results, and produces a .html that allows for the user
-to look into the results with greater detail.
+This python script contains methods for writing outputs to file and rendering the 
+results from the functions defined in trajectory.py and heatmap.py. The current 
+implementation makes use of plotly to render graphs, which produces a .html that 
+enables the user to look interact with the resulting plots.
 """
 import os
 import csv
@@ -24,7 +24,7 @@ COLORS = plotly.colors.qualitative.Plotly
 
 def post_process(animal_list, dists, outdir, outfilename, sort_table,
                  square_table, color_min=0.0, color_max=1.0):
-    """ MATT: Need to add description.
+    """ Writes and renders the outputs of computeAllBDD() or ComputeAllCSD().
 
     Parameters
     ----------
@@ -39,7 +39,7 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
     outfilename : str
         Name that will be given to the files printed by this function.
     sort_table : bool
-        MATT: I'm not 100% certain of the logic behind the sorts
+        If True, dists will be sorted according to average row/column values.
     square_table: bool
         If True, dists will be mirrored along the diagonal to fill up the empty entries.
     color_min : float, optional
@@ -424,21 +424,22 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
 
 
 def write_off(animal_obj, coordinates, outdir, filename):
-    """ Exports triangulation of a given Animal() object to an .off file.
+    """ Exports triangular mesh to an .off file.
 
-    MATT: Further explanation might be useful, like what the .off file is used for.
+    Records the vertex coordinates and list of triangles for the triangular mesh
+    of an Animal() object in an .off file for visualization purposes.
 
     Parameters
     ----------
-    animal_list : list of Animal() objects
+    animal_obj : Animal() object
         Corresponds to the animals that the pair-wise distances were calculated for.
         Order is assumed to match the order of the results.
     coordinates : list of triples of floats
         Regular (3D) coordinates that the animal's triangulation is defined for.
     outdir : str
-        Absolute path to the output directory for the .csv files exported by the function.
+        Absolute path to the output directory for the .off file exported by the function.
     outfilename : str
-        Name that will be given to the files printed by this function.
+        Name that will be given to the file printed by this function.
     """
     outpath = os.path.join(outdir, filename).replace(' ', '')
     triangles = animal_obj.get_triangulation()

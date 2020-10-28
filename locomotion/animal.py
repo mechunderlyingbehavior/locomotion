@@ -2,14 +2,15 @@
 Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-animal.py is part of the locomotion package comparing animal behaviours, developed
-to support the work discussed in the paper "Computational geometric tools for
-modeling inherent variability in animal behavior" by MT Stamps, S Go, and AS Mathuru.
+animal.py is part of the locomotion python package for analyzing locomotory animal 
+behaviors via the techniques presented in the paper "Computational geometric tools  
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+(https://doi.org/10.1038/s41598-019-52300-8).
 
 This python module defines the Animal class object used throughout the package to store
-and manipulate the tracked data of the animal. On initialization, the animal object
-extracts various pieces of information from the JSON files, such as the experiment
-settings and the tracked data of the animal, and prepares them for use.
+and process the tracked data of an animal subject. On initialization, the animal object
+extracts various pieces of information from JSON files, such as experimental parameters 
+and coordinate data of the subjects, and prepares them for analysis.
 """
 import os
 import csv
@@ -20,9 +21,9 @@ import warnings
 from math import ceil
 import numpy as np
 
-################################################################################
-#### Animal class ####
-################################################################################
+####################
+### Animal class ###
+####################
 
 class Animal():
     """
@@ -75,9 +76,9 @@ class Animal():
         self.__triangle_triangle_adjacency = None
         self.__vertex_bfs = None
 
-    ########################
-    # Population Functions #
-    ########################
+    ############################
+    ### Population Functions ###
+    ############################
 
     def add_raw_vals(self, var_name, val_list):
         """ Updates dictionary self.__raw_vals with new data.
@@ -214,9 +215,9 @@ class Animal():
         """Setter function for self.__group."""
         self.__group = group_no
 
-    ##################################
-    # Functions for modifying values #
-    ##################################
+    ######################################
+    ### Functions for modifying values ###
+    ######################################
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """ Retrieve multiple raw values stored in Animal object.
@@ -296,9 +297,9 @@ class Animal():
                            % wrong_key)
         return means, stds
 
-    ############################
-    # Functions for heatmap.py #
-    ############################
+    ################################
+    ### Functions for heatmap.py ###
+    ################################
 
     def get_boundary_edges(self):
         """Getter functions for self.__boundary_edges"""
@@ -499,9 +500,9 @@ class Animal():
         """
         self.__triangle_triangle_adjacency = triangle_triangle_adjacency
 
-################################################################################
-### Basic Functions
-################################################################################
+#######################
+### Basic Functions ###
+#######################
 
 def norm(data, rm_outliers = True):
     """ Calculates the mean and standard deviation of data.
@@ -534,8 +535,7 @@ def norm(data, rm_outliers = True):
 def normalize(data, mean, std):
     """ Normalize data given mean and standard deviation.
 
-    Shifts and scales data such that mean is 0 and std is 1. If std is already less than
-    1, the function doesn't scale the data so as to not artifically blow up the values.
+    Shifts and scales data so the range is between 0 and 1.
 
     Parameters
     ----------
@@ -559,9 +559,9 @@ def normalize(data, mean, std):
         return list(map(lambda x: 1/(1 + math.exp(-(x-mean)/std)), data))
     return [0 for d in data]
 
-################################################################################
-### Initialization Functions
-################################################################################
+################################
+### Initialization Functions ###
+################################
 
 def read_info(infile_path):
     """ Load JSON file given path.
@@ -703,9 +703,9 @@ def _init_animal(json_item, group_no):
     return animal
 
 
-################################################################################
-### Other Functions
-################################################################################
+#######################
+### Other Functions ###
+#######################
 
 def calculate_frame_num(animal, time_in_minutes):
     """ Convert time_in_minutes to frame number with stored framerate.
