@@ -2,14 +2,15 @@
 Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-animal.py is part of the locomotion package comparing animal behaviours, developed
-to support the work discussed in the paper "Computational geometric tools for
-modeling inherent variability in animal behavior" by MT Stamps, S Go, and AS Mathuru.
+animal.py is part of the locomotion python package for analyzing locomotory animal 
+behaviors via the techniques presented in the paper "Computational geometric tools  
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+(https://doi.org/10.1038/s41598-019-52300-8).
 
 This python module defines the Animal class object used throughout the package to store
-and manipulate the tracked data of the animal. On initialization, the animal object
-extracts various pieces of information from the JSON files, such as the experiment
-settings and the tracked data of the animal, and prepares them for use.
+and process the tracked data of an animal subject. On initialization, the animal object
+extracts various pieces of information from JSON files, such as experimental parameters 
+and coordinate data of the subjects, and prepares them for analysis.
 """
 import os
 import csv
@@ -20,9 +21,9 @@ import warnings
 from math import ceil
 import numpy as np
 
-################################################################################
-#### Animal class ####
-################################################################################
+####################
+### Animal class ###
+####################
 
 class Animal():
     """
@@ -35,6 +36,13 @@ class Animal():
     # pylint: disable=too-many-public-methods
     # Class contains a large number of methods, but is done to improve readability.
     def __init__(self, json_item):
+        """ Initiates the Animal() object.
+
+        Parameters
+        ----------
+        json_item : dict
+            Deserialised JSON file, with the necessary animal information.
+        """
         self.__animal_id = json_item["animal_attributes"]["ID"]
         self.__animal_type = json_item["animal_attributes"]["species"]
         self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
@@ -68,28 +76,42 @@ class Animal():
         self.__triangle_triangle_adjacency = None
         self.__vertex_bfs = None
 
-    ########################
-    # Population Functions #
-    ########################
+    ############################
+    ### Population Functions ###
+    ############################
 
     def add_raw_vals(self, var_name, val_list):
-        """
-        Adds an entry to the dict self.__raw_vals.
-        :Parameters:
-         var_name : hashable key point to variables in animal object
-         val_list : list of data values corresponding to var_name
+        """ Updates dictionary self.__raw_vals with new data.
+
+        Function creates a new entry in the dictionary, with key var_name and value val_list.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key that will be used to point to variable in self.__raw_vals.
+        val_list : list of floats
+            List of data values corresponding to var_name to be stored in self.__raw_vals.
         """
         self.__raw_vals.update({var_name:val_list})
 
     def add_stats(self, var_name, scope, start_frame, end_frame):
-        """
-        Calculates statistics of var_name over a specific scope, as defined by
-        start_frame and end_frame.
-        :Parameters:
-         var_name : hashable key pointing to variables in animal object
-         scope : hashable key representing the scope defined by start_frame and end_frame
-         start_frame : starting frame of scope
-         end_frame : ending frame of scope
+        """ Calculates and updates self.__means and self.__stds for raw value var_name.
+
+        Calculates statistics (means and standard deviation) of var_name over a specific scope,
+        as defined by start_frame and end_frame. Uses the norm() method to do so. The function
+        then initializes (if not already initialized) and updates the dictionary entries for
+        var_name in self.__means and self.__stds.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variables stored in dict self.__raw_vals.
+        scope : str
+            Hashable key that will be used to point to scope defined by start_frame and end_frame.
+        start_frame : int
+            Starting frame of scope.
+        end_frame : int
+            Ending frame of scope.
         """
         if var_name not in self.__means:
             self.init_stats(var_name)
@@ -98,11 +120,15 @@ class Animal():
         self.__stds[var_name].update({scope:stds})
 
     def init_stats(self, var_name):
-        """
-        Utility function for initializing a dictionary entry in self.__means and
+        """ Set up empty dict entry for var_name in self.__means and self.__stds.
+
+        Utility function for setting up an empty dictionary entry in self.__means and
         self.__stds for key var_name.
-        :Parameters:
-         var_name : hashable key pointing to variable in animal object
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variable stored in dict self.__raw_vals.
         """
         self.__means.update({var_name:{}})
         self.__stds.update({var_name:{}})
@@ -112,10 +138,13 @@ class Animal():
         return self.__animal_type
 
     def get_baseline_times(self):
-        """
-        Getter function for both self.__baseline_start and self.__baseline_end.
-        :Returns:
-            tuple : (self.__baseline_start, self.__baseline_end)
+        """ Getter function for both self.__baseline_start and self.__baseline_end.
+
+        Returns
+        -------
+        tuple
+            First entry of tuple is the baseline start time (in minutes), and the second entry
+            is the baseline end time (in minutes).
         """
         return (self.__baseline_start, self.__baseline_end)
 
@@ -148,10 +177,13 @@ class Animal():
         return self.__exp_type
 
     def get_exp_times(self):
-        """
-        Getter function for both self.__start and self.__end.
-        :Returns:
-            tuple : (self.__start, self.__end)
+        """ Getter function for both self.__start and self.__end.
+
+        Returns
+        -------
+        tuple
+            First entry of tuple is the experiment start time (in minutes), and the second entry
+            is the experiment end time (in minutes).
         """
         return (self.__start, self.__end)
 
@@ -183,27 +215,41 @@ class Animal():
         """Setter function for self.__group."""
         self.__group = group_no
 
-    ##################################
-    # Functions for modifying values #
-    ##################################
+    ######################################
+    ### Functions for modifying values ###
+    ######################################
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
-        """
-        Runs self.get_raw_vals for multiple variables stored in animal object.
-        :Parameters:
-         var_names : list of hashable keys pointing to variables in animal object
-         start_frame : starting frame of portion to extract
-         end_frame : ending frame of portion to extract
+        """ Retrieve multiple raw values stored in Animal object.
+
+        Runs self.get_raw_vals for all the variables in var_names stored in Animal object.
+        If no start_frame or end_frame is given, then the experiment start / end time is used.
+
+        Parameters
+        ----------
+        var_names : list of strs
+            List of hashable keys pointing to variables stored in self.__raw_vals.
+        start_frame : int, optional
+            Starting frame of portion to extract. Default value : None.
+        end_frame : int, optional
+            Ending frame of portion to extract. Default value : None.
         """
         return [self.get_raw_vals(v, start_frame, end_frame) for v in var_names]
 
     def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
-        """
-        Return the raw vals stored in animal object.
-        :Parameters:
-         var_name : hashable key pointing to variables in animal object
-         start_frame : starting frame of portion to extract
-         end_frame : ending frame of portion to extract
+        """ Return the raw values with key var_name stored in Animal object.
+
+        Retrieves the raw values stored in self.__raw_vals of the Animal object. If no start_frame
+        or end_frame is given, then the experiment start / end time is used.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variables stored in self.__raw_vals.
+        start_frame : int, optional
+            Starting frame of portion to extract. Default value : None.
+        end_frame : int, optional
+            Ending frame of portion to extract. Default value : None.
         """
         if start_frame is None:
             start_frame = self.__start*60*self.__frame_rate
@@ -224,19 +270,36 @@ class Animal():
         return values[start_frame:end_frame]
 
     def get_stats(self, var_name, scope):
-        """
-        Retrieve statistics of var_name calculated over scope period.
-        :Parameters:
-         var_name : hashable key pointing to variables in animal object
-         scope : hashable key pointing to predefined scope
-        :Returns:
-         means, stds
-        """
-        return self.__means[var_name][scope], self.__stds[var_name][scope]
+        """ Returns the calculated statistics for var_name over previously defined scope.
 
-    ############################
-    # Functions for heatmap.py #
-    ############################
+        Retrieve statistics stored in self.__means and self.__vars for var_name over the scope
+        period. The statistics must have been previously calculated with the add_stats method.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variables stored in self.__raw_vals.
+        scope : str
+            Hashable key pointing to predefined scope in self.__means and self.__stds.
+
+        Returns
+        -------
+        float
+            Mean of var_name over scope period.
+        float
+            Standard deviation of var_name over scope period.
+        """
+        try:
+            means = self.__means[var_name][scope]
+            stds = self.__stds[var_name][scope]
+        except KeyError as wrong_key:
+            raise KeyError("get_stats : %s is not a valid variable name or scope."
+                           % wrong_key)
+        return means, stds
+
+    ################################
+    ### Functions for heatmap.py ###
+    ################################
 
     def get_boundary_edges(self):
         """Getter functions for self.__boundary_edges"""
@@ -291,58 +354,71 @@ class Animal():
         return self.__triangle_triangle_adjacency
 
     def set_boundary_edges(self, edges):
-        """
-        Setter functions for self.__boundary_edges
-        :Parameters:
-         edges : list of int tuple pairs. The edges of the boundary loop in
-         counter-clockwise order, where each edge is a tuple of the two
-         vertices it connects.
+        """ Setter functions for self.__boundary_edges.
+
+        Parameters
+        ----------
+        edges : list of int tuple pairs
+            The edges of the boundary loop in counter-clockwise order, where each edge
+            is a tuple of the two vertices it connects.
         """
         self.__boundary_edges = edges
 
     def set_boundary_vertices(self, vertices):
-        """
-        Setter functions for self.__boundary_vertices
-        :Parameters:
-         vertices : numpy array of ints. The indices of the vertices that
-         are on the boundary of this animal in counter-clockwise order.
+        """ Setter functions for self.__boundary_vertices.
+
+        Parameters
+        ----------
+        vertices : numpy array of ints
+            The indices of the vertices that are on the boundary of this animal in
+            counter-clockwise order.
         """
         self.__boundary_vertices = vertices
 
     def set_central_vertex(self, central_vertex):
-        """
-        Setter functions for self.__central_vertex
-        :Parameters:
-         central_vertex : int. The index of the vertex at the topological
-         centre of the animal's heat map in the x-y plane.
+        """ Setter functions for self.__central_vertex.
+
+        Parameters
+        ----------
+        central_vertex : int.
+            The index of the vertex at the topological centre of the animal's heatmap
+            in the x-y plane.
         """
         self.__central_vertex = central_vertex
 
     def set_colors(self, colors):
-        """
-        Setter functions for self.__colors
-        :Parameters:
-         colors : list of triples of floats. The RGB coordinates for each
-         triangle in the triangulation associated to an animal's heat map.
+        """ Setter functions for self.__colors.
+
+        Parameters
+        ----------
+        colors : list of triples of floats.
+            The RGB coordinates for each triangle in the triangulation associated to
+            an animal's heat map.
         """
         self.__colors = colors
 
     def set_flattened_coordinates(self, coordinates):
-        """
-        Setter functions for self.__flat_coords
-        :Parameters:
-         coordinates : list of pairs of floats. The x- and y-coordinates of
-         the vertices of a triangulation that have been conformally flattened
-         to the unit disk.
+        """ Setter functions for self.__flat_coords.
+
+        Parameters
+        ----------
+        coordinates : list of pairs of floats.
+            The x- and y-coordinates of the vertices of a triangulation that have been
+            conformally flattened to the unit disk.
         """
         self.__flat_coords = coordinates
 
     def set_grid_size(self, grid_size):
-        """
-        Setter function for self.__grid_size, self.__num_x_grid, and self.__num_y_grid
-        by dividing self.__dim_x and self.__dim_y by grid_size.
-        :Parameters:
-         grid_size : int. Size of each grid. Should divide self.__dim_x and self.__dim_y.
+        """ Setter function for self.__grid_size, self.__num_x_grid, self.__num_y_grid.
+
+        Setter function for self.__grid_size, self.__num_x_grid, and self.__num_y_grid.
+        Number of x and y grids is calculated by dividing self.__dim_x and self.__dim_y
+        by grid_size.
+
+        Parameters
+        ----------
+        grid_size : int.
+            Size of each grid. Must divide self.__dim_x and self.__dim_y.
         """
         if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
             raise Exception("grid_size does not divide dim x or dim y.")
@@ -351,11 +427,11 @@ class Animal():
         self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
 
     def set_interior_vertex_bfs(self, vertex_bfs):
-        """
-        Setter functions for self.__vertex_bfs
-        :Parameters:
-         vertex_bfs : A tuple of int numpy arrays, (bfs_ordering, bfs_ancestors).
+        """ Setter function for self.__vertex_bfs.
 
+        Parameters
+        ----------
+        vertex_bfs : A tuple of int numpy arrays, (bfs_ordering, bfs_ancestors).
             bfs_ordering is an array containing the interior vertices in an animal's
             heat map in order of discovery in the breadth-first-search.
 
@@ -369,109 +445,111 @@ class Animal():
         self.__vertex_bfs = vertex_bfs
 
     def set_num_triangles(self, num_triangles):
-        """
-        Setter functions for self.__num_triangles
-        :Parameters:
-         num_triangles : int. The number of triangles in the triangulation
-         associated with an animal's heat map.
+        """ Setter functions for self.__num_triangles.
+
+        Parameters
+        ----------
+        num_triangles : int.
+            The number of triangles in the triangulation associated with an animal's
+            heat map.
         """
         self.__num_triangles = num_triangles
 
     def set_num_verts(self, num_verts):
-        """
-        Setter functions for self.__num_verts
-        :Parameters:
-         num_verts : int. The number of vertices in an animal's heat map.
+        """ Setter functions for self.__num_verts.
+
+        Parameters
+        ----------
+        num_verts : int.
+            The number of vertices in an animal's heat map.
         """
         self.__num_verts = num_verts
 
     def set_regular_coordinates(self, coordinates):
-        """
-        Setter functions for self.__reg_coords
-        :Parameters:
-         coordinates : list of triples of floats. The the x-, y-,
-         and z-coordinates of the vertices for a triangulation of the
-         animal's heat map.
+        """ Setter functions for self.__reg_coords.
+
+        Parameters
+        ----------
+        coordinates : list of triples of floats.
+            The the x-, y-, and z-coordinates of the vertices for a triangulation of
+            the animal's heat map.
         """
         self.__reg_coords = coordinates
 
     def set_triangulation(self, triangles):
-        """
-        Setter functions for self.__triangulation
-        :Parameters:
-         triangles : list of triples of ints. The indices of the vertices
-         for each triangle in the triangulation of a surface.
+        """ Setter functions for self.__triangulation.
+
+        Parameters
+        ----------
+        triangles : list of triples of ints.
+            The indices of the vertices for each triangle in the triangulation of a
+            surface.
         """
         self.__triangulation = triangles
 
     def set_triangle_triangle_adjacency(self, triangle_triangle_adjacency):
-        """
-        Setter functions for self.__triangle_triangle_adjacency
-        :Parameters:
-         triangle_triangle_adjacency : num_triangles x 3 numpy array of ints.
-         Each 3 X 1 element of triangle_triangle_adjacency[i] corresponds to the
-         indices of the triangle in the triangulation of the heat map that is
-         adjacent to the three edges of the triangle with index i. -1 indicates
-         that no triangles are adjacent to that particular edge of the the triangle.
+        """ Setter functions for self.__triangle_triangle_adjacency.
+
+        Parameters
+        ----------
+        triangle_triangle_adjacency : num_triangles x 3 numpy array of ints.
+            Each 3 X 1 element of triangle_triangle_adjacency[i] corresponds to the
+            indices of the triangle in the triangulation of the heat map that is
+            adjacent to the three edges of the triangle with index i. -1 indicates
+            that no triangles are adjacent to that particular edge of the the triangle.
         """
         self.__triangle_triangle_adjacency = triangle_triangle_adjacency
 
-################################################################################
-### Basic Functions
-################################################################################
-
-def calculate_frame_num(animal, time_in_minutes):
-    """
-    Calculate the frame number given the time in minutes using the
-    frame rate stored in the animal object
-    :Parameters:
-     time_in_minutes : float.
-    """
-    return int(animal.get_frame_rate() * time_in_minutes * 60)
-
-
-def find_col_index(header, col_name):
-    """
-    Finds the column index of the given variable in the data
-    :Parameters:
-     header : list of headers in the dataset
-     col_name : name of column to be indexed
-    """
-    # TODO: make this case insensitive
-    pat = re.compile('^(")*%s(")*$' % col_name)
-    for i, _ in enumerate(header):
-        if re.match(pat, header[i]):
-            return i
-    raise Exception("Column name not found: %s" % col_name)
-    return None
-
+#######################
+### Basic Functions ###
+#######################
 
 def norm(data, rm_outliers = True):
-    """
-    Given data, find the mean and standard deviation.
-    :Parameters:
-     data : list of data values
-     rm_outliers : bool. If True, function removes outliers. True by default.
-    :Returns:
-     mean, stds
+    """ Calculates the mean and standard deviation of data.
+
+    Given data, find the mean and standard deviation. If rm_outliers is True, the
+    method will remove outliers using _remove_outliers() before the calculation.
+
+    Parameters
+    ----------
+    data : list of floats
+        List of data values for on which to calculate the mean and standard deviation.
+    rm_outliers : bool.
+        If True, function removes outliers. Default value : True.
+
+    Returns
+    -------
+    mean : float
+        Mean of data, calculated using numpy.
+    std : float
+        Standard deviation of data, calculated using numpy.
     """
     data_array = np.array(data, dtype=np.float)
     if rm_outliers:
-        data_array = _remove_outliers(data_array) #Calculate norm without outliers
+        data_array = _remove_outliers(data_array)
     mean = np.mean(data_array)
     std = np.std(data_array)
     return mean, std
 
 
 def normalize(data, mean, std):
-    """
-    Normalize data given mean and standard deviation.
-    :Parameters:
-     data : list of data values
-     mean : mean of data values
-     std : standard deviation of data values
-    :Returns:
-     list of normalized data. list of 0 if std == 0
+    """ Normalize data given mean and standard deviation.
+
+    Shifts and scales data so the range is between 0 and 1.
+
+    Parameters
+    ----------
+    data : list of floats
+        List of data values to normalize.
+    mean : float
+        Mean of data values.
+    std : float
+        Standard deviation of data values
+
+    Returns
+    -------
+    list of floats
+        List of normalized data. If std == 0, then returns a list of 0.
     """
     if std != 0:
         if std < 1:
@@ -481,33 +559,49 @@ def normalize(data, mean, std):
         return list(map(lambda x: 1/(1 + math.exp(-(x-mean)/std)), data))
     return [0 for d in data]
 
-################################################################################
-### Initialization Functions
-################################################################################
+################################
+### Initialization Functions ###
+################################
 
-def read_info(infile):
+def read_info(infile_path):
+    """ Load JSON file given path.
+
+    Utility function to read the JSON file from infile_path.
+
+    Parameters
+    ----------
+    infile_path : str
+        Absolute path to json file.
+
+    Returns
+    -------
+    info : dict
+        Deserialised json file through the json.load() function.
     """
-    Load JSON file given path.
-    :Parameters:
-     infile : path to json file
-    :Returns:
-     info : loaded json file
-    """
-    with open(infile, 'r') as infofile:
+    with open(infile_path, 'r') as infofile:
         info = json.load(infofile)
     return info
 
 
 def setup_animal_objs(infofiles, name_list=None):
-    """
-    Given a json file, generate and return the animal object files.
-    If name_list is given, only generate the animal objects for animals in name_list
-    :Parameters:
-     infofile : list of json files. Each group of animals should have a corresponding
-         .json file, which should contain an entry for each animal in the group.
-     name_list : list of str. Names of animals to be generated.
-    :Returns:
-     list of animal objects
+    """ Generates and initializes Animal objects from a list of JSONs.
+
+    Given a list of JSON files, generate and return the Animal object. If name_list is
+    given, only generate the Animal object whose names are in the name list.
+
+    Parameters
+    ----------
+    infofile : list of dicts
+        Each group of animals should have a corresponding deserialized .json file, stored
+        as a dict, which should contain an entry for each animal in the group.
+    name_list : list of strs, optional
+        Names of animals to be generated.
+
+    Returns
+    -------
+    objs : list of Animal() objects
+        Regardless of the number of groups of animals, will only return one compiled list.
+        Groupings are reflected in the Animal() object itself.
     """
     # check if infofiles is a list:
     if type(infofiles) != type([]):
@@ -523,16 +617,19 @@ def setup_animal_objs(infofiles, name_list=None):
     return objs
 
 
-def setup_raw_data(animal, group_no):
-    """
+def setup_raw_data(animal):
+    """ Extracts the raw data from the data file linked in the Animal() object.
+
     Store the raw data values from the data file location of the animal object
-    into the animal object itself.
-    :Parameters:
-     animal : animal object
+    into the animal object itself. Currently only sets up X and Y coordinates.
+
+    Parameters
+    ----------
+    animal : Animal() object
+        The Animal() object that the raw data is to be set up for.
     """
     # pylint: disable=too-many-locals
     # Function is complicated, the local variables are necessary.
-    # TODO: Fix the import + errors.
     with open(animal.get_data_file_location(), 'r') as infile:
         print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
         header = infile.readline()#.replace('\r','').replace('\n','')
@@ -541,12 +638,12 @@ def setup_raw_data(animal, group_no):
         elif ',' in header:
             delim = ','
         else:
-            raise Exception("Incorrect type of Data file in animal object.")
+            raise Exception("setup_raw_data : Incorrect type of Data file in animal object.")
         header = list(map(lambda x: x.strip(), header.split(delim)))
         try: # verify the file can be parsed
             reader = csv.reader(infile, delimiter=delim)
         except FileNotFoundError:
-            raise Exception("Incorrect type of Data file in animal object.")
+            raise Exception("setup_raw_data : Data file not found in animal object.")
 
         x_ind = find_col_index(header, 'X')
         y_ind = find_col_index(header, 'Y')
@@ -579,58 +676,91 @@ def setup_raw_data(animal, group_no):
     baseline_end_frame = calculate_frame_num(animal, baseline_end)
     animal.add_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
     animal.add_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
-    animal.set_group(group_no)
 
 
 def _init_animal(json_item, group_no):
-    """
-    Given a json entry, extracts the relevant information and returns an initialized animal object
-    :Parameters:
-     json_item : json. Corresponds to animal.
-    :Returns:
-     animal : Animal object.
+    """ Initializes the Animal() object.
+
+    Given a json entry, extracts the relevant information and returns an initialized
+    Animal() object.
+
+    Parameters
+    ----------
+    json_item : dict
+        Deserialized JSON item stored as a python dictionary. Corresponds to the Animal()
+        object.
+    group_no : int
+        Group number that the Animal() object is a part of.
+
+    Returns
+    -------
+    animal : Animal() object
+        Initialized Animal() object.
     """
     animal = Animal(json_item)
-    setup_raw_data(animal, group_no)
+    setup_raw_data(animal)
+    animal.set_group(group_no)
     return animal
 
 
-################################################################################
-### Other Functions
-################################################################################
+#######################
+### Other Functions ###
+#######################
 
 def calculate_frame_num(animal, time_in_minutes):
-    """
-    Calculate the frame number given the time in minutes using the
-    frame rate stored in the animal object
-    :Parameters:
-     time_in_minutes : float.
+    """ Convert time_in_minutes to frame number with stored framerate.
+
+    Calculate the frame number given the time in minutes using the frame rate
+    stored in the animal object. Framerate is in frames per second, and the time
+    in minutes is converted to time in seconds for the conversion.
+
+    Parameters
+    ----------
+    time_in_minutes : float.
+        Time to be converted in minutes.
     """
     return int(animal.get_frame_rate() * time_in_minutes * 60)
 
 
 def find_col_index(header, col_name):
+    """ Extracts the column index of the given variable in the data.
+
+    Given a list of headers, searches the list for one that first one that contains
+    the col_name. Uses regex match to search through each header.
+
+    Parameters
+    ----------
+    header : list of strs
+        List of headers in the dataset.
+    col_name : str
+        Name of column to be indexed.
+
+    Returns
+    -------
+    int
+        If a match is found, returns the index. If no match, it raises an Exception.
     """
-    Finds the column index of the given variable in the data
-    :Parameters:
-     header : list of headers in the dataset
-     col_name : name of column to be indexed
-    """
-    # TODO: make this case insensitive
-    pat = re.compile('^(")*%s(")*$' % col_name)
+    pat = re.compile('^(")*%s(")*$' % col_name.lower())
     for i, _ in enumerate(header):
-        if re.match(pat, header[i]):
+        if re.match(pat, header[i].lower()):
             return i
     raise Exception("Column name not found: %s" % col_name)
 
 
 def _remove_outliers(data):
-    """
-    Given a numpy array, removes outliers using 1.5 Interquartile Range standard
-    :Parameters:
-     data : numpy array
-    :Returns:
-     numpy array, without outliers
+    """ Remove outliers from data.
+
+    Given a numpy array, removes outliers using 1.5 Interquartile Range standard.
+
+    Parameters
+    ----------
+    data : numpy array
+        Data to be modified.
+
+    Returns
+    -------
+    numpy array
+        Modified data with outliers removed.
     """
     first_quart = np.percentile(data, 25)
     third_quart = np.percentile(data, 75)

@@ -1,0 +1,42 @@
+[
+    {
+        "name": "SS_01",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_01.dat",
+        "animal_attributes": {
+            "species": "medaka",
+            "exp_type": "SS",
+            "ID": "01",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 200,
+            "dim_y": 100,
+            "pixels_per_mm": 1.6,
+            "frames_per_sec": 20,
+            "start_time": 0,
+            "end_time": 10,
+            "baseline_start_time": 0,
+            "baseline_end_time": 2
+        }
+    },
+    {
+        "name": "SS_02",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_02.dat",
+        "animal_attributes": {
+            "species": "medaka",
+            "exp_type": "SS",
+            "ID": "02",
+            "control_group": "False"
+        },
+        "capture_attributes": {
+            "dim_x": 200,
+            "dim_y": 100,
+            "pixels_per_mm": 1.6,
+            "frames_per_sec": 20,
+            "start_time": 0,
+            "end_time": 10,
+            "baseline_start_time": 0,
+            "baseline_end_time": 2
+        }
+    }
+]
