@@ -19,10 +19,16 @@ Python 3.7.3. This module also requires the following python packages:
 
 #### Installation instructions
 
-As `locomotion` is still in development, the only supported method for 
-installation method is from source. Once you've cloned the directory or 
-downloaded the source file, run the following command while in the main 
-directory.
+The `locomotion` package is available for installation on 
+[PyPI](https://pypi.org/project/locomotion/), which can be done by running the 
+following command on your terminal:
+```
+pip install locomotion
+```
+
+Another installation option is to install it from the source directory directly.
+Once you've cloned the directory or  downloaded the source file, run the 
+following command while in the main directory.
 ```
 python setup.py install
 ```
@@ -145,24 +151,6 @@ color_min, color_max = 0.1, 0.5
 locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
-<!-- Alternately, you can use the `computeBDD.py` script and follow prompts to run -->
-<!-- comparisons among animals in a given info file by running `python computeBDD.py` -->
-<!-- in your terminal, which should run similar to this sample snippet. -->
-
-<!-- ``` -->
-<!-- Specify the path to the json file with animal information: /path/to/animal_info.json -->
-<!-- Use all entries in the info file? [y/n] y -->
-<!-- Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature -->
-<!-- Specify the start time of the segment you want to compare: 0 -->
-<!-- Specify the end time of the segment you want to compare: 1 -->
-<!-- Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b -->
-<!-- Do you want to write the results into a file? [y/n] y -->
-<!-- Specify the output directory: /path/to/outdir -->
-<!-- Specify the output file name: results -->
-<!-- Do you want to sort the output? [y/n] n -->
-<!-- Do you want the distance table to be square instead of upper triangular? [y/n] n -->
-<!-- ``` -->
-
 To calculate the Intra-Individual Behavioral Distortion Distance (IIBDD) for each animal in a
 specified info sheet, one can run a script like the following:
 
@@ -180,23 +168,6 @@ start_time, end_time = 0, 1
 iibdds = locomotion.trajectory.compute_all_iibdd( animals, variables, norm_mode, number_of_samples, start_time=start_time, end_time=end_time )
 locomotion.write.write_iibdd_to_csv( animals, iibdds, output_directory, outfile_name )
 ```
-
-<!-- Alternately, you can use the `computeIIBDD.py` script and follow prompts to run -->
-<!-- comparisons among animals in a given info file by running `python -->
-<!-- computeIIBDD.py` in your terminal, which should run similar to this sample -->
-<!-- snippet. -->
-
-<!-- ``` -->
-<!-- Specify the path to the json file with animal information: /path/to/animal_info.json -->
-<!-- Use all entries in the info file? [y/n] y -->
-<!-- Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature -->
-<!-- Specify the start time of the overall segment in which you want to run comparisons: 0 -->
-<!-- Specify the end time of the overall segment in which you want to run comparisons: 1 -->
-<!-- Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b -->
-<!-- Do you want to write the results into a file? [y/n] y -->
-<!-- Specify the output directory: /path/to/outdir -->
-<!-- Specify the output file name: results -->
-<!-- ``` -->
 
 The routines for calculating Conformal Spatiotemporal Distance (CSD) are located
 in the `heatmap.py` file and can be called by `locomotion.heatmap.[routine_name]`.
@@ -217,45 +188,35 @@ color_min, color_max = 0, 0.2
 locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
-<!-- Alternately, you can use the `computeCSD.py` script and follow prompts to run -->
-<!-- comparisons among animals in a given info file by running `python computeCSD.py` -->
-<!-- in your terminal, which should run similar to this sample snippet. -->
-
-<!-- ``` -->
-<!-- Specify the path to the json file with animal information: /path/to/animal_info.json -->
-<!-- Use all entries in the info file? [y/n] y -->
-<!-- Specify the start time of the segment you want to compare: 0 -->
-<!-- Specify the end time of the segment you want to compare: 1 -->
-<!-- Specify the grid size for the heat map (in the same units as the x- and y-dimensions): 10 -->
-<!-- Do you want to write the results into a file? [y/n] y -->
-<!-- Specify the output directory: /path/to/outdir -->
-<!-- Specify the output file name: results -->
-<!-- Do you want to sort the output? [y/n] n -->
-<!-- Do you want the distance table to be square instead of upper triangular? [y/n] n -->
-<!-- ``` -->
-
-<!--
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
 ## Contributing
 
-Please read
-[CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for
-details on our code of conduct, and the process for submitting pull requests to
-us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
+conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available,
+see the [tags on this repository](https://github.com/mechunderlyingbehavior/locomotion/tags).
 
 ## Authors
 
-* **AUTHORS** 
+This package was written by Matthew T. Stamps, Zhong Xuan Khwa, Elaine Wijaya,
+Soo Go, and Ajay S. Mathuru.
 
-See also the list of [contributors](https://github.com/mechunderlyingbehavior/locomotion/contributors) who participated in this project.
+See also the list of
+[contributors](https://github.com/mechunderlyingbehavior/locomotion/contributors)
+who participated in this project.
+
+## Citation
+
+If you use `locomotion` in a scientific paper, we would appreciate citations to
+the following [paper](https://www.nature.com/articles/s41598-019-52300-8):
+```
+Stamps, M.T., Go, S. & Mathuru, A.S. Computational geometric tools for quantitative comparison of locomotory behavior. Sci Rep 9, 16585 (2019). https://doi.org/10.1038/s41598-019-52300-8
+```
+
+Preferred citation format can be found
+[here](https://www.nature.com/articles/s41598-019-52300-8#citeas).
 
 ## License
 
@@ -263,8 +224,8 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+We would like to acknowledge the work of Alaukik Pant, Haroun Chahed, Karolina
+Grzeszkiewicz, Katherine Sun, Lucy Zhu, Sultan Aitzhan, and Yanhua Wang, for
+their contributions to this package.
 
---!>
+README template provided by [PurpleBooth](https://github.com/PurpleBooth/a-good-readme-template).
