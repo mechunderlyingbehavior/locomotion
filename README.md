@@ -43,11 +43,11 @@ locomotion` in your Python shell.
 
 #### Checking the installation
 
-To ensure that all the functions in the package work as intended, run the jupyer
-notebook `installation_check.ipynb`, which is located in the main folder. Follow
-through the notebook, which will run through the basic functions of the package.
-If the package is installed properly, it should be able to generate a small
-sample dataset and run the BDD and CSD on it.
+To ensure that all the functions in the package work as intended, run the
+jupyter notebook `scripts/example_notebook.ipynb`, which is located in the main
+folder. Follow through the notebook, which will run through the basic functions
+of the package. If the package is installed properly, it should be able to
+generate a small sample dataset and run the BDD and CSD on it.
 
 ## Data format
 
@@ -92,36 +92,9 @@ using spaces in the field values.
     }
 ```
 
-To generate the info file, you can make use of `infosheetGenerator.ipynb` which contains
-a step-by-step walkthrough that populates a .json file, prompting you to include the 
-correct data. Alternatively, you can use `infosheetGenerator.py` provided along with
-the locomotion package, which will populate a json file in the correct format by
-prompting the user for each necessary piece of information. It should run
-similarly to the following snippet.
-
-```
-Specify the directory the json file will be saved: /path/to/json/files/
-Specify the json file name: sample.json
-Write new file or append to an existing file? [w/a] w
-Read in all data files in a directory or individual data files? [d/f] f
-Specify the data file to read from: /path/to/data/files/SS_01.tsv
-Required information for /path/to/data/files/SS_01.tsv...
-Name: SS_01
-Species: medaka
-Experiment type: SS
-ID: 01
-Is this the control group? [y/n] n
-Horizontal dimension of the capture area (in mm): 200
-Vertical dimension of the capture area (in mm): 100
-Pixels to mm ratio: 2.4
-Frame rate (per second): 20
-Experiment starts at (in min): 0
-Experiment ends at (in min): 10
-Baseline segment starts at (in min): 0
-Baseline segment ends at (in min): 2
-Do you want to add another file? [y/n] n
-Wrote the information entered into /path/to/json/files/sample.json
-```
+To generate the info file, you can make use of `scripts/json_generator.ipynb`
+which contains a step-by-step walkthrough that populates a .json file, prompting
+you to include the correct data.
 
 ## Using the Package
 
