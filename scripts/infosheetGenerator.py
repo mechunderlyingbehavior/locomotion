@@ -10,11 +10,6 @@ def getItemInfo(f):
   species = input(str("Species: "))
   exp_type = input(str("Experiment type: "))
   ID = input(str("ID: "))
-  control_group = input(str("Is this the control group? [y/n] ")).lower()
-  if control_group == 'y':
-    control_group = "True"
-  else:
-    control_group = "False"
   dim_x = input(str("Horizontal dimension of the capture area (in mm): "))
   dim_y = input(str("Vertical dimension of the capture area (in mm): "))
   pixels_per_mm = input(str("Pixels per mm ratio: "))
@@ -31,8 +26,7 @@ def getItemInfo(f):
     {
       "species": species,
       "exp_type": exp_type,
-      "ID": ID,
-      "control_group": control_group
+      "ID": ID
     },
     "capture_attributes": 
     {
@@ -111,8 +105,7 @@ def main():
       else:
         print("Invalid answer. Going to assume that was a no. (If you were not done, start again and choose to append to this info file.)")
         break
-      
-  else: 
+  else:
     print("Invalid input")
     exit(1)
 

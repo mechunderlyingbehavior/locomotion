@@ -71,7 +71,6 @@ using spaces in the field values.
         "animal_attributes": {
             "species": "Medaka", //species name
             "exp_type": "NSS", //experiment type
-            "control_group": "True", //True or False
             "ID": "01" //number, but in quotations
         },
         "capture_attributes": {
@@ -87,7 +86,9 @@ using spaces in the field values.
     }
 ```
 
-To generate the info file, you can use `infosheetGenerator.py` provided along with
+To generate the info file, you can make use of `infosheetGenerator.ipynb` which contains
+a step-by-step walkthrough that populates a .json file, prompting you to include the 
+correct data. Alternatively, you can use `infosheetGenerator.py` provided along with
 the locomotion package, which will populate a json file in the correct format by
 prompting the user for each necessary piece of information. It should run
 similarly to the following snippet.
@@ -119,7 +120,7 @@ Wrote the information entered into /path/to/json/files/sample.json
 ## Using the Package
 
 Once you import the `locomotion` package, you will need to first initiate animal
-objects using the `locomotion.get_animal_objs` command, which returns a list of
+objects using the `locomotion.setup_animal_objs` command, which returns a list of
 animal objects with basic X and Y data from the data files.
 
 The routines for calculating Behavioral Distortion Distance (BDD) are located in
@@ -144,23 +145,23 @@ color_min, color_max = 0.1, 0.5
 locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
-Alternately, you can use the `computeBDD.py` script and follow prompts to run
-comparisons among animals in a given info file by running `python computeBDD.py`
-in your terminal, which should run similar to this sample snippet.
+<!-- Alternately, you can use the `computeBDD.py` script and follow prompts to run -->
+<!-- comparisons among animals in a given info file by running `python computeBDD.py` -->
+<!-- in your terminal, which should run similar to this sample snippet. -->
 
-```
-Specify the path to the json file with animal information: /path/to/animal_info.json
-Use all entries in the info file? [y/n] y
-Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature
-Specify the start time of the segment you want to compare: 0
-Specify the end time of the segment you want to compare: 1
-Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b
-Do you want to write the results into a file? [y/n] y
-Specify the output directory: /path/to/outdir
-Specify the output file name: results
-Do you want to sort the output? [y/n] n
-Do you want the distance table to be square instead of upper triangular? [y/n] n
-```
+<!-- ``` -->
+<!-- Specify the path to the json file with animal information: /path/to/animal_info.json -->
+<!-- Use all entries in the info file? [y/n] y -->
+<!-- Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature -->
+<!-- Specify the start time of the segment you want to compare: 0 -->
+<!-- Specify the end time of the segment you want to compare: 1 -->
+<!-- Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b -->
+<!-- Do you want to write the results into a file? [y/n] y -->
+<!-- Specify the output directory: /path/to/outdir -->
+<!-- Specify the output file name: results -->
+<!-- Do you want to sort the output? [y/n] n -->
+<!-- Do you want the distance table to be square instead of upper triangular? [y/n] n -->
+<!-- ``` -->
 
 To calculate the Intra-Individual Behavioral Distortion Distance (IIBDD) for each animal in a
 specified info sheet, one can run a script like the following:
@@ -173,28 +174,29 @@ for a in animals:
   locomotion.trajectory.populate_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 norm_mode = 'spec'
-number_of_comparisons_per_animal, specified_durations = 100, None
-output_directory, outfile_name = "/path/to/outdir", "results"
+number_of_samples = 100
+output_directory, outfile_name = "/path/to/outdir", "results.csv"
 start_time, end_time = 0, 1
-locomotion.trajectory.compute_all_iibdd( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
+iibdds = locomotion.trajectory.compute_all_iibdd( animals, variables, norm_mode, number_of_samples, start_time=start_time, end_time=end_time )
+locomotion.write.write_iibdd_to_csv( animals, iibdds, output_directory, outfile_name )
 ```
 
-Alternately, you can use the `computeIIBDD.py` script and follow prompts to run
-comparisons among animals in a given info file by running `python
-computeIIBDD.py` in your terminal, which should run similar to this sample
-snippet.
+<!-- Alternately, you can use the `computeIIBDD.py` script and follow prompts to run -->
+<!-- comparisons among animals in a given info file by running `python -->
+<!-- computeIIBDD.py` in your terminal, which should run similar to this sample -->
+<!-- snippet. -->
 
-```
-Specify the path to the json file with animal information: /path/to/animal_info.json
-Use all entries in the info file? [y/n] y
-Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature
-Specify the start time of the overall segment in which you want to run comparisons: 0
-Specify the end time of the overall segment in which you want to run comparisons: 1
-Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b
-Do you want to write the results into a file? [y/n] y
-Specify the output directory: /path/to/outdir
-Specify the output file name: results
-```
+<!-- ``` -->
+<!-- Specify the path to the json file with animal information: /path/to/animal_info.json -->
+<!-- Use all entries in the info file? [y/n] y -->
+<!-- Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature -->
+<!-- Specify the start time of the overall segment in which you want to run comparisons: 0 -->
+<!-- Specify the end time of the overall segment in which you want to run comparisons: 1 -->
+<!-- Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b -->
+<!-- Do you want to write the results into a file? [y/n] y -->
+<!-- Specify the output directory: /path/to/outdir -->
+<!-- Specify the output file name: results -->
+<!-- ``` -->
 
 The routines for calculating Conformal Spatiotemporal Distance (CSD) are located
 in the `heatmap.py` file and can be called by `locomotion.heatmap.[routine_name]`.
@@ -215,22 +217,22 @@ color_min, color_max = 0, 0.2
 locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
-Alternately, you can use the `computeCSD.py` script and follow prompts to run
-comparisons among animals in a given info file by running `python computeCSD.py`
-in your terminal, which should run similar to this sample snippet.
+<!-- Alternately, you can use the `computeCSD.py` script and follow prompts to run -->
+<!-- comparisons among animals in a given info file by running `python computeCSD.py` -->
+<!-- in your terminal, which should run similar to this sample snippet. -->
 
-```
-Specify the path to the json file with animal information: /path/to/animal_info.json
-Use all entries in the info file? [y/n] y
-Specify the start time of the segment you want to compare: 0
-Specify the end time of the segment you want to compare: 1
-Specify the grid size for the heat map (in the same units as the x- and y-dimensions): 10
-Do you want to write the results into a file? [y/n] y
-Specify the output directory: /path/to/outdir
-Specify the output file name: results
-Do you want to sort the output? [y/n] n
-Do you want the distance table to be square instead of upper triangular? [y/n] n
-```
+<!-- ``` -->
+<!-- Specify the path to the json file with animal information: /path/to/animal_info.json -->
+<!-- Use all entries in the info file? [y/n] y -->
+<!-- Specify the start time of the segment you want to compare: 0 -->
+<!-- Specify the end time of the segment you want to compare: 1 -->
+<!-- Specify the grid size for the heat map (in the same units as the x- and y-dimensions): 10 -->
+<!-- Do you want to write the results into a file? [y/n] y -->
+<!-- Specify the output directory: /path/to/outdir -->
+<!-- Specify the output file name: results -->
+<!-- Do you want to sort the output? [y/n] n -->
+<!-- Do you want the distance table to be square instead of upper triangular? [y/n] n -->
+<!-- ``` -->
 
 <!--
 
