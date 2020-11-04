@@ -10,11 +10,27 @@ individuals.
 For more information on the techniques implemented in this repository, please
 read our [publication](https://www.nature.com/articles/s41598-019-52300-8).
 
+## Table of Contents
+* [Getting Started](#getting-started)
+  * [Installation and Requirements](#installation-and-requirements)
+* [Data Format](#data-format)
+  * [File Format](#file-format)
+  * [Header Format](#header-format)
+  * [Information File Format](#information-file-format)
+* [Using the Package](#using-the-package)
+* [Contributing](#contributing)
+* [Versioning](#versioning)
+* [Authors](#authors)
+* [Citation](#citation)
+* [License](#license)
+* [Acknowledgments](#acknowledgments)
+
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your
-local machine for development and testing purposes. See deployment for notes on
-how to deploy the project on a live system.
+To begin using the `locomotion` package, please follow the installation
+instructions below. After the package has been successfully installed, please
+proceed to the [Data Format](#data-format) section to understand how your data
+should be formatted for use.
 
 ### Installation and Requirements
 
@@ -54,19 +70,19 @@ locomotion` in your Python shell.
 #### Checking the installation
 
 To ensure that all the functions in the package work as intended, run the
-jupyter notebook `scripts/example_notebook.ipynb`, which is located in the main
-folder. Follow through the notebook, which will run through the basic functions
-of the package. If the package is installed properly, it should be able to
-generate a small sample dataset and run the BDD and CSD on it.
+jupyter notebook `scripts/example_notebook.ipynb`. Follow through the notebook,
+which will run through the basic functions of the package. If the package is
+installed properly, it should be able to generate a small sample dataset and run
+the BDD and CSD methods on it.
 
-## Data format
+## Data Format
 
 ### File Format
-The package accepts csv and tsv files. However, because it distinguishes between
-tsv and csv by doing a simple check to see if tabs or commas are present in the
-first (header) line, make sure to avoid using both delimiters in the header of
-your data file. If your data must use both, you will need to edit the `get_raw_data`
-function in `animal.py`. 
+The package accepts `.csv` and `.tsv` files. However, because it distinguishes
+between tsv and csv by doing a simple check to see if tabs or commas are present
+in the first (header) line, make sure to avoid using both delimiters in the
+header of your data file. If your data must use both, you will need to edit the
+`get_raw_data` function in `animal.py`.
 
 ### Header Format 
 The computations require X and Y coordinate data with corresponding column
@@ -103,7 +119,7 @@ using spaces in the field values.
 ```
 
 To generate the info file, you can make use of `scripts/json_generator.ipynb`
-which contains a step-by-step walkthrough that populates a .json file, prompting
+which contains a step-by-step walkthrough that populates a `.json` file, prompting
 you to include the correct data.
 
 ## Using the Package
