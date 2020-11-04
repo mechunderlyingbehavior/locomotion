@@ -1,4 +1,14 @@
-# Locomotion Python Package
+# Locomotion - Quantitative Comparisons of Locomotive Behavior
+[![License](https://img.shields.io/github/license/mechunderlyingbehavior/locomotion)](https://github.com/mechunderlyingbehavior/locomotion/blob/stable/LICENSE.md)
+
+`locomotion` is a Python package that provides computational geometric tools for
+quantitative comparisons of locomotive behaviors. The package makes use of curve
+and shape alignment techniques to accurately quantify (dis)similarities in
+animal behavior without excluding inherent variability present between
+individuals. 
+
+For more information on the techniques implemented in this repository, please
+read our [publication](https://www.nature.com/articles/s41598-019-52300-8).
 
 ## Getting Started
 
