@@ -1,7 +1,7 @@
 # Locomotion - Quantitative Comparisons of Locomotive Behavior
 [![Tag](https://img.shields.io/github/v/tag/mechunderlyingbehavior/locomotion?logo=github)](https://github.com/mechunderlyingbehavior/locomotion/tags)
 [![PyPI](https://img.shields.io/pypi/v/locomotion)](https://pypi.org/project/locomotion/)
-[![Requirements](https://img.shields.io/requires/github/mechunderlyingbehavior/locomotion)](https://requires.io/github/mechunderlyingbehavior/locomotion/requirements/?branch=stable)
+[![Requirements Status](https://requires.io/github/mechunderlyingbehavior/locomotion/requirements.svg?branch=stable)](https://requires.io/github/mechunderlyingbehavior/locomotion/requirements/?branch=stable)
 [![License](https://img.shields.io/github/license/mechunderlyingbehavior/locomotion)](https://github.com/mechunderlyingbehavior/locomotion/blob/stable/LICENSE.md)
 
 `locomotion` is a Python package that provides computational geometric tools for

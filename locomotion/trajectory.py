@@ -1,14 +1,14 @@
 """Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-trajectory.py is part of the locomotion python package for analyzing locomotory animal 
-behaviors via the techniques presented in the paper "Computational geometric tools  
-for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+trajectory.py is part of the locomotion python package for analyzing locomotory animal
+behaviors via the techniques presented in the paper "Computational geometric tools
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru
 (https://doi.org/10.1038/s41598-019-52300-8).
 
 This python script contains methods for computing behavioral distortion distances
-(BDD). The DTW implementation used in this package is the one provided in the 
-dtw-python package (T. Giorgino. Computing and Visualizing Dynamic Time Warping 
+(BDD). The DTW implementation used in this package is the one provided in the
+dtw-python package (T. Giorgino. Computing and Visualizing Dynamic Time Warping
 Alignments in R: The dtw Package. J. Stat. Soft., doi:10.18637/jss.v031.i07.).
 """
 
@@ -344,8 +344,8 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     """
     # pylint: disable=too-many-arguments
     bdds = []
-    for animal in animal_list:
-        bdd = compute_one_iibdd(animal, varnames, norm_mode, num_samples,
+    for anim in animal_list:
+        bdd = compute_one_iibdd(anim, varnames, norm_mode, num_samples,
                                 interval_length, start_time, end_time)
         bdds.append(bdd)
     return bdds

@@ -1,19 +1,18 @@
 """Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-write.py is part of the locomotion python package for analyzing locomotory animal 
-behaviors via the techniques presented in the paper "Computational geometric tools  
-for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+write.py is part of the locomotion python package for analyzing locomotory animal
+behaviors via the techniques presented in the paper "Computational geometric tools
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru
 (https://doi.org/10.1038/s41598-019-52300-8).
 
-This python script contains methods for writing outputs to file and rendering the 
-results from the functions defined in trajectory.py and heatmap.py. The current 
-implementation makes use of plotly to render graphs, which produces a .html that 
+This python script contains methods for writing outputs to file and rendering the
+results from the functions defined in trajectory.py and heatmap.py. The current
+implementation makes use of plotly to render graphs, which produces a .html that
 enables the user to look interact with the resulting plots.
 """
 import os
 import csv
-import itertools
 import operator
 import numpy as np
 import plotly

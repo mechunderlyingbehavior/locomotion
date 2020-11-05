@@ -2,20 +2,19 @@
 Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-animal.py is part of the locomotion python package for analyzing locomotory animal 
-behaviors via the techniques presented in the paper "Computational geometric tools  
-for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+animal.py is part of the locomotion python package for analyzing locomotory animal
+behaviors via the techniques presented in the paper "Computational geometric tools
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru
 (https://doi.org/10.1038/s41598-019-52300-8).
 
 This python module defines the Animal class object used throughout the package to store
 and process the tracked data of an animal subject. On initialization, the animal object
-extracts various pieces of information from JSON files, such as experimental parameters 
+extracts various pieces of information from JSON files, such as experimental parameters
 and coordinate data of the subjects, and prepares them for analysis.
 """
 import os
 import csv
 import re
-import math
 import json
 import warnings
 from math import ceil
@@ -505,7 +504,7 @@ class Animal():
 ### Basic Functions ###
 #######################
 
-def norm(data, rm_outliers = True):
+def norm(data, rm_outliers=True):
     """ Calculates the mean and standard deviation of data.
 
     Given data, find the mean and standard deviation. If rm_outliers is True, the
@@ -607,7 +606,7 @@ def setup_animal_objs(infofiles, name_list=None):
         Groupings are reflected in the Animal() object itself.
     """
     # check if infofiles is a list:
-    if type(infofiles) != type([]):
+    if not isinstance(infofiles, list):
         raise Exception("setup_animal_objs: infofiles variable needs to be a list.")
     objs = []
     for group_no, infofile in enumerate(infofiles):
