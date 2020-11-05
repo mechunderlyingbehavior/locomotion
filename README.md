@@ -227,7 +227,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Acknowledgments
 
 We would like to acknowledge the work of Alaukik Pant, Haroun Chahed, Karolina
-Grzeszkiewicz, Katherine Sun, Lucy Zhu, Sultan Aitzhan, and Yanhua Wang, for
-their contributions to this package.
+Grzeszkiewicz, Katherine Sun, Lucy Zhu, Saoirse Therese Lightbourne, Sultan Aitzhan, and 
+Yanhua Wang, for their contributions to this package.
 
 README template provided by [PurpleBooth](https://github.com/PurpleBooth/a-good-readme-template).
