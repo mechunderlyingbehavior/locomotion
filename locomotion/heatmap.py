@@ -2,16 +2,16 @@
 Copyright Mechanisms Underlying Behavior Lab, Singapore
 https://mechunderlyingbehavior.wordpress.com/
 
-heatmap.py is part of the locomotion python package for analyzing locomotory animal 
-behaviors via the techniques presented in the paper "Computational geometric tools  
-for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru 
+heatmap.py is part of the locomotion python package for analyzing locomotory animal
+behaviors via the techniques presented in the paper "Computational geometric tools
+for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS Mathuru
 (https://doi.org/10.1038/s41598-019-52300-8).
 
 This python script contains methods for computing conformal spatiotemporal distances
 (CSD) between heatmaps of animal trajectories representing the amount of time each
-subject spends in a given location. The heatmaps are modeled as triangular meshes 
+subject spends in a given location. The heatmaps are modeled as triangular meshes
 that are conformally flattened to the unit disk for the purpose of shape alignment
-and analysis. The implementation for conformal flattening used in this package is 
+and analysis. The implementation for conformal flattening used in this package is
 the one provided in the libigl package (https://libigl.github.io/).
 """
 # pylint:disable=too-many-lines
@@ -39,7 +39,7 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
     """ Computes the heatmap representation of an animal's movement.
 
     Computes the heatmap for a given animal trajectory representing the amount of time
-    the subject spent in each location during a specified time interval as a histogram 
+    the subject spent in each location during a specified time interval as a histogram
     with a specified grid size along with a triangular mesh of the corresponding 2D
     surface, and a conformal flattening of the mesh to the unit disk.
 
@@ -220,8 +220,9 @@ def compute_all_csd(animal_list):
 
     Parameters
     ----------
-    animal_list : list of Animal() objects All initialized with regular/flattened coordinates and triangulation set/updated.
-        Order will determine the order of calculations.
+    animal_list : list of Animal() objects All initialized with regular/flattened
+        coordinates and triangulation set/updated. Order will determine the order of
+        calculations.
 
     Returns
     -------
@@ -487,7 +488,7 @@ def _calculate_area(p, q, r):
 def _calculate_distortion_energy(animal_0, animal_1, theta, rho):
     """ Calculates elastic energy required to stretch one animal mesh onto another.
 
-    Calculates the elastic energy required to stretch the mesh of Animal 0 onto the 
+    Calculates the elastic energy required to stretch the mesh of Animal 0 onto the
     mesh of Animal 1 via the conformal mapping obtained by factoring through their
     respective conformal flattenings and applyling a Mobius transformation.
 
@@ -520,7 +521,7 @@ def _calculate_distortion_energy(animal_0, animal_1, theta, rho):
 
     #initialize four matrices whose entries correspond to pairs of vertices in
     #the triangulation of Animal 0
-    
+
     #the number of triangles containing each pair of vertices
     triangles_per_edge = [[0 for j in range(num_verts)] for i in range(num_verts)]
     #the distance between each pair of vertices with the regular coordinates
@@ -562,8 +563,8 @@ def _calculate_distortion_energy(animal_0, animal_1, theta, rho):
 def _calculate_symmetric_distortion_energy(animal_0, animal_1, theta, rho):
     """ Calculates symmetric distortion energy required to stretch one animal mesh onto another.
 
-    Calculates the symmetric distortion energy required to stretch the mesh of Animal 0 
-    onto the mesh of Animal 1 via the conformal mapping obtained by factoring through 
+    Calculates the symmetric distortion energy required to stretch the mesh of Animal 0
+    onto the mesh of Animal 1 via the conformal mapping obtained by factoring through
     their respective conformal flattenings and applyling a Mobius transformation.
 
     Parameters
@@ -616,7 +617,7 @@ def _calculate_z_dim(animal_obj):
 
 def _find_aligned_coordinate(point, simplices, simplex_indices,
                              input_coordinates, output_coordinates):
-    """ Converts the coordinates of a point on one flattened mesh to the coordinates of 
+    """ Converts the coordinates of a point on one flattened mesh to the coordinates of
     the preimage of its position in an aligned mesh.
 
     Given a point in the 2D input coordinate system, search through the given simplices
@@ -787,7 +788,7 @@ def _find_closest_vertex(point, vertices, input_coordinates, output_coordinates)
 
 
 def _find_next_neighbourhood(animal_obj, current_triangles, traversed_triangles):
-    """ Find the triangles adjacent to a given list of triangles in an animal mesh, 
+    """ Find the triangles adjacent to a given list of triangles in an animal mesh,
     disregarding previously traversed triangles.
 
     Given an animal object, a set of triangles whose neighbours we want to get and a set of
@@ -1032,7 +1033,7 @@ def _convert_from_barycentric(barycentric_coords, simplex, coordinates):
 
 
 def _determine_aligned_coordinates(animal_obj_0, animal_obj_1, theta, rho):
-    """ Determines the coordinates for the image of an animal mesh aligned to another 
+    """ Determines the coordinates for the image of an animal mesh aligned to another
     via a prescribed Mobius transformation.
 
     Calculates the vertex coordinates for the triangulation of Animal 1 aligned to the
