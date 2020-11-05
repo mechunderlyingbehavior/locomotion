@@ -220,8 +220,7 @@ def compute_all_csd(animal_list):
 
     Parameters
     ----------
-    animal_list : list of Animal() objects
-        All initialized with regular/flattened coordinates and triangulation set/updated.
+    animal_list : list of Animal() objects All initialized with regular/flattened coordinates and triangulation set/updated.
         Order will determine the order of calculations.
 
     Returns
