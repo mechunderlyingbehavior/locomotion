@@ -1,85 +1,88 @@
-# Locomotion Python Package
+# Locomotion - Quantitative Comparisons of Locomotive Behavior
+[![License](https://img.shields.io/github/license/mechunderlyingbehavior/locomotion)](https://github.com/mechunderlyingbehavior/locomotion/blob/stable/LICENSE.md)
+
+`locomotion` is a Python package that provides computational geometric tools for
+quantitative comparisons of locomotive behaviors. The package makes use of curve
+and shape alignment techniques to accurately quantify (dis)similarities in
+animal behavior without excluding inherent variability present between
+individuals. 
+
+For more information on the techniques implemented in this repository, please
+read our [publication](https://www.nature.com/articles/s41598-019-52300-8).
+
+## Table of Contents
+* [Getting Started](#getting-started)
+  * [Installation and Requirements](#installation-and-requirements)
+* [Data Format](#data-format)
+  * [File Format](#file-format)
+  * [Header Format](#header-format)
+  * [Information File Format](#information-file-format)
+* [Using the Package](#using-the-package)
+* [Contributing](#contributing)
+* [Versioning](#versioning)
+* [Authors](#authors)
+* [Citation](#citation)
+* [License](#license)
+* [Acknowledgments](#acknowledgments)
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your
-local machine for development and testing purposes. See deployment for notes on
-how to deploy the project on a live system.
+To begin using the `locomotion` package, please follow the installation
+instructions below. After the package has been successfully installed, please
+proceed to the [Data Format](#data-format) section to understand how your data
+should be formatted for use.
 
-### Prerequisites
+### Installation and Requirements
 
 As of 24 January 2020, the `locomotion` package has been converted for use on
 Python 3.7.3. This module also requires the following python packages:
-* Numpy (>= 1.16.2)
-* Scipy (>= 1.2.1)
-* Plotly (>= 4.4.1)
 
-### Installing
+* numpy (>= 1.16.2)
+* scipy (>= 1.5.0)
+* plotly (>= 4.4.1)
+* dtw-python (>= 1.1.4)
+* igl (>=2.2.0)
 
-The `pip` installation is a work in progress. In the meantime, the package can
-be manually installed in your system.
+#### Installation instructions
 
-#### Step 1: Adding `locomotion` to your Python Path
-
-To access the `locomotion` package, you could either copy the `locomotion`
-folder into your working directory, or add the package to your environment. To
-do the latter, you may use the following methods in your terminal, replacing
-`/PATH/TO/PACKAGE` with the directory containing the package:
-
-```shell
-export PYTHONPATH=$PYTHONPATH:/PATH/TO/PACKAGE
+The `locomotion` package is available for installation on 
+[PyPI](https://pypi.org/project/locomotion/), which can be done by running the 
+following command on your terminal:
+```
+pip install locomotion
 ```
 
-Note that this method will have to be repeated every time a new terminal window
-is opened. An alternative to the terminal method would be to add the following
-directly to the top of your python script, before any other imports:
-
-```python
-import sys
-sys.path.append('/PATH/TO/PACKAGE')
+Another installation option is to install it from the source directory directly.
+Once you've cloned the directory or  downloaded the source file, run the 
+following command while in the main directory.
+```
+python setup.py install
 ```
 
-You should now be able to `import locomotion` from your python shell.
+**Note**: One of our dependencies, `igl`, is still in development phase, and is
+not currently on PyPI. You will have to install it manually in order to use
+`locomotion`. You may find the installation instructions
+[here](https://github.com/libigl/libigl-python-bindings).
 
-#### Step 2: Compiling `extendedDTW.so` file
+After installing all the requirements, you should now be able to run `import
+locomotion` in your Python shell.
 
-If `import extendedDTW` results in an `ImportError`, you will need to rebuild
-the package to make it compatible to your system. To do so, perform the following
-steps:
-1. First, `cd` into the `locomotion` directory. Note that this is the
-   `locomotion` folder in the package, not the package itself.
-1. If there is an `extendedDTW.so` file in the directory, remove it.
-1. Now, run `cd ../extendedDTW`
-1. If there exists an `extendedDTW.so` file, remove it.
-1. If there exists an `extendedDTW.c` file, remove it.
-1. Run `setup.py` with the following command on terminal.
-```
-python setup.py build_ext --inplace
-```
-1. The terminal log might show some warnings, but if it runs successfully, there
-   should be a `extendedDTW.cpython ... .so` file in your current directory.
-1. Rename this `.so` file to `extendedDTW.so`, and move it into the `locomotion`
-   directory.
+#### Checking the installation
 
-If all goes well, you should be able to run `import extendedDTW` in your Python
-shell now.
+To ensure that all the functions in the package work as intended, run the
+jupyter notebook `scripts/example_notebook.ipynb`. Follow through the notebook,
+which will run through the basic functions of the package. If the package is
+installed properly, it should be able to generate a small sample dataset and run
+the BDD and CSD methods on it.
 
-#### Step 3: Check if the installation worked
-
-To ensure that the package was installed properly, run the jupyer notebook
-`installation_check.ipynb`, which is located in the main folder. Follow through
-the notebook, which will run through the basic functions of the package. If the
-package is installed properly, it should be able to generate a small sample
-dataset and run the BDD on it.
-
-## Data format
+## Data Format
 
 ### File Format
-The package accepts csv and tsv files. However, because it distinguishes between
-tsv and csv by doing a simple check to see if tabs or commas are present in the
-first (header) line, make sure to avoid using both delimiters in the header of
-your data file. If your data must use both, you will need to edit the `getRawData`
-function in `animal.py`. 
+The package accepts `.csv` and `.tsv` files. However, because it distinguishes
+between tsv and csv by doing a simple check to see if tabs or commas are present
+in the first (header) line, make sure to avoid using both delimiters in the
+header of your data file. If your data must use both, you will need to edit the
+`get_raw_data` function in `animal.py`.
 
 ### Header Format 
 The computations require X and Y coordinate data with corresponding column
@@ -100,7 +103,6 @@ using spaces in the field values.
         "animal_attributes": {
             "species": "Medaka", //species name
             "exp_type": "NSS", //experiment type
-            "control_group": "True", //True or False
             "ID": "01" //number, but in quotations
         },
         "capture_attributes": {
@@ -116,39 +118,14 @@ using spaces in the field values.
     }
 ```
 
-To generate the info file, you can use `infosheetGenerator.py` provided along with
-the locomotion package, which will populate a json file in the correct format by
-prompting the user for each necessary piece of information. It should run
-similarly to the following snippet.
-
-```
-Specify the directory the json file will be saved: /path/to/json/files/
-Specify the json file name: sample.json
-Write new file or append to an existing file? [w/a] w
-Read in all data files in a directory or individual data files? [d/f] f
-Specify the data file to read from: /path/to/data/files/SS_01.tsv
-Required information for /path/to/data/files/SS_01.tsv...
-Name: SS_01
-Species: medaka
-Experiment type: SS
-ID: 01
-Is this the control group? [y/n] n
-Horizontal dimension of the capture area (in mm): 200
-Vertical dimension of the capture area (in mm): 100
-Pixels to mm ratio: 2.4
-Frame rate (per second): 20
-Experiment starts at (in min): 0
-Experiment ends at (in min): 10
-Baseline segment starts at (in min): 0
-Baseline segment ends at (in min): 2
-Do you want to add another file? [y/n] n
-Wrote the information entered into /path/to/json/files/sample.json
-```
+To generate the info file, you can make use of `scripts/json_generator.ipynb`
+which contains a step-by-step walkthrough that populates a `.json` file, prompting
+you to include the correct data.
 
 ## Using the Package
 
 Once you import the `locomotion` package, you will need to first initiate animal
-objects using the `locomotion.getAnimalObjs` command, which returns a list of
+objects using the `locomotion.setup_animal_objs` command, which returns a list of
 animal objects with basic X and Y data from the data files.
 
 The routines for calculating Behavioral Distortion Distance (BDD) are located in
@@ -159,36 +136,18 @@ Example script:
 
 ```python
 import locomotion
-info_file = "/path/to/animal_info.json"
-animals = locomotion.getAnimalObjs( info_file )
+info_files = ["/path/to/animal_info.json"]
+animals = locomotion.setup_animal_objs( info_files )
 for a in animals:
-  locomotion.trajectory.getCurveData( a )
+  locomotion.trajectory.populate_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 start_time, end_time = 0, 1
 norm_mode = 'spec'
-distances = locomotion.trajectory.computeAllBDD( animals, variables, start_time, end_time, norm_mode )
+distances = locomotion.trajectory.compute_all_bdd( animals, variables, start_time, end_time, norm_mode )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0.1, 0.5
-locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
-```
-
-Alternately, you can use the `computeBDD.py` script and follow prompts to run
-comparisons among animals in a given info file by running `python computeBDD.py`
-in your terminal, which should run similar to this sample snippet.
-
-```
-Specify the path to the json file with animal information: /path/to/animal_info.json
-Use all entries in the info file? [y/n] y
-Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature
-Specify the start time of the segment you want to compare: 0
-Specify the end time of the segment you want to compare: 1
-Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b
-Do you want to write the results into a file? [y/n] y
-Specify the output directory: /path/to/outdir
-Specify the output file name: results
-Do you want to sort the output? [y/n] n
-Do you want the distance table to be square instead of upper triangular? [y/n] n
+locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
 
 To calculate the Intra-Individual Behavioral Distortion Distance (IIBDD) for each animal in a
@@ -196,33 +155,17 @@ specified info sheet, one can run a script like the following:
 
 ```python
 import locomotion
-info_file = "/path/to/animal_info.json"
-animals = locomotion.getAnimalObjs( info_file )
+info_files = ["/path/to/animal_info.json"]
+animals = locomotion.setup_animal_objs( info_files )
 for a in animals:
-  locomotion.trajectory.getCurveData( a )
+  locomotion.trajectory.populate_curve_data( a )
 variables = ['Y','Velocity','Curvature']
 norm_mode = 'spec'
-number_of_comparisons_per_animal, specified_durations = 100, None
-output_directory, outfile_name = "/path/to/outdir", "results"
+number_of_samples = 100
+output_directory, outfile_name = "/path/to/outdir", "results.csv"
 start_time, end_time = 0, 1
-locomotion.trajectory.computeAllIIBDD( animals, variables, norm_mode, number_of_comparisons_per_animal, specified_durations, output_directory, outfile_name, start_time, end_time )
-```
-
-Alternately, you can use the `computeIIBDD.py` script and follow prompts to run
-comparisons among animals in a given info file by running `python
-computeIIBDD.py` in your terminal, which should run similar to this sample
-snippet.
-
-```
-Specify the path to the json file with animal information: /path/to/animal_info.json
-Use all entries in the info file? [y/n] y
-Which variables do you want to use? (e.g., 'Y Velocity Curvature') Y Velocity Curvature
-Specify the start time of the overall segment in which you want to run comparisons: 0
-Specify the end time of the overall segment in which you want to run comparisons: 1
-Which time segment do you want to normalize over: the predetermined baseline or the segment specified above? [b/s] b
-Do you want to write the results into a file? [y/n] y
-Specify the output directory: /path/to/outdir
-Specify the output file name: results
+iibdds = locomotion.trajectory.compute_all_iibdd( animals, variables, norm_mode, number_of_samples, start_time=start_time, end_time=end_time )
+locomotion.write.write_iibdd_to_csv( animals, iibdds, output_directory, outfile_name )
 ```
 
 The routines for calculating Conformal Spatiotemporal Distance (CSD) are located
@@ -232,57 +175,47 @@ Example script:
 
 ```python
 import locomotion
-info_file = "/path/to/animal_info.json"
-animals = locomotion.getAnimalObjs( info_file )
+info_files = ["/path/to/animal_info.json"]
+animals = locomotion.setup_animal_objs( info_files )
 grid_size, start_time, end_time = 10, 0, 2
 for a in animals:
-  locomotion.heatmap.getSurfaceData( a, grid_size, start_time, end_time )
-distances = locomotion.heatmap.computeAllCSD( animals )
+  locomotion.heatmap.populate_surface_data( a, grid_size, start_time, end_time )
+distances = locomotion.heatmap.compute_all_csd( animals )
 output_directory, outfile_name = "/path/to/outdir", "results"
 sort_table, square_table = False, False
 color_min, color_max = 0, 0.2
-locomotion.write.postProcess( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
+locomotion.write.post_process( animals, distances, output_directory, outfile_name, sort_table, square_table, color_min, color_max )
 ```
-
-Alternately, you can use the `computeCSD.py` script and follow prompts to run
-comparisons among animals in a given info file by running `python computeCSD.py`
-in your terminal, which should run similar to this sample snippet.
-
-```
-Specify the path to the json file with animal information: /path/to/animal_info.json
-Use all entries in the info file? [y/n] y
-Specify the start time of the segment you want to compare: 0
-Specify the end time of the segment you want to compare: 1
-Specify the grid size for the heat map (in the same units as the x- and y-dimensions): 10
-Do you want to write the results into a file? [y/n] y
-Specify the output directory: /path/to/outdir
-Specify the output file name: results
-Do you want to sort the output? [y/n] n
-Do you want the distance table to be square instead of upper triangular? [y/n] n
-```
-
-<!--
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
 
 ## Contributing
 
-Please read
-[CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for
-details on our code of conduct, and the process for submitting pull requests to
-us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
+conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available,
+see the [tags on this repository](https://github.com/mechunderlyingbehavior/locomotion/tags).
 
 ## Authors
 
-* **AUTHORS** 
+This package was written by Matthew T. Stamps, Zhong Xuan Khwa, Elaine Wijaya,
+Soo Go, and Ajay S. Mathuru.
 
-See also the list of [contributors](https://github.com/mechunderlyingbehavior/locomotion/contributors) who participated in this project.
+See also the list of
+[contributors](https://github.com/mechunderlyingbehavior/locomotion/contributors)
+who participated in this project.
+
+## Citation
+
+If you use `locomotion` in a scientific paper, we would appreciate citations to
+the following [paper](https://www.nature.com/articles/s41598-019-52300-8):
+```
+Stamps, M.T., Go, S. & Mathuru, A.S. Computational geometric tools for quantitative comparison of locomotory behavior. Sci Rep 9, 16585 (2019). https://doi.org/10.1038/s41598-019-52300-8
+```
+
+Preferred citation format can be found
+[here](https://www.nature.com/articles/s41598-019-52300-8#citeas).
 
 ## License
 
@@ -290,8 +223,8 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+We would like to acknowledge the work of Alaukik Pant, Haroun Chahed, Karolina
+Grzeszkiewicz, Katherine Sun, Lucy Zhu, Sultan Aitzhan, and Yanhua Wang, for
+their contributions to this package.
 
---!>
+README template provided by [PurpleBooth](https://github.com/PurpleBooth/a-good-readme-template).
