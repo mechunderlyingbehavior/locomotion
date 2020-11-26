@@ -15,4 +15,4 @@ import locomotion.trajectory as trajectory
 import locomotion.heatmap as heatmap
 import locomotion.write as write
 
-__version__="1.0.0"
+__version__="2.0.0"
