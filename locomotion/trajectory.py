@@ -92,6 +92,67 @@ def populate_curve_data(animal_obj, col_names=None):
     return first_deriv, second_deriv, velocity, curvature
 
 
+def populate_distance_data(animal_obj, goal_key, val_key, col_names=None):
+    """Calculates distance of animal from a defined goal coordinate and add to object.
+
+    Given the position coordinates of an animal, calculates the euclidean
+    distance of the animal from a pre-defined goal coordinate stored in
+    animal_obj.__info. Then, update the dictionary animal_obj.__raw_vals with
+    the new distance data, with key val_key. Finally, calculates and updates
+    animal_obj.__means and animal_obj.__stds for val_key.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, with coordinate data and with a goal coordinate
+        stored in animal_obj.__info, with key goal_key.
+    goal_key : str
+        Hashable key pointing to goal coordinate data stored in animal_obj.__info.
+    val_key : str
+        Hashable key that will be used to point to distance data stored in self.__raw_vals.
+    col_names : list of str, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals, and must be ordered in the same order as the coordinates of
+        the goal. If not given, defaults to ['X', 'Y'].
+
+    Returns
+    -------
+    distances : list of floats
+        Computed distances from goal point at each frame.
+    """
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col),
+                                  animal_obj.get_frame_rate()))
+        except KeyError:
+            raise KeyError("column name {} does not exist in animal dataset".format(col))
+
+    # extract goal coordinates
+    try:
+        goal = animal_obj.get_info(goal_key)
+    except KeyError:
+        raise KeyError("%s is not a valid key stored in Animal Object %s"
+                       % (goal_key, animal_obj.get_name()))
+    if not(isinstance(goal, (list, tuple, np.ndarray))):
+        raise Exception("Goal is of type %s, but it should be a list, tuple, or numpy array"
+                        % type(goal))
+    elif len(goal) != n_dims:
+        raise Exception("Dimension of goal is not the same as dimension of coordinates.")
+
+    # euclidean distance calculation
+    goal = np.array(goal)
+    coords = np.array(coords).T
+    distances = np.sqrt(np.sum((coords - goal)**2, axis=1))
+
+    start_time, end_time = animal_obh.get_baseline_times()
+    animal_obj.add_raw_vals(val_key, distances)
+    animal_obj.add_stats(val_key, 'baseline', start_time, end_time)
+    return distances
+
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
                     norm_mode, fullmode=False, outdir=None):

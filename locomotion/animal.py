@@ -58,6 +58,7 @@ class Animal():
         self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
+        self.__info = {}
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
@@ -218,6 +219,21 @@ class Animal():
     ######################################
     ### Functions for modifying values ###
     ######################################
+
+    def get_info(self, info_key):
+        """ Retrieve information stored in Animal object.
+
+        Parameters
+        ----------
+        info_key : str, hashable key
+            Key pointing to information stored in self.__info.
+        """
+        try:
+            value = self.__info[info_key]
+        except KeyError:
+            raise KeyError("get_info : %s not an entry in animal object %s."
+                           % {info_key, self.__name})
+        return value
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """ Retrieve multiple raw values stored in Animal object.
