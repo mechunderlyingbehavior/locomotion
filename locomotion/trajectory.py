@@ -148,7 +148,7 @@ def populate_distance_data(animal_obj, goal_key, val_key, col_names=None):
     coords = np.array(coords).T
     distances = np.sqrt(np.sum((coords - goal)**2, axis=1))
 
-    start_time, end_time = animal_obh.get_baseline_times()
+    start_time, end_time = animal_obj.get_baseline_times()
     animal_obj.add_raw_vals(val_key, distances)
     animal_obj.add_stats(val_key, 'baseline', start_time, end_time)
     return distances

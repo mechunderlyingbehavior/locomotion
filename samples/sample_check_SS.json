@@ -1,7 +1,7 @@
 [
     {
         "name": "SS_01",
-        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_01.dat",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/scripts/../samples/sample_data/SS_01.dat",
         "animal_attributes": {
             "species": "medaka",
             "exp_type": "SS",
@@ -20,7 +20,7 @@
     },
     {
         "name": "SS_02",
-        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/samples/sample_data/SS_02.dat",
+        "data_file_location": "/home/zhongxuan/ync/compgeom/locomotion_package/scripts/../samples/sample_data/SS_02.dat",
         "animal_attributes": {
             "species": "medaka",
             "exp_type": "SS",

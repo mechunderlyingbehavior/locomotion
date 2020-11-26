@@ -81,6 +81,27 @@ class Animal():
     ### Population Functions ###
     ############################
 
+    def add_info(self, info_key, info_value, replace=True):
+        """ Updates dictionary self.__info with new data.
+
+        Create a new entry in the dictionary, with key info_key and value info_value.
+
+        Parameters
+        ----------
+        info_key : str
+            Hashable key that will point to info_value in self.__info.
+        info_value : any
+            Any value to be stored into self.__info.
+        replace : bool, optional
+            If false, the function will not replace the value if there info_key is already
+            pointing to a value. Default value : True.
+        """
+        if info_key in self.__info and not(replace):
+            print("WARNING: %s is already in %s. Since replace is False, will not update."
+                  % (info_key, self.get_name()))
+        else:
+            self.__info.update({info_key:info_value})
+
     def add_raw_vals(self, var_name, val_list):
         """ Updates dictionary self.__raw_vals with new data.
 
