@@ -16,6 +16,12 @@
             "end_time": 2,
             "baseline_start_time": 0,
             "baseline_end_time": 1
+        },
+        "additional_info": {
+            "point": [
+                100,
+                100
+            ]
         }
     },
     {
@@ -35,6 +41,12 @@
             "end_time": 2,
             "baseline_start_time": 0,
             "baseline_end_time": 1
+        },
+        "additional_info": {
+            "point": [
+                50,
+                50
+            ]
         }
     }
 ]

@@ -58,7 +58,7 @@ class Animal():
         self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
-        self.__info = {}
+        self.__info = json_item["additional_info"]
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
