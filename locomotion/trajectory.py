@@ -153,23 +153,24 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
     animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
     return first_deriv, second_deriv, velocity, curvature
 
-def populate_distance_from_point(animal_obj, goal_key, val_key, col_names=None):
-    """Calculates distance of animal from a defined goal coordinate and add to object.
+def populate_distance_from_point(animal_obj, point_key, param_key, col_names=None):
+    """Calculates distance of animal from a point and add to object.
 
     Given the position coordinates of an animal, calculates the euclidean
-    distance of the animal from a pre-defined goal coordinate stored in
-    animal_obj.__info. Then, update the dictionary animal_obj.__raw_vals with
-    the new distance data, with key val_key. Finally, calculates and updates
-    animal_obj.__means and animal_obj.__stds for val_key.
+    distance of the animal from a point, pre-defined with coordinates stored in
+    animal_obj.__info with key point_key. Then, update the dictionary
+    animal_obj.__raw_vals with the new distance data, with key param_key.
+    Finally, calculates and updates animal_obj.__means and animal_obj.__stds
+    for param_key.
 
     Parameters
     ----------
     animal_obj : Animal() object
-        Initialized Animal() object, with coordinate data and with a goal coordinate
-        stored in animal_obj.__info, with key goal_key.
-    goal_key : str
+        Initialized Animal() object, with coordinate data and with coordinates
+        stored in animal_obj.__info, with key point_key.
+    point_key : str
         Hashable key pointing to goal coordinate data stored in animal_obj.__info.
-    val_key : str
+    param_key : str
         Hashable key that will be used to point to distance data stored in self.__raw_vals.
     col_names : list of str, optional
         Names of data columns used for calculations. Must coincide with data stored in
@@ -180,6 +181,7 @@ def populate_distance_from_point(animal_obj, goal_key, val_key, col_names=None):
     -------
     distances : list of floats
         Computed distances from goal point at each frame.
+
     """
     if col_names is None:
         col_names = ['X', 'Y']
@@ -194,24 +196,24 @@ def populate_distance_from_point(animal_obj, goal_key, val_key, col_names=None):
 
     # extract goal coordinates
     try:
-        goal = animal_obj.get_info(goal_key)
+        point = animal_obj.get_info(point_key)
     except KeyError:
         raise KeyError("%s is not a valid key stored in Animal Object %s"
-                       % (goal_key, animal_obj.get_name()))
-    if not(isinstance(goal, (list, tuple, np.ndarray))):
-        raise Exception("Goal is of type %s, but it should be a list, tuple, or numpy array"
-                        % type(goal))
-    elif len(goal) != n_dims:
-        raise Exception("Dimension of goal is not the same as dimension of coordinates.")
+                       % (point_key, animal_obj.get_name()))
+    if not(isinstance(point, (list, tuple, np.ndarray))):
+        raise Exception("Point is of type %s, but it should be a list, tuple, or numpy array"
+                        % type(point))
+    elif len(point) != n_dims:
+        raise Exception("Dimension of point is not the same as dimension of coordinates.")
 
     # euclidean distance calculation
-    goal = np.array(goal)
+    goal = np.array(point)
     coords = np.array(coords).T
-    distances = np.sqrt(np.sum((coords - goal)**2, axis=1))
+    distances = np.sqrt(np.sum((coords - point)**2, axis=1))
 
     start_time, end_time = animal_obj.get_baseline_times()
-    animal_obj.add_raw_vals(val_key, distances)
-    animal_obj.add_stats(val_key, 'baseline', start_time, end_time)
+    animal_obj.add_raw_vals(param_key, distances)
+    animal_obj.add_stats(param_key, 'baseline', start_time, end_time)
     return distances
 
 def populate_curve_data(animal_obj, col_names=None):
