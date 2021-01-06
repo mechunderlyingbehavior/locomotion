@@ -48,8 +48,6 @@ class Animal():
         self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
         self.__baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Minutes
         self.__data_file = os.path.abspath(json_item["data_file_location"])
-        self.__dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
-        self.__dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
         self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__filename = os.path.basename(self.__data_file)
         self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
@@ -59,6 +57,12 @@ class Animal():
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
         self.__info = json_item["additional_info"]
+        self.__x_min = json_item["capture_attributes"]["x_min"] # Pixels
+        self.__x_max = json_item["capture_attributes"]["x_max"] # Pixels
+        self.__y_min = json_item["capture_attributes"]["y_min"] # Pixels
+        self.__y_max = json_item["capture_attributes"]["y_max"] # Pixels
+        self.__dim_x = self.__x_max - self.__x_min
+        self.__dim_y = self.__y_max - self.__y_min
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
@@ -191,7 +195,7 @@ class Animal():
         return self.__filename
 
     def get_dims(self):
-        """Getter function for self.__dim_x and self.__dim_y."""
+        """Getter function for the x and y dimensions."""
         return self.__dim_x, self.__dim_y
 
     def get_exp_type(self):
