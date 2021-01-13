@@ -8,8 +8,10 @@
             "ID": "01"
         },
         "capture_attributes": {
-            "dim_x": 200,
-            "dim_y": 100,
+            "x_min": 0,
+            "x_max": 200,
+            "y_min": 0,
+            "y_max": 100,
             "pixels_per_mm": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
@@ -33,8 +35,10 @@
             "ID": "02"
         },
         "capture_attributes": {
-            "dim_x": 200,
-            "dim_y": 100,
+            "x_min": 0,
+            "x_max": 200,
+            "y_min": 0,
+            "y_max": 100,
             "pixels_per_mm": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
