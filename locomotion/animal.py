@@ -57,12 +57,10 @@ class Animal():
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
         self.__info = json_item["additional_info"]
-        self.__x_min = json_item["capture_attributes"]["x_min"] # Pixels
-        self.__x_max = json_item["capture_attributes"]["x_max"] # Pixels
-        self.__y_min = json_item["capture_attributes"]["y_min"] # Pixels
-        self.__y_max = json_item["capture_attributes"]["y_max"] # Pixels
-        self.__dim_x = self.__x_max - self.__x_min
-        self.__dim_y = self.__y_max - self.__y_min
+        self.__x_lims = json_item["capture_attributes"]["x_lims"] # Tuple of Pixels
+        self.__y_lims = json_item["capture_attributes"]["y_lims"] # Tuple of Pixels
+        self.__dim_x = self.__x_lims[1] - self.__x_lims[0]
+        self.__dim_y = self.__y_lims[1] - self.__y_lims[0]
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
@@ -228,6 +226,10 @@ class Animal():
     def get_id(self):
         """Getter function for self.__animal_id."""
         return self.__animal_id
+
+    def get_lims(self):
+        """Getter function for self.__x_lims and self.__y_lims."""
+        return self.__x_lims, self.__y_lims
 
     def get_name(self):
         """Getter function for self.__name."""
@@ -711,8 +713,8 @@ def setup_raw_data(animal):
             #      exp to get the "baseline normal" numbers
             #DEFN: exp norm is where we take the stats from the whole exp duration and take all
             #      'local data' into consideration
-    animal.add_raw_vals('X', x_vals)
-    animal.add_raw_vals('Y', y_vals)
+    animal.add_raw_vals('X', np.array(x_vals))
+    animal.add_raw_vals('Y', np.array(y_vals))
 
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)

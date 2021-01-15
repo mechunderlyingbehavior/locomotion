@@ -273,6 +273,7 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     grid_size = animal_obj.get_grid_size()
+    x_lims, y_lims = animal_obj.get_lims()
     x_dim, y_dim = animal_obj.get_dims()
     num_x_grid, num_y_grid = animal_obj.get_num_grids()
     x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
@@ -283,18 +284,45 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
 
     #check that coordinate data is within the specified bounds
     x_max = max(x_vals)
-    x_offset = max(x_max - x_dim, 0) + perturb
+    x_min = min(x_vals)
     y_max = max(y_vals)
-    y_offset = max(y_max - y_dim, 0) + perturb
+    y_min = min(y_vals)
+    if x_min < x_lims[0] or x_max > x_lims[1] or y_min < y_lims[0] or y_max > y_lims[1]:
+        # Some data is out of bounds, adjustments are needed.
+        print("WARNING: Some data points out of bounds. Data will be adjusted.")
+        # Check if scaling is necessary
+        if x_max - x_min > x_dim - perturb:
+            # total x range is larger than x_dim, need to scale down
+            x_scale = (x_dim - perturb) / (x_max - x_min)
+            x_vals = x_vals * x_scale
+            x_max, x_min = max(x_vals), min(x_vals)
+        if y_max - y_min > y_dim - perturb:
+            # total y range is larger than y_dim, need to scale down
+            y_scale = (y_dim - perturb) / (y_max - y_min)
+            y_vals = y_vals * y_scale
+            y_max, y_min = max(y_vals), min(y_vals)
 
-    #iterate through each frame, adjust out-of-bounds data, and update frequency matrix
-    for i, _ in enumerate(x_vals):
-        x_val = x_vals[i] - x_offset
+        # Scaling should not be necessary at this point. Check if translation is needed.
+        if x_max > x_lims[1]:
+            offset = x_max - x_lims[1] + perturb
+            x_vals = x_vals - offset
+        elif x_min < x_lims[0]:
+            offset = x_lims[0] - x_min + perturb
+            x_vals = x_vals + offset
+        if y_max > y_lims[1]:
+            offset = y_max - y_lims[1] + perturb
+            y_vals = y_vals - offset
+        elif y_min < y_lims[0]:
+            offset = y_lims[0] - y_min + perturb
+            y_vals = y_vals + offset
+
+    #iterate through each frame and update frequency matrix
+    for i, x_val in enumerate(x_vals):
         if x_val < 0:
             print("WARNING: X data is out of bounds. Frame #%d, x=%f" % (i+1, x_vals[i]))
             x_val = 0
         x_index = int(x_val/grid_size)
-        y_val = y_vals[i] - y_offset
+        y_val = y_vals[i]
         if y_val < 0:
             print("WARNING: Y data is out of bounds. Frame #%d, x=%f" % (i+1, y_vals[i]))
             y_val = 0
