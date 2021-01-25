@@ -422,6 +422,44 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
     return bdds
 
 
+def compute_all_to_one_bdd(animal_list, target_animal, varnames,
+                           seg_start_time, seg_end_time, norm_mode):
+    """ Computes BDDs between a list of animals to a target animal.
+
+    Computes the BDDs of each animal in animal_list to target_animal using
+    compute_one_bdd() with a prescribed set of variables and normalization mode
+    over a common time interval given in the function call.
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        List of initialized Animal() objects to be compared.
+    target_animal : Animal() object
+        Single Animal() object that all animals in animal_list will be compared to.
+    varnames : list of strs
+        List of hashable keys pointing to values stored in the Animal() objects to be used
+        to calculate the BDD.
+    seg_start/end_time : int or float
+        Segment start / end ime in minutes.
+    norm_mode : str, either 'baseline' or 'spec'
+        Baseline mode uses the mean and standard deviation from the baseline observation
+        time to normalize each variable data, whereas the spec mode uses the mean and
+        standard deivation from the time period specified for this comparison.
+
+    Returns
+    -------
+    bdds : list of floats
+        i-th entry bdds[i] is the bdd between trajectories of animal_list[i] and
+        target_animal.
+    """
+    bdds = ['' for _ in animal_list]
+    for i, a in enumerate(animal_list):
+        bdd = compute_one_bdd(a, target_animal, varnames, seg_start_time, seg_end_time,
+                              seg_start_time, seg_end_time, norm_mode)
+        bdds[i] = bdd
+    return bdds
+
+
 def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
                       interval_length=None, start_time=None, end_time=None):
     """ Computes the IIBDD for an animal trajectory.
