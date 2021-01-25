@@ -30,8 +30,194 @@ ORDER = 5 #order of smoothing curve used in _smooth()
 ### Main Functions ###
 ######################
 
+
+def populate_velocity(animal_obj, col_names=None):
+    """Computes the velocity given coordinates stored in animal_obj.
+
+    This function computes and stores the Velocity of the coordinate data
+    stored in animal_obj. The data used to calculate this is given by
+    col_names, the list of column names.
+
+    Currently only works in 2 or 3 dimensions.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, which should already contain coordinate data.
+    col_names : list of strs, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals. If not given, defaults to ['X', 'Y']
+
+    Returns
+    -------
+    first_deriv : list of numpy arrays
+        Each numpy array corresponds to the first derivative of the respective coordinate
+        data as ordered by col_names.
+    velocity : numpy array
+        The computed velocity at each frame.
+    """
+    # Extract and smoothens coordinate data
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    if n_dims < 2 or n_dims > 3:
+        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+        except KeyError:
+            raise Exception("column name {} does not exist in animal dataset".format(col))
+
+    # Calculate first derivative and adjust units
+    coords = np.array(coords) # MM
+    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
+    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
+
+    # Calculate velocity and adds to Animal() object
+    velocity = _calculate_velocity(first_deriv)
+    start_time, end_time = animal_obj.get_baseline_times()
+    animal_obj.add_raw_vals('Velocity', velocity)
+    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
+    return first_deriv, velocity
+
+def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=None):
+    """Computes the curvature given coordinates stored in animal_obj.
+
+    This function computes and stores the Curvature of the coordinate data
+    stored in animal_obj. The data used to calculate this is given by
+    col_names, the list of column names.
+
+    Currently only works in 2 or 3 dimensions.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, which should already contain coordinate data.
+    col_names : list of strs, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals. Will only be used if first_deriv and velocity is None.
+        If not given, defaults to ['X', 'Y'].
+    first_deriv : numpy arrays of floats, optional
+        Previously calculated first derivatives. If not given, the first derivative would
+        be calculated using col_names if velocity is also None.
+    velocity : numpy array of floats, optional
+        Previously calculated velocity. If not given, the velocity will be calculated with
+        col_names if first_deriv is also None.
+
+    Returns
+    -------
+    first_deriv : list of numpy arrays
+        Each numpy array corresponds to the first derivative of the respective coordinate
+        data as ordered by col_names.
+    second_deriv : list of numpy arrays
+        Each numpy array corresponds to the second derivative of the respective coordinate
+        data as ordered by col_names.
+    velocity : numpy array
+        The computed velocity at each frame.
+    curvature: numpy array
+        The computed curvature at each frame.
+    """
+    if first_deriv is None and velocity is None:
+        # Calculate first_deriv and velocity
+        if col_names is None:
+            col_names = ['X', 'Y']
+        n_dims = len(col_names)
+        if n_dims < 2 or n_dims > 3:
+            raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+        coords = []
+        for col in col_names:
+            try:
+                coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+            except KeyError:
+                raise Exception("column name {} does not exist in animal dataset".format(col))
+        coords = np.array(coords) # MM
+
+        first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
+        first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
+        velocity = _calculate_velocity(first_deriv)
+    else:
+        # Quick sense check of given first_deriv and velocity
+        if first_deriv is None or velocity is None:
+            raise Exception("populate_curvature: both first_deriv and velocity must be given.")
+        if len(velocity) != first_deriv.shape[1]:
+            raise Exception("populate_curvature: shape of first_deriv and velocity don't match.")
+
+    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
+    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
+    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
+
+    # Add curvature data to animal_obj
+    start_time, end_time = animal_obj.get_baseline_times()
+    animal_obj.add_raw_vals('Curvature', curvature)
+    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
+    return first_deriv, second_deriv, velocity, curvature
+
+def populate_distance_from_point(animal_obj, point_key, param_key, col_names=None):
+    """Calculates distance of animal from a point and add to object.
+
+    Given the position coordinates of an animal, calculates the euclidean
+    distance of the animal from a point, pre-defined with coordinates stored in
+    animal_obj.__info with key point_key. Then, update the dictionary
+    animal_obj.__raw_vals with the new distance data, with key param_key.
+    Finally, calculates and updates animal_obj.__means and animal_obj.__stds
+    for param_key.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, with coordinate data and with coordinates
+        stored in animal_obj.__info, with key point_key.
+    point_key : str
+        Hashable key pointing to goal coordinate data stored in animal_obj.__info.
+    param_key : str
+        Hashable key that will be used to point to distance data stored in self.__raw_vals.
+    col_names : list of str, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals, and must be ordered in the same order as the coordinates of
+        the goal. If not given, defaults to ['X', 'Y'].
+
+    Returns
+    -------
+    distances : list of floats
+        Computed distances from goal point at each frame.
+
+    """
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col),
+                                  animal_obj.get_frame_rate()))
+        except KeyError:
+            raise KeyError("column name {} does not exist in animal dataset".format(col))
+
+    # extract goal coordinates
+    try:
+        point = animal_obj.get_info(point_key)
+    except KeyError:
+        raise KeyError("%s is not a valid key stored in Animal Object %s"
+                       % (point_key, animal_obj.get_name()))
+    if not(isinstance(point, (list, tuple, np.ndarray))):
+        raise Exception("Point is of type %s, but it should be a list, tuple, or numpy array"
+                        % type(point))
+    elif len(point) != n_dims:
+        raise Exception("Dimension of point is not the same as dimension of coordinates.")
+
+    # euclidean distance calculation
+    goal = np.array(point)
+    coords = np.array(coords).T
+    distances = np.sqrt(np.sum((coords - point)**2, axis=1))
+
+    start_time, end_time = animal_obj.get_baseline_times()
+    animal_obj.add_raw_vals(param_key, distances)
+    animal_obj.add_stats(param_key, 'baseline', start_time, end_time)
+    return distances
+
 def populate_curve_data(animal_obj, col_names=None):
-    """ Computes the behavioural curve data such as Velocity and Curvature.
+    """ OUTDATED: Computes the behavioural curve data such as Velocity and Curvature.
 
     This function computes and stores the Velocity and Curvature of the coordinate
     data stored in animal_obj. The data used to calculate this is given by col_names,
@@ -60,6 +246,7 @@ def populate_curve_data(animal_obj, col_names=None):
     curvature: numpy array
         The computed curvature at each frame.
     """
+    print("OUTDATED: This method has been split into populate_velocity and populate_curvature.")
     # Extract and smoothens coordinate data
     if col_names is None:
         col_names = ['X', 'Y']
@@ -90,7 +277,6 @@ def populate_curve_data(animal_obj, col_names=None):
     animal_obj.add_raw_vals('Curvature', curvature)
     animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
     return first_deriv, second_deriv, velocity, curvature
-
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,

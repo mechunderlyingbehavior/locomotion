@@ -48,8 +48,6 @@ class Animal():
         self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
         self.__baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Minutes
         self.__data_file = os.path.abspath(json_item["data_file_location"])
-        self.__dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
-        self.__dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
         self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__filename = os.path.basename(self.__data_file)
         self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
@@ -58,6 +56,11 @@ class Animal():
         self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
+        self.__info = json_item["additional_info"]
+        self.__x_lims = json_item["capture_attributes"]["x_lims"] # Tuple of Pixels
+        self.__y_lims = json_item["capture_attributes"]["y_lims"] # Tuple of Pixels
+        self.__dim_x = self.__x_lims[1] - self.__x_lims[0]
+        self.__dim_y = self.__y_lims[1] - self.__y_lims[0]
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
@@ -79,6 +82,27 @@ class Animal():
     ############################
     ### Population Functions ###
     ############################
+
+    def add_info(self, info_key, info_value, replace=True):
+        """ Updates dictionary self.__info with new data.
+
+        Create a new entry in the dictionary, with key info_key and value info_value.
+
+        Parameters
+        ----------
+        info_key : str
+            Hashable key that will point to info_value in self.__info.
+        info_value : any
+            Any value to be stored into self.__info.
+        replace : bool, optional
+            If false, the function will not replace the value if there info_key is already
+            pointing to a value. Default value : True.
+        """
+        if info_key in self.__info and not(replace):
+            print("WARNING: %s is already in %s. Since replace is False, will not update."
+                  % (info_key, self.get_name()))
+        else:
+            self.__info.update({info_key:info_value})
 
     def add_raw_vals(self, var_name, val_list):
         """ Updates dictionary self.__raw_vals with new data.
@@ -169,7 +193,7 @@ class Animal():
         return self.__filename
 
     def get_dims(self):
-        """Getter function for self.__dim_x and self.__dim_y."""
+        """Getter function for the x and y dimensions."""
         return self.__dim_x, self.__dim_y
 
     def get_exp_type(self):
@@ -203,6 +227,10 @@ class Animal():
         """Getter function for self.__animal_id."""
         return self.__animal_id
 
+    def get_lims(self):
+        """Getter function for self.__x_lims and self.__y_lims."""
+        return self.__x_lims, self.__y_lims
+
     def get_name(self):
         """Getter function for self.__name."""
         return self.__name
@@ -218,6 +246,21 @@ class Animal():
     ######################################
     ### Functions for modifying values ###
     ######################################
+
+    def get_info(self, info_key):
+        """ Retrieve information stored in Animal object.
+
+        Parameters
+        ----------
+        info_key : str, hashable key
+            Key pointing to information stored in self.__info.
+        """
+        try:
+            value = self.__info[info_key]
+        except KeyError:
+            raise KeyError("get_info : %s not an entry in animal object %s."
+                           % {info_key, self.__name})
+        return value
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """ Retrieve multiple raw values stored in Animal object.
@@ -670,8 +713,8 @@ def setup_raw_data(animal):
             #      exp to get the "baseline normal" numbers
             #DEFN: exp norm is where we take the stats from the whole exp duration and take all
             #      'local data' into consideration
-    animal.add_raw_vals('X', x_vals)
-    animal.add_raw_vals('Y', y_vals)
+    animal.add_raw_vals('X', np.array(x_vals))
+    animal.add_raw_vals('Y', np.array(y_vals))
 
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)

@@ -10,6 +10,7 @@ samples/info_med.json
 samples/info_med_data/*
 samples/sample_check.json
 scripts/compute*.py
+scripts/results/
 tests/robustness_tests
 tests/heatmap
 tests/write_and_window
