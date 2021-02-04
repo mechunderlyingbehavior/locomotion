@@ -358,13 +358,17 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             data_0[i] = animal.normalize(data_0[i], means, stds)
             means, stds = animal.norm(data_1[i])
             data_1[i] = animal.normalize(data_1[i], means, stds)
-    elif norm_mode in animal_obj_0.get_stat_keys() and \
-         norm_mode in animal_obj_1.get_stat_keys():
+    else:
         for i in range(num_vars):
-            means, stds = animal_obj_0.get_stats(varnames[i], norm_mode)
-            data_0[i] = animal.normalize(data_0[i], means, stds)
-            means, stds = animal_obj_1.get_stats(varnames[i], norm_mode)
-            data_1[i] = animal.normalize(data_1[i], means, stds)
+            if norm_mode in animal_obj_0.get_stat_keys(varnames[i]) and \
+               norm_mode in animal_obj_1.get_stat_keys(varnames[i]):
+                means, stds = animal_obj_0.get_stats(varnames[i], norm_mode)
+                data_0[i] = animal.normalize(data_0[i], means, stds)
+                means, stds = animal_obj_1.get_stats(varnames[i], norm_mode)
+                data_1[i] = animal.normalize(data_1[i], means, stds)
+            else:
+                raise KeyError("compute_one_bdd : %s is not a defined norm method."
+                               % norm_mode)
     for i in range(num_vars):
         if varnames[i] == "Curvature": # Convert signed curvature to curvature
             data_0[i] = np.absolute(data_0[i])
