@@ -340,6 +340,23 @@ class Animal():
                            % wrong_key)
         return means, stds
 
+    def get_stat_keys(self):
+        """Returns the existing keys in the self.__means and self.__stds dictionaries.
+
+        Since add_stats method uses the same keys when adding to the self.__means and
+        self.__stds dictionaries, this function assumes that the keys are the same in
+        both dictionaries.
+
+        Returns
+        -------
+        dict_keys
+            The keys of the self.__means dictionary.
+        """
+        # check if keys match up
+        if self.__means.keys() != self.__stds.keys():
+            print("WARNING: self.__means and self.__stds do not have the same keys.")
+        return self.__means.keys()
+
     ################################
     ### Functions for heatmap.py ###
     ################################

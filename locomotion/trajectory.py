@@ -352,17 +352,18 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     # Normalize and convert data to fit the dtw function
     num_vars = len(varnames)
-    if norm_mode == 'baseline':
-        for i in range(num_vars):
-            means, stds = animal_obj_0.get_stats(varnames[i], 'baseline')
-            data_0[i] = animal.normalize(data_0[i], means, stds)
-            means, stds = animal_obj_1.get_stats(varnames[i], 'baseline')
-            data_1[i] = animal.normalize(data_1[i], means, stds)
-    elif norm_mode == 'spec':
+    if norm_mode == 'spec':
         for i in range(num_vars):
             means, stds = animal.norm(data_0[i])
             data_0[i] = animal.normalize(data_0[i], means, stds)
             means, stds = animal.norm(data_1[i])
+            data_1[i] = animal.normalize(data_1[i], means, stds)
+    elif norm_mode in animal_obj_0.get_stat_keys() and \
+         norm_mode in animal_obj_1.get_stat_keys():
+        for i in range(num_vars):
+            means, stds = animal_obj_0.get_stats(varnames[i], norm_mode)
+            data_0[i] = animal.normalize(data_0[i], means, stds)
+            means, stds = animal_obj_1.get_stats(varnames[i], norm_mode)
             data_1[i] = animal.normalize(data_1[i], means, stds)
     for i in range(num_vars):
         if varnames[i] == "Curvature": # Convert signed curvature to curvature
