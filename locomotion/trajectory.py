@@ -306,10 +306,12 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
         to calculate the BDD.
     seg_start/end_time_0/1 : int or float
         Segment start / end time in minutes.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
     fullmode : bool, optional
         If True, the method first obtains the full suite of returns from dtw_ext and
         writes several path graphs. Default value : False.
@@ -413,10 +415,12 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
         to calculate the BDD.
     seg_start/end_time : int or float
         Segment start / end ime in minutes.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
 
     Returns
     -------
@@ -454,10 +458,12 @@ def compute_all_to_one_bdd(animal_list, target_animal, varnames,
         to calculate the BDD.
     seg_start/end_time : int or float
         Segment start / end ime in minutes.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
 
     Returns
     -------
@@ -488,10 +494,12 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
     varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
     num_samples : int
         Number of samples generated and used in calculating the average bdd.
     interval_legth : int or float, optional
@@ -560,10 +568,12 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
     num_samples : int
         Number of samples generated and used in calculating the average bdd.
     interval_legth : int or float, optional
