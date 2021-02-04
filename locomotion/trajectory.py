@@ -77,11 +77,10 @@ def populate_velocity(animal_obj, col_names=None):
     # Calculate velocity and adds to Animal() object
     velocity = _calculate_velocity(first_deriv)
     start_time, end_time = animal_obj.get_baseline_times()
-    fr = animal_obj.get_frame_rate()
-    start_frame = int(start_time * 60 * fr)
-    end_frame = int(end_time * 60 * fr)
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
+    animal_obj.calculate_stats('Velocity', 'baseline', start_frame, end_frame)
     return first_deriv, velocity
 
 def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=None):
@@ -152,11 +151,10 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
 
     # Add curvature data to animal_obj
     start_time, end_time = animal_obj.get_baseline_times()
-    fr = animal_obj.get_frame_rate()
-    start_frame = int(start_time * 60 * fr)
-    end_frame = int(end_time * 60 * fr)
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
+    animal_obj.calculate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
 
 def populate_distance_from_point(animal_obj, point_key, param_key, col_names=None):
@@ -218,11 +216,10 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     distances = np.sqrt(np.sum((coords - point)**2, axis=1))
 
     start_time, end_time = animal_obj.get_baseline_times()
-    fr = animal_obj.get_frame_rate()
-    start_frame = int(start_time * 60 * fr)
-    end_frame = int(end_time * 60 * fr)
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals(param_key, distances)
-    animal_obj.add_stats(param_key, 'baseline', start_time, end_time)
+    animal_obj.calculate_stats(param_key, 'baseline', start_frame, end_frame)
     return distances
 
 def populate_curve_data(animal_obj, col_names=None):
@@ -281,13 +278,12 @@ def populate_curve_data(animal_obj, col_names=None):
     curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
 
     start_time, end_time = animal_obj.get_baseline_times()
-    fr = animal_obj.get_frame_rate()
-    start_frame = int(start_time * 60 * fr)
-    end_frame = int(end_time * 60 * fr)
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
+    animal_obj.calculate_stats('Velocity', 'baseline', start_frame, end_frame)
     animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
+    animal_obj.calculate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
