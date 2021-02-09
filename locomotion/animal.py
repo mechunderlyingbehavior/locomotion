@@ -48,8 +48,6 @@ class Animal():
         self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
         self.__baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Minutes
         self.__data_file = os.path.abspath(json_item["data_file_location"])
-        self.__dim_x = json_item["capture_attributes"]["dim_x"] # Pixels
-        self.__dim_y = json_item["capture_attributes"]["dim_y"] # Pixels
         self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__filename = os.path.basename(self.__data_file)
         self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
@@ -58,6 +56,11 @@ class Animal():
         self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
+        self.__info = json_item["additional_info"]
+        self.__x_lims = json_item["capture_attributes"]["x_lims"] # Tuple of Pixels
+        self.__y_lims = json_item["capture_attributes"]["y_lims"] # Tuple of Pixels
+        self.__dim_x = self.__x_lims[1] - self.__x_lims[0]
+        self.__dim_y = self.__y_lims[1] - self.__y_lims[0]
         self.__raw_vals = {}
         self.__means = {}
         self.__stds = {}
@@ -80,6 +83,27 @@ class Animal():
     ### Population Functions ###
     ############################
 
+    def add_info(self, info_key, info_value, replace=True):
+        """ Updates dictionary self.__info with new data.
+
+        Create a new entry in the dictionary, with key info_key and value info_value.
+
+        Parameters
+        ----------
+        info_key : str
+            Hashable key that will point to info_value in self.__info.
+        info_value : any
+            Any value to be stored into self.__info.
+        replace : bool, optional
+            If false, the function will not replace the value if there info_key is already
+            pointing to a value. Default value : True.
+        """
+        if info_key in self.__info and not(replace):
+            print("WARNING: %s is already in %s. Since replace is False, will not update."
+                  % (info_key, self.get_name()))
+        else:
+            self.__info.update({info_key:info_value})
+
     def add_raw_vals(self, var_name, val_list):
         """ Updates dictionary self.__raw_vals with new data.
 
@@ -94,7 +118,29 @@ class Animal():
         """
         self.__raw_vals.update({var_name:val_list})
 
-    def add_stats(self, var_name, scope, start_frame, end_frame):
+    def add_stats(self, var_name, scope, mean, std):
+        """ Updates dictionary self.__means and self.__stds with new data.
+
+        Updates the self.__means and self.__stds for var_name with a new scope and
+        manually defined mean and std.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variables stored in dict self.__raw_vals.
+        scope : str
+            Hashable key used to define new scope in self.__means and self.__stds.
+        mean : float
+            Manually defined mean for var_name over scope.
+        std : float
+            Manually defined standard deviation for var_name over scope.
+        """
+        if var_name not in self.__means:
+            self.init_stats(var_name)
+        self.__means[var_name].update({scope:mean})
+        self.__stds[var_name].update({scope:std})
+
+    def calculate_stats(self, var_name, scope, start_frame, end_frame):
         """ Calculates and updates self.__means and self.__stds for raw value var_name.
 
         Calculates statistics (means and standard deviation) of var_name over a specific scope,
@@ -169,7 +215,7 @@ class Animal():
         return self.__filename
 
     def get_dims(self):
-        """Getter function for self.__dim_x and self.__dim_y."""
+        """Getter function for the x and y dimensions."""
         return self.__dim_x, self.__dim_y
 
     def get_exp_type(self):
@@ -203,6 +249,10 @@ class Animal():
         """Getter function for self.__animal_id."""
         return self.__animal_id
 
+    def get_lims(self):
+        """Getter function for self.__x_lims and self.__y_lims."""
+        return self.__x_lims, self.__y_lims
+
     def get_name(self):
         """Getter function for self.__name."""
         return self.__name
@@ -218,6 +268,21 @@ class Animal():
     ######################################
     ### Functions for modifying values ###
     ######################################
+
+    def get_info(self, info_key):
+        """ Retrieve information stored in Animal object.
+
+        Parameters
+        ----------
+        info_key : str, hashable key
+            Key pointing to information stored in self.__info.
+        """
+        try:
+            value = self.__info[info_key]
+        except KeyError:
+            raise KeyError("get_info : %s not an entry in animal object %s."
+                           % {info_key, self.__name})
+        return value
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
         """ Retrieve multiple raw values stored in Animal object.
@@ -273,12 +338,12 @@ class Animal():
         """ Returns the calculated statistics for var_name over previously defined scope.
 
         Retrieve statistics stored in self.__means and self.__vars for var_name over the scope
-        period. The statistics must have been previously calculated with the add_stats method.
+        period. The statistics must have been previously calculated with the calculate_stats method.
 
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__raw_vals.
         scope : str
             Hashable key pointing to predefined scope in self.__means and self.__stds.
 
@@ -296,6 +361,35 @@ class Animal():
             raise KeyError("get_stats : %s is not a valid variable name or scope."
                            % wrong_key)
         return means, stds
+
+    def get_stat_keys(self, var_name):
+        """Returns the existing keys in stat dictionaries for given var_name.
+
+        Since calculate_stats method uses the same keys when adding to the self.__means and
+        self.__stds dictionaries, this function assumes that the keys are the same in
+        both dictionaries for a given var_name.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variable stored in self.__raw_vals.
+
+        Returns
+        -------
+        dict_keys
+            The keys of the self.__means dictionary.
+        """
+        # check if keys match up
+        try:
+            means = self.__means[var_name]
+            stds = self.__stds[var_name]
+        except KeyError as wrong_key:
+            raise KeyError("get_stats : %s is not a valid variable name."
+                           % wrong_key)
+        if means.keys() != stds.keys():
+            print("WARNING: stat dictionaries for %s do not have the same keys."
+                  % var_name)
+        return means.keys()
 
     ################################
     ### Functions for heatmap.py ###
@@ -670,14 +764,14 @@ def setup_raw_data(animal):
             #      exp to get the "baseline normal" numbers
             #DEFN: exp norm is where we take the stats from the whole exp duration and take all
             #      'local data' into consideration
-    animal.add_raw_vals('X', x_vals)
-    animal.add_raw_vals('Y', y_vals)
+    animal.add_raw_vals('X', np.array(x_vals))
+    animal.add_raw_vals('Y', np.array(y_vals))
 
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)
     baseline_end_frame = calculate_frame_num(animal, baseline_end)
-    animal.add_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
-    animal.add_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.calculate_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.calculate_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
 def _init_animal(json_item, group_no):

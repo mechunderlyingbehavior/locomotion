@@ -30,8 +30,200 @@ ORDER = 5 #order of smoothing curve used in _smooth()
 ### Main Functions ###
 ######################
 
+
+def populate_velocity(animal_obj, col_names=None):
+    """Computes the velocity given coordinates stored in animal_obj.
+
+    This function computes and stores the Velocity of the coordinate data
+    stored in animal_obj. The data used to calculate this is given by
+    col_names, the list of column names.
+
+    Currently only works in 2 or 3 dimensions.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, which should already contain coordinate data.
+    col_names : list of strs, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals. If not given, defaults to ['X', 'Y']
+
+    Returns
+    -------
+    first_deriv : list of numpy arrays
+        Each numpy array corresponds to the first derivative of the respective coordinate
+        data as ordered by col_names.
+    velocity : numpy array
+        The computed velocity at each frame.
+    """
+    # Extract and smoothens coordinate data
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    if n_dims < 2 or n_dims > 3:
+        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+        except KeyError:
+            raise Exception("column name {} does not exist in animal dataset".format(col))
+
+    # Calculate first derivative and adjust units
+    coords = np.array(coords) # MM
+    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
+    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
+
+    # Calculate velocity and adds to Animal() object
+    velocity = _calculate_velocity(first_deriv)
+    start_time, end_time = animal_obj.get_baseline_times()
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
+    animal_obj.add_raw_vals('Velocity', velocity)
+    animal_obj.calculate_stats('Velocity', 'baseline', start_frame, end_frame)
+    return first_deriv, velocity
+
+def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=None):
+    """Computes the curvature given coordinates stored in animal_obj.
+
+    This function computes and stores the Curvature of the coordinate data
+    stored in animal_obj. The data used to calculate this is given by
+    col_names, the list of column names.
+
+    Currently only works in 2 or 3 dimensions.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, which should already contain coordinate data.
+    col_names : list of strs, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals. Will only be used if first_deriv and velocity is None.
+        If not given, defaults to ['X', 'Y'].
+    first_deriv : numpy arrays of floats, optional
+        Previously calculated first derivatives. If not given, the first derivative would
+        be calculated using col_names if velocity is also None.
+    velocity : numpy array of floats, optional
+        Previously calculated velocity. If not given, the velocity will be calculated with
+        col_names if first_deriv is also None.
+
+    Returns
+    -------
+    first_deriv : list of numpy arrays
+        Each numpy array corresponds to the first derivative of the respective coordinate
+        data as ordered by col_names.
+    second_deriv : list of numpy arrays
+        Each numpy array corresponds to the second derivative of the respective coordinate
+        data as ordered by col_names.
+    velocity : numpy array
+        The computed velocity at each frame.
+    curvature: numpy array
+        The computed curvature at each frame.
+    """
+    if first_deriv is None and velocity is None:
+        # Calculate first_deriv and velocity
+        if col_names is None:
+            col_names = ['X', 'Y']
+        n_dims = len(col_names)
+        if n_dims < 2 or n_dims > 3:
+            raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+        coords = []
+        for col in col_names:
+            try:
+                coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+            except KeyError:
+                raise Exception("column name {} does not exist in animal dataset".format(col))
+        coords = np.array(coords) # MM
+
+        first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
+        first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
+        velocity = _calculate_velocity(first_deriv)
+    else:
+        # Quick sense check of given first_deriv and velocity
+        if first_deriv is None or velocity is None:
+            raise Exception("populate_curvature: both first_deriv and velocity must be given.")
+        if len(velocity) != first_deriv.shape[1]:
+            raise Exception("populate_curvature: shape of first_deriv and velocity don't match.")
+
+    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
+    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
+    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
+
+    # Add curvature data to animal_obj
+    start_time, end_time = animal_obj.get_baseline_times()
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
+    animal_obj.add_raw_vals('Curvature', curvature)
+    animal_obj.calculate_stats('Curvature', 'baseline', start_frame, end_frame)
+    return first_deriv, second_deriv, velocity, curvature
+
+def populate_distance_from_point(animal_obj, point_key, param_key, col_names=None):
+    """Calculates distance of animal from a point and add to object.
+
+    Given the position coordinates of an animal, calculates the euclidean
+    distance of the animal from a point, pre-defined with coordinates stored in
+    animal_obj.__info with key point_key. Then, update the dictionary
+    animal_obj.__raw_vals with the new distance data, with key param_key.
+    Finally, calculates and updates animal_obj.__means and animal_obj.__stds
+    for param_key.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, with coordinate data and with coordinates
+        stored in animal_obj.__info, with key point_key.
+    point_key : str
+        Hashable key pointing to goal coordinate data stored in animal_obj.__info.
+    param_key : str
+        Hashable key that will be used to point to distance data stored in self.__raw_vals.
+    col_names : list of str, optional
+        Names of data columns used for calculations. Must coincide with data stored in
+        animal_obj.__raw_vals, and must be ordered in the same order as the coordinates of
+        the goal. If not given, defaults to ['X', 'Y'].
+
+    Returns
+    -------
+    distances : list of floats
+        Computed distances from goal point at each frame.
+
+    """
+    if col_names is None:
+        col_names = ['X', 'Y']
+    n_dims = len(col_names)
+    coords = []
+    for col in col_names:
+        try:
+            coords.append(_smooth(animal_obj.get_raw_vals(col),
+                                  animal_obj.get_frame_rate()))
+        except KeyError:
+            raise KeyError("column name {} does not exist in animal dataset".format(col))
+
+    # extract goal coordinates
+    try:
+        point = animal_obj.get_info(point_key)
+    except KeyError:
+        raise KeyError("%s is not a valid key stored in Animal Object %s"
+                       % (point_key, animal_obj.get_name()))
+    if not(isinstance(point, (list, tuple, np.ndarray))):
+        raise Exception("Point is of type %s, but it should be a list, tuple, or numpy array"
+                        % type(point))
+    elif len(point) != n_dims:
+        raise Exception("Dimension of point is not the same as dimension of coordinates.")
+
+    # euclidean distance calculation
+    goal = np.array(point)
+    coords = np.array(coords).T
+    distances = np.sqrt(np.sum((coords - point)**2, axis=1))
+
+    start_time, end_time = animal_obj.get_baseline_times()
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
+    animal_obj.add_raw_vals(param_key, distances)
+    animal_obj.calculate_stats(param_key, 'baseline', start_frame, end_frame)
+    return distances
+
 def populate_curve_data(animal_obj, col_names=None):
-    """ Computes the behavioural curve data such as Velocity and Curvature.
+    """ OUTDATED: Computes the behavioural curve data such as Velocity and Curvature.
 
     This function computes and stores the Velocity and Curvature of the coordinate
     data stored in animal_obj. The data used to calculate this is given by col_names,
@@ -60,6 +252,7 @@ def populate_curve_data(animal_obj, col_names=None):
     curvature: numpy array
         The computed curvature at each frame.
     """
+    print("OUTDATED: This method has been split into populate_velocity and populate_curvature.")
     # Extract and smoothens coordinate data
     if col_names is None:
         col_names = ['X', 'Y']
@@ -85,12 +278,13 @@ def populate_curve_data(animal_obj, col_names=None):
     curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
 
     start_time, end_time = animal_obj.get_baseline_times()
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.add_stats('Velocity', 'baseline', start_time, end_time)
+    animal_obj.calculate_stats('Velocity', 'baseline', start_frame, end_frame)
     animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.add_stats('Curvature', 'baseline', start_time, end_time)
+    animal_obj.calculate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
-
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
@@ -112,10 +306,12 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
         to calculate the BDD.
     seg_start/end_time_0/1 : int or float
         Segment start / end time in minutes.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
     fullmode : bool, optional
         If True, the method first obtains the full suite of returns from dtw_ext and
         writes several path graphs. Default value : False.
@@ -154,18 +350,23 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     # Normalize and convert data to fit the dtw function
     num_vars = len(varnames)
-    if norm_mode == 'baseline':
-        for i in range(num_vars):
-            means, stds = animal_obj_0.get_stats(varnames[i], 'baseline')
-            data_0[i] = animal.normalize(data_0[i], means, stds)
-            means, stds = animal_obj_1.get_stats(varnames[i], 'baseline')
-            data_1[i] = animal.normalize(data_1[i], means, stds)
-    elif norm_mode == 'spec':
+    if norm_mode == 'spec':
         for i in range(num_vars):
             means, stds = animal.norm(data_0[i])
             data_0[i] = animal.normalize(data_0[i], means, stds)
             means, stds = animal.norm(data_1[i])
             data_1[i] = animal.normalize(data_1[i], means, stds)
+    else:
+        for i in range(num_vars):
+            if norm_mode in animal_obj_0.get_stat_keys(varnames[i]) and \
+               norm_mode in animal_obj_1.get_stat_keys(varnames[i]):
+                means, stds = animal_obj_0.get_stats(varnames[i], norm_mode)
+                data_0[i] = animal.normalize(data_0[i], means, stds)
+                means, stds = animal_obj_1.get_stats(varnames[i], norm_mode)
+                data_1[i] = animal.normalize(data_1[i], means, stds)
+            else:
+                raise KeyError("compute_one_bdd : %s is not a defined norm method."
+                               % norm_mode)
     for i in range(num_vars):
         if varnames[i] == "Curvature": # Convert signed curvature to curvature
             data_0[i] = np.absolute(data_0[i])
@@ -214,10 +415,12 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
         to calculate the BDD.
     seg_start/end_time : int or float
         Segment start / end ime in minutes.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
 
     Returns
     -------
@@ -236,6 +439,46 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
     return bdds
 
 
+def compute_all_to_one_bdd(animal_list, target_animal, varnames,
+                           seg_start_time, seg_end_time, norm_mode):
+    """ Computes BDDs between a list of animals to a target animal.
+
+    Computes the BDDs of each animal in animal_list to target_animal using
+    compute_one_bdd() with a prescribed set of variables and normalization mode
+    over a common time interval given in the function call.
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        List of initialized Animal() objects to be compared.
+    target_animal : Animal() object
+        Single Animal() object that all animals in animal_list will be compared to.
+    varnames : list of strs
+        List of hashable keys pointing to values stored in the Animal() objects to be used
+        to calculate the BDD.
+    seg_start/end_time : int or float
+        Segment start / end ime in minutes.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
+
+    Returns
+    -------
+    bdds : list of floats
+        i-th entry bdds[i] is the bdd between trajectories of animal_list[i] and
+        target_animal.
+    """
+    bdds = ['' for _ in animal_list]
+    for i, a in enumerate(animal_list):
+        bdd = compute_one_bdd(a, target_animal, varnames, seg_start_time, seg_end_time,
+                              seg_start_time, seg_end_time, norm_mode)
+        bdds[i] = bdd
+    return bdds
+
+
 def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
                       interval_length=None, start_time=None, end_time=None):
     """ Computes the IIBDD for an animal trajectory.
@@ -251,10 +494,12 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
     varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
     num_samples : int
         Number of samples generated and used in calculating the average bdd.
     interval_legth : int or float, optional
@@ -323,10 +568,12 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
-    norm_mode : str, either 'baseline' or 'spec'
-        Baseline mode uses the mean and standard deviation from the baseline observation
-        time to normalize each variable data, whereas the spec mode uses the mean and
-        standard deivation from the time period specified for this comparison.
+    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+        If 'spec', normalization uses the mean and standard deviation from the time period
+        specified for this comparison.
+        Otherwise, normalization makes use of the mean and standard deviation stored in
+        the stat dictionaries for the animal objects. If the norm_mode is not defined
+        in these dictionaries, an error will be raised.
     num_samples : int
         Number of samples generated and used in calculating the average bdd.
     interval_legth : int or float, optional
