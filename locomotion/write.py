@@ -110,10 +110,11 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
     outdir : str
         Absolute path to the output directory for the .html file.
     """
-    filename = "figure_%s-%s_%s_alignment.html" % (animal_obj_0.get_name(),
-                                                   animal_obj_1.get_name(),
-                                                   '-'.join(varnames))
-    outpath = os.path.join(outdir, filename).replace(' ', '')
+    filename = "figure_%s-%s_%s_alignment" % (animal_obj_0.get_name(),
+                                              animal_obj_1.get_name(),
+                                              '-'.join(varnames))
+    html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
     fr_0 = animal_obj_0.get_frame_rate()
     fr_1 = animal_obj_1.get_frame_rate()
     nums = len(alignment[0])
@@ -135,8 +136,10 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
                         'plot_bgcolor' : 'white',
                         'xaxis':{'title': '%s Time (s)' % animal_obj_0.get_name()},
                         'yaxis': {'title': '%s Time (s)' % animal_obj_1.get_name()}}}
-    plotly.offline.plot(figure, filename=outpath, auto_open=False)
-    print("Saved alignment graph in %s" % outpath)
+    fig = go.Figure(figure)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(figure, filename=html_outpath, auto_open=False)
+    print("Saved alignment graph in %s" % html_outpath)
 
 
 def render_aligned_graphs(points_0, points_1, alignment,
@@ -167,10 +170,11 @@ def render_aligned_graphs(points_0, points_1, alignment,
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-locals
     # pylint:disable=too-many-statements
-    filename = "figure_%s-%s_%s_plots.html" % (animal_obj_0.get_name(),
-                                               animal_obj_1.get_name(),
-                                               varname)
-    fulloutpath = os.path.join(outdir, filename).replace(' ', '')
+    filename = "figure_%s-%s_%s_plots" % (animal_obj_0.get_name(),
+                                          animal_obj_1.get_name(),
+                                          varname)
+    html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
     nums = len(alignment[0])
 
     fr_0 = animal_obj_0.get_frame_rate()
@@ -301,7 +305,8 @@ def render_aligned_graphs(points_0, points_1, alignment,
                       plot_bgcolor='white',
                       showlegend=False)
 
-    plotly.offline.plot(fig, filename=fulloutpath, auto_open=False)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
     print("Saved the alignment graphs in directory %s" % outdir)
 
 
@@ -321,14 +326,18 @@ def render_single_animal_graph(points, animal_obj, varname, outdir):
     outdir : str
         Absolute path to the output directory for the .html file.
     """
-    filename = "figure_%s_%s.html" % (animal_obj.get_name(), varname)
-    outpath = os.path.join(outdir, filename).replace(' ', '')
+    filename = "figure_%s_%s" % (animal_obj.get_name(), varname)
+    html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
     num_points = len(points)
     trace = go.Scatter(x=range(num_points)/animal_obj.get_frame_rate(), y=points,
                        mode='lines', showlegend=False, line={'width':4})
     data = [trace]
-    plotly.offline.plot(data, filename=outpath, auto_open=False)
-    print("Saved single animal graph in %s" % outpath)
+    fig = go.Figure()
+    fig.add_trace(trace)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(data, filename=html_outpath, auto_open=False)
+    print("Saved single animal graph in %s" % html_outpath)
 
 
 def write_dist_table_to_csv(animal_list, results, outdir, outfilename):
