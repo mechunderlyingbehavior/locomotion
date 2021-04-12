@@ -80,7 +80,7 @@ def populate_velocity(animal_obj, col_names=None):
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.calculate_stats('Velocity', 'baseline', start_frame, end_frame)
+    animal_obj.populate_stats('Velocity', 'baseline', start_frame, end_frame)
     return first_deriv, velocity
 
 def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=None):
@@ -154,7 +154,7 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.calculate_stats('Curvature', 'baseline', start_frame, end_frame)
+    animal_obj.populate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
 
 def populate_distance_from_point(animal_obj, point_key, param_key, col_names=None):
@@ -164,8 +164,7 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     distance of the animal from a point, pre-defined with coordinates stored in
     animal_obj.__info with key point_key. Then, update the dictionary
     animal_obj.__raw_vals with the new distance data, with key param_key.
-    Finally, calculates and updates animal_obj.__means and animal_obj.__stds
-    for param_key.
+    Finally, calculates and updates animal_obj.__norm_info for param_key.
 
     Parameters
     ----------
@@ -219,7 +218,7 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals(param_key, distances)
-    animal_obj.calculate_stats(param_key, 'baseline', start_frame, end_frame)
+    animal_obj.populate_stats(param_key, 'baseline', start_frame, end_frame)
     return distances
 
 def populate_curve_data(animal_obj, col_names=None):
@@ -281,9 +280,9 @@ def populate_curve_data(animal_obj, col_names=None):
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.calculate_stats('Velocity', 'baseline', start_frame, end_frame)
+    animal_obj.populate_stats('Velocity', 'baseline', start_frame, end_frame)
     animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.calculate_stats('Curvature', 'baseline', start_frame, end_frame)
+    animal_obj.populate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
@@ -306,7 +305,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
         to calculate the BDD.
     seg_start/end_time_0/1 : int or float
         Segment start / end time in minutes.
-    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+    norm_mode : str or list of str, 'spec' or any defined norm_mode in self.__norm_info
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
         Otherwise, normalization makes use of the mean and standard deviation stored in
@@ -335,6 +334,8 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     seg_diff = abs((seg_end_time_0 - seg_start_time_0) - (seg_end_time_1 - seg_start_time_1))
     if seg_diff >= EPSILON:
         raise Exception("compute_one_bdd : segments need to be of the same length.")
+    if not isinstance(norm_mode, (list, str)):
+        raise Exception("compute_one_bdd: norm_mode should be a str or a list of str.")
 
     # Extract relevant information from Animal() objects
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
@@ -350,23 +351,36 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
 
     # Normalize and convert data to fit the dtw function
     num_vars = len(varnames)
-    if norm_mode == 'spec':
-        for i in range(num_vars):
-            means, stds = animal.norm(data_0[i])
-            data_0[i] = animal.normalize(data_0[i], means, stds)
-            means, stds = animal.norm(data_1[i])
-            data_1[i] = animal.normalize(data_1[i], means, stds)
+    if isinstance(norm_mode, str):
+        norm_mode = [norm_mode] * num_vars
     else:
-        for i in range(num_vars):
-            if norm_mode in animal_obj_0.get_stat_keys(varnames[i]) and \
-               norm_mode in animal_obj_1.get_stat_keys(varnames[i]):
-                means, stds = animal_obj_0.get_stats(varnames[i], norm_mode)
-                data_0[i] = animal.normalize(data_0[i], means, stds)
-                means, stds = animal_obj_1.get_stats(varnames[i], norm_mode)
-                data_1[i] = animal.normalize(data_1[i], means, stds)
+        if len(norm_mode) != num_vars:
+            raise Exception("compute_one_bdd: norm_mode should be as long as var_names.")
+    for i in range(num_vars):
+        norm_method = norm_mode[i]
+        if norm_method == 'spec':
+            means, stds = animal.calculate_norm_stats(data_0[i])
+            data_0[i] = animal.normalize_standard(data_0[i], means, stds)
+            means, stds = animal.calculate_norm_stats(data_1[i])
+            data_1[i] = animal.normalize_standard(data_1[i], means, stds)
+        else:
+            if animal_obj_0.check_existing_scope(varnames[i], norm_method) and \
+               animal_obj_1.check_existing_scope(varnames[i], norm_method):
+                if animal_obj_0.check_if_standard(varnames[i], norm_method):
+                    # Standard Normalization
+                    means, stds = animal_obj_0.get_norm_stats(varnames[i], norm_method)
+                    data_0[i] = animal.normalize_standard(data_0[i], means, stds)
+                    means, stds = animal_obj_1.get_norm_stats(varnames[i], norm_method)
+                    data_1[i] = animal.normalize_standard(data_1[i], means, stds)
+                else:
+                    # Bounded Normalization
+                    lower, upper = animal_obj_0.get_norm_bounds(varnames[i], norm_method)
+                    data_0[i] = animal.normalize_bounded(data_0[i], means, stds)
+                    lower, upper = animal_obj_1.get_norm_bounds(varnames[i], norm_method)
+                    data_1[i] = animal.normalize_bounded(data_1[i], means, stds)
             else:
                 raise KeyError("compute_one_bdd : %s is not a defined norm method."
-                               % norm_mode)
+                               % norm_method)
     for i in range(num_vars):
         if varnames[i] == "Curvature": # Convert signed curvature to curvature
             data_0[i] = np.absolute(data_0[i])
@@ -415,7 +429,7 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
         to calculate the BDD.
     seg_start/end_time : int or float
         Segment start / end ime in minutes.
-    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+    norm_mode : str, 'spec' or any defined norm_mode in self.__norm_info[varname]
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
         Otherwise, normalization makes use of the mean and standard deviation stored in
@@ -458,7 +472,7 @@ def compute_all_to_one_bdd(animal_list, target_animal, varnames,
         to calculate the BDD.
     seg_start/end_time : int or float
         Segment start / end ime in minutes.
-    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+    norm_mode : str, 'spec' or any defined norm_mode in self.__norm_info[varname]
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
         Otherwise, normalization makes use of the mean and standard deviation stored in
@@ -494,7 +508,7 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
     varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
-    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+    norm_mode : str, 'spec' or any defined norm_mode in self.__norm_info[varname]
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
         Otherwise, normalization makes use of the mean and standard deviation stored in
@@ -568,7 +582,7 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     varnames : list of strs
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
-    norm_mode : str, 'spec' or any defined norm_mode in self.__means[varname]
+    norm_mode : str, 'spec' or any defined norm_mode in self.__norm_info[varname]
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
         Otherwise, normalization makes use of the mean and standard deviation stored in
