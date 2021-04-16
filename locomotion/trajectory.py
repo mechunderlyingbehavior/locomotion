@@ -375,9 +375,9 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                 else:
                     # Bounded Normalization
                     lower, upper = animal_obj_0.get_norm_bounds(varnames[i], norm_method)
-                    data_0[i] = animal.normalize_bounded(data_0[i], means, stds)
+                    data_0[i] = animal.normalize_bounded(data_0[i], lower, upper)
                     lower, upper = animal_obj_1.get_norm_bounds(varnames[i], norm_method)
-                    data_1[i] = animal.normalize_bounded(data_1[i], means, stds)
+                    data_1[i] = animal.normalize_bounded(data_1[i], lower, upper)
             else:
                 raise KeyError("compute_one_bdd : %s is not a defined norm method."
                                % norm_method)

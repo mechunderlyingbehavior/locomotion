@@ -775,6 +775,7 @@ def normalize_bounded(data, lower, upper):
         Array of normalized data. If std == 0, then returns an array of 0.
     """
     data = np.array(data)
+    print(data[:10])
     transformed = (data - lower)/(upper - lower)
     too_low_ind, too_high_ind = transformed < 0, transformed > 1
     if any(too_low_ind):
@@ -783,6 +784,7 @@ def normalize_bounded(data, lower, upper):
     if any(too_high_ind):
         print("WARNING: Values above bounds during normalization. Mapping to 1.")
         transformed[too_high_ind] = 1.0
+    print(transformed[:10])
     return transformed
 
 

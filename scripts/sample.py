@@ -52,7 +52,7 @@ a2 = animals[1]
 bdd_12 = locomotion.trajectory.compute_one_bdd(a1, a2, variables,
                                                start_time, end_time,
                                                start_time, end_time,
-                                               norm_mode, fullmode=True, outdir='BDD_12/')
+                                               norm_mode, fullmode=True, outdir='results/')
 
 # a1 and a3
 # bdd_13 = locomotion.trajectory.compute_one_bdd(a1, a3, variables,
