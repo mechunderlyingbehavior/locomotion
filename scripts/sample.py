@@ -10,6 +10,7 @@ outfile = PATH_TO_DIRECTORY + "/../samples/sample_check_SS.json"
 info_files = [outfile] # 3 animals in this json
 animals = locomotion.setup_animal_objs( info_files )
 for a in animals:
+    locomotion.write.plot_path(a, 'results/')
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
     locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
     locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])

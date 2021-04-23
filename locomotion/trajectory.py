@@ -16,15 +16,11 @@ import os
 import random
 import numpy as np
 import dtw
-from scipy.signal import savgol_filter
 import locomotion.write as write
 import locomotion.animal as animal
 
 #Static Variables
 EPSILON = 0.0001
-SMOOTH_RANGE_MIN = 5 #minimum length of smoothing window in _smooth()
-WINDOW_SCALAR = 2.5 #scalar for smoothing window calculation in _smooth()
-ORDER = 5 #order of smoothing curve used in _smooth()
 
 ######################
 ### Main Functions ###
@@ -65,7 +61,7 @@ def populate_velocity(animal_obj, col_names=None):
     coords = []
     for col in col_names:
         try:
-            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+            coords.append(animal_obj.get_raw_vals(col))
         except KeyError:
             raise Exception("column name {} does not exist in animal dataset".format(col))
 
@@ -130,7 +126,7 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
         coords = []
         for col in col_names:
             try:
-                coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+                coords.append(animal_obj.get_raw_vals(col))
             except KeyError:
                 raise Exception("column name {} does not exist in animal dataset".format(col))
         coords = np.array(coords) # MM
@@ -192,8 +188,7 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     coords = []
     for col in col_names:
         try:
-            coords.append(_smooth(animal_obj.get_raw_vals(col),
-                                  animal_obj.get_frame_rate()))
+            coords.append(animal_obj.get_raw_vals(col))
         except KeyError:
             raise KeyError("column name {} does not exist in animal dataset".format(col))
 
@@ -261,7 +256,7 @@ def populate_curve_data(animal_obj, col_names=None):
     coords = []
     for col in col_names:
         try:
-            coords.append(_smooth(animal_obj.get_raw_vals(col), animal_obj.get_frame_rate()))
+            coords.append(animal_obj.get_raw_vals(col))
         except KeyError:
             raise Exception("column name {} does not exist in animal dataset".format(col))
 
@@ -681,22 +676,3 @@ def _calculate_velocity(coordinates):
     return velocity
 
 
-def _smooth(sequence, frame_rate):
-    """ Smooths sequence by applying Savitzky-Golay smoothing.
-
-    Note: This function makes use of global variables SMOOTH_RANGE_MIN and WINDOW_SCALAR.
-
-    Parameters
-    ----------
-    sequence : list of floats
-        Sequence to be smoothed.
-
-    Returns
-    -------
-    smoothed : list of floats
-        Smoothed sequence.
-    """
-    smooth_range = max(SMOOTH_RANGE_MIN, int(np.ceil(frame_rate * WINDOW_SCALAR)))
-    smooth_range_odd = smooth_range + 1 if smooth_range % 2 == 0 else smooth_range
-    smoothed = savgol_filter(sequence, smooth_range_odd, ORDER)
-    return smoothed

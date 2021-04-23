@@ -20,6 +20,8 @@ import warnings
 from math import ceil
 import numpy as np
 from scipy.special import expit
+import locomotion.write as write
+from scipy.signal import savgol_filter
 
 ####################
 ### Animal class ###
@@ -841,7 +843,7 @@ def read_info(infile_path):
     return info
 
 
-def setup_animal_objs(infofiles, name_list=None):
+def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=51):
     """ Generates and initializes Animal objects from a list of JSONs.
 
     Given a list of JSON files, generate and return the Animal object. If name_list is
@@ -854,6 +856,10 @@ def setup_animal_objs(infofiles, name_list=None):
         as a dict, which should contain an entry for each animal in the group.
     name_list : list of strs, optional
         Names of animals to be generated.
+    smooth_order : int
+        Order of the polynomial used in the smoothening function. Default value : 3.
+    smooth_window : int
+        Window of frames used for smoothening. Must be odd. Default value : 51.
 
     Returns
     -------
@@ -864,18 +870,24 @@ def setup_animal_objs(infofiles, name_list=None):
     # check if infofiles is a list:
     if not isinstance(infofiles, list):
         raise Exception("setup_animal_objs: infofiles variable needs to be a list.")
+    if not isinstance(smooth_order, int):
+        raise TypeError("setup_animal_objs : smooth_order must be an int.")
+    if not (isinstance(smooth_window, int) and smooth_window % 2 == 1):
+        raise TypeError("setup_animal_objs : smooth_window must be an odd int.")
     objs = []
     for group_no, infofile in enumerate(infofiles):
         info = read_info(infofile)
         if name_list is not None:
-            objs += [_init_animal(item, group_no) for item in info
-                     if item["name"] in name_list]
+            objs += [_init_animal(item, group_no, smooth_order=smooth_order,
+                                  smooth_window=smooth_window) for item in info if
+                     item["name"] in name_list]
         else:
-            objs += [_init_animal(item, group_no) for item in info]
+            objs += [_init_animal(item, group_no, smooth_order=smooth_order,
+                                  smooth_window=smooth_window) for item in info]
     return objs
 
 
-def setup_raw_data(animal):
+def setup_raw_data(animal, smooth_order, smooth_window):
     """ Extracts the raw data from the data file linked in the Animal() object.
 
     Store the raw data values from the data file location of the animal object
@@ -885,9 +897,14 @@ def setup_raw_data(animal):
     ----------
     animal : Animal() object
         The Animal() object that the raw data is to be set up for.
+    smooth_order : int
+        Order of the polynomial used in the smoothening function.
+    smooth_window : int
+        Window of frames used for smoothening. Must be odd.
     """
     # pylint: disable=too-many-locals
     # Function is complicated, the local variables are necessary.
+    # Argument Checks & Validations
     with open(animal.get_data_file_location(), 'r') as infile:
         print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
         header = infile.readline()#.replace('\r','').replace('\n','')
@@ -922,12 +939,12 @@ def setup_raw_data(animal):
                 raise Exception("Data file in animal object might be truncated.")
             x_vals.append(float(x_val)/animal.get_pixel_density()) #scaling for pixel density
             y_vals.append(float(y_val)/animal.get_pixel_density())
-            #DEFN: baseline norm is where we take the stats from the first two minutes of the
-            #      exp to get the "baseline normal" numbers
-            #DEFN: exp norm is where we take the stats from the whole exp duration and take all
-            #      'local data' into consideration
-    animal.add_raw_vals('X', np.array(x_vals))
-    animal.add_raw_vals('Y', np.array(y_vals))
+
+    smooth_x = _smooth(np.array(x_vals), smooth_order, smooth_window)
+    smooth_y = _smooth(np.array(y_vals), smooth_order, smooth_window)
+
+    animal.add_raw_vals('X', smooth_x)
+    animal.add_raw_vals('Y', smooth_y)
 
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)
@@ -936,7 +953,7 @@ def setup_raw_data(animal):
     animal.populate_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
-def _init_animal(json_item, group_no):
+def _init_animal(json_item, group_no, smooth_order, smooth_window):
     """ Initializes the Animal() object.
 
     Given a json entry, extracts the relevant information and returns an initialized
@@ -949,6 +966,10 @@ def _init_animal(json_item, group_no):
         object.
     group_no : int
         Group number that the Animal() object is a part of.
+    smooth_order : int
+        Order of the polynomial used in the smoothening function.
+    smooth_window : int
+        Window of frames used for smoothening. Must be odd.
 
     Returns
     -------
@@ -956,7 +977,7 @@ def _init_animal(json_item, group_no):
         Initialized Animal() object.
     """
     animal = Animal(json_item)
-    setup_raw_data(animal)
+    setup_raw_data(animal, smooth_order=smooth_order, smooth_window=smooth_window)
     animal.set_group(group_no)
     return animal
 
@@ -1025,3 +1046,20 @@ def _remove_outliers(data):
     iqr = third_quart - first_quart
     idx = (data > first_quart - 1.5 * iqr) & (data < third_quart + 1.5 * iqr)
     return data[idx]
+
+
+def _smooth(sequence, smooth_order, smooth_window):
+    """ Smooths sequence by applying Savitzky-Golay smoothing.
+
+    Parameters
+    ----------
+    sequence : list of floats
+        Sequence to be smoothed.
+
+    Returns
+    -------
+    smoothed : list of floats
+        Smoothed sequence.
+    """
+    smoothed = savgol_filter(sequence, smooth_window, smooth_order)
+    return smoothed
