@@ -385,7 +385,7 @@ def _assemble_vertex_coordinates(animal_obj, freqs):
     f_std = std(freqs)
     z_dim = _calculate_z_dim(animal_obj)
     for i, _ in enumerate(freqs):
-        freqs[i] = animal.normalize(freqs[i], f_mean, f_std)
+        freqs[i] = animal.normalize_standard(freqs[i], f_mean, f_std)
         freqs[i] = list(map(lambda x: z_dim*x, freqs[i]))
 
     #initialize list of coordinates to return

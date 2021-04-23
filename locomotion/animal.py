@@ -62,8 +62,7 @@ class Animal():
         self.__dim_x = self.__x_lims[1] - self.__x_lims[0]
         self.__dim_y = self.__y_lims[1] - self.__y_lims[0]
         self.__raw_vals = {}
-        self.__means = {}
-        self.__stds = {}
+        self.__norm_info = {}
         self.__boundary_vertices = None
         self.__boundary_edges = None
         self.__central_vertex = None
@@ -104,6 +103,52 @@ class Animal():
         else:
             self.__info.update({info_key:info_value})
 
+    def add_norm_bounded(self, var_name, scope, lower, upper):
+        """ Updates dictionary self.__norm_info with lower and upper bounds for var_name.
+
+        Updates var_name entry in dictionary self.__norm_info with lower and upper bounds
+        for normalization method defined by scope. Use when scope is using bounded
+        normalization.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variables stored in dict self.__raw_vals.
+        scope : str
+            Hashable key used to define new scope in self.__norm_info.
+        lower : float
+            Manually defined lower bound for var_name over scope.
+        upper : float
+            Manually defined upper bound for var_name over scope.
+        """
+        if var_name not in self.__norm_info:
+            self.init_norm_dict(var_name)
+        self.__norm_info[var_name].update({scope:{"lower" : lower,
+                                                  "upper" : upper}})
+
+    def add_norm_standard(self, var_name, scope, mean, std):
+        """ Updates dictionary self.__norm_info with mean and std for var_name.
+
+        Updates var_name entry in dictionary self.__norm_info with new mean and std for
+        normalization method defined by scope. Use when scope is using Standardization for
+        normalization.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variables stored in dict self.__raw_vals.
+        scope : str
+            Hashable key used to define new scope in self.__norm_info.
+        mean : float
+            Manually defined mean for var_name over scope.
+        std : float
+            Manually defined standard deviation for var_name over scope.
+        """
+        if var_name not in self.__norm_info:
+            self.init_norm_dict(var_name)
+        self.__norm_info[var_name].update({scope:{"mean": mean,
+                                                  "std" : std}})
+
     def add_raw_vals(self, var_name, val_list):
         """ Updates dictionary self.__raw_vals with new data.
 
@@ -118,66 +163,73 @@ class Animal():
         """
         self.__raw_vals.update({var_name:val_list})
 
-    def add_stats(self, var_name, scope, mean, std):
-        """ Updates dictionary self.__means and self.__stds with new data.
-
-        Updates the self.__means and self.__stds for var_name with a new scope and
-        manually defined mean and std.
+    def check_existing_scope(self, var_name, scope):
+        """Checks if scope is already defined for var_name.
 
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in dict self.__raw_vals.
+            Hashable key pointing to variable stored in self.__raw_vals.
         scope : str
-            Hashable key used to define new scope in self.__means and self.__stds.
-        mean : float
-            Manually defined mean for var_name over scope.
-        std : float
-            Manually defined standard deviation for var_name over scope.
+            Hashable key to check if exists in self.__norm_info[var_name].
+
+        Returns
+        -------
+        bool
+            Function returns True if scope is already defined for var_name.
         """
-        if var_name not in self.__means:
-            self.init_stats(var_name)
-        self.__means[var_name].update({scope:mean})
-        self.__stds[var_name].update({scope:std})
+        # check if keys match up
+        try:
+            norm_info = self.__norm_info[var_name]
+        except KeyError as wrong_key:
+            raise KeyError("check_existing_scope() : %s is not a valid variable name."
+                           % wrong_key)
+        return scope in norm_info
 
-    def calculate_stats(self, var_name, scope, start_frame, end_frame):
-        """ Calculates and updates self.__means and self.__stds for raw value var_name.
+    def check_if_standard(self, var_name, scope):
+        """ Checks if normalization method scope defined for var_name is standard.
 
-        Calculates statistics (means and standard deviation) of var_name over a specific scope,
-        as defined by start_frame and end_frame. Uses the norm() method to do so. The function
-        then initializes (if not already initialized) and updates the dictionary entries for
-        var_name in self.__means and self.__stds.
+        The function returns true if the normalization method scope defined for var_name
+        in self.__norm_info is for standard normalization (i.e. defined by a mean and std)
+        or if it is for bounded normalization (i.e. defined by upper and lower bound).
 
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in dict self.__raw_vals.
+            Hashable key pointing to variable stored in self.__raw_vals.
         scope : str
-            Hashable key that will be used to point to scope defined by start_frame and end_frame.
-        start_frame : int
-            Starting frame of scope.
-        end_frame : int
-            Ending frame of scope.
+            Hashable key pointing to scope stored in self.__norm_info[var_name].
+
+        Returns
+        -------
+        bool
+            Function returns True if scope is defined as a standard normalization method,
+            and False if scope is defined as a bounded normalization method.
         """
-        if var_name not in self.__means:
-            self.init_stats(var_name)
-        means, stds = norm(self.__raw_vals[var_name][start_frame:end_frame])
-        self.__means[var_name].update({scope:means})
-        self.__stds[var_name].update({scope:stds})
+        try:
+            norm_info = self.__norm_info[var_name]
+        except KeyError as wrong_key:
+            raise KeyError("check_existing_scope() : %s is not a valid variable name."
+                           % wrong_key)
+        try:
+            scope_dict = norm_info[scope]
+        except KeyError as wrong_scope:
+            raise KeyError("check_existing_scope() : %s is not a valid scope for %s."
+                           % (wrong_scope, var_name))
+        return ("mean" in scope_dict) and ("std" in scope_dict)
 
-    def init_stats(self, var_name):
-        """ Set up empty dict entry for var_name in self.__means and self.__stds.
+    def init_norm_dict(self, var_name):
+        """ Set up empty dict entry for var_name in self.__norm_info.
 
-        Utility function for setting up an empty dictionary entry in self.__means and
-        self.__stds for key var_name.
+        Utility function for setting up an empty dictionary entry in self.__norm_info for
+        key var_name.
 
         Parameters
         ----------
         var_name : str
             Hashable key pointing to variable stored in dict self.__raw_vals.
         """
-        self.__means.update({var_name:{}})
-        self.__stds.update({var_name:{}})
+        self.__norm_info.update({var_name:{}})
 
     def get_animal_type(self):
         """Getter function for self.__name."""
@@ -281,7 +333,7 @@ class Animal():
             value = self.__info[info_key]
         except KeyError:
             raise KeyError("get_info : %s not an entry in animal object %s."
-                           % {info_key, self.__name})
+                           % (info_key, self.__name))
         return value
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
@@ -300,6 +352,84 @@ class Animal():
             Ending frame of portion to extract. Default value : None.
         """
         return [self.get_raw_vals(v, start_frame, end_frame) for v in var_names]
+
+    def get_norm_bounds(self, var_name, scope):
+        """ Returns the stored lower and upper bounds for var_name over scope period.
+
+        Retrieve lower and upper bounds previously defined and stored in self.__norm_info
+        for var_name over the scope period.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variable stored in self.__raw_vals.
+        scope : str
+            Hashable key pointing to predefined scope in self.__norm_info.
+
+        Returns
+        -------
+        float
+            Lower bound of var_name over scope period.
+        float
+            Upper bound of var_name over scope period.
+        """
+        try:
+            lower = self.__norm_info[var_name][scope]["lower"]
+            upper = self.__norm_info[var_name][scope]["upper"]
+        except KeyError as wrong_key:
+            raise KeyError("get_norm_bounds : %s is not a valid variable name or scope."
+                           % wrong_key)
+        return lower, upper
+
+    def get_norm_stats(self, var_name, scope):
+        """ Returns the calculated statistics for var_name over previously defined scope.
+
+        Retrieve statistics stored in self_norm_info for var_name over the scope period.
+        The statistics must have been previously calculated with the calculate_norm_stats
+        method.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variable stored in self.__raw_vals.
+        scope : str
+            Hashable key pointing to predefined scope in self.__norm_info.
+
+        Returns
+        -------
+        float
+            Mean of var_name over scope period.
+        float
+            Standard deviation of var_name over scope period.
+        """
+        try:
+            mean = self.__norm_info[var_name][scope]["mean"]
+            std = self.__norm_info[var_name][scope]["std"]
+        except KeyError as wrong_key:
+            raise KeyError("get_norm_stats : %s is not a valid variable name or scope."
+                           % wrong_key)
+        return mean, std
+
+    def get_stat_keys(self, var_name):
+        """Returns the existing keys in self.__norm_info for given var_name.
+
+        Parameters
+        ----------
+        var_name : str
+            Hashable key pointing to variable stored in self.__raw_vals.
+
+        Returns
+        -------
+        dict_keys
+            The keys of the self.__norm_info dictionary.
+        """
+        # check if keys match up
+        try:
+            norm_info = self.__norm_info[var_name]
+        except KeyError as wrong_key:
+            raise KeyError("get_stat_keys : %s is not a valid variable name."
+                           % wrong_key)
+        return norm_info.keys()
 
     def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
         """ Return the raw values with key var_name stored in Animal object.
@@ -335,17 +465,19 @@ class Animal():
         return values[start_frame:end_frame]
 
     def get_stats(self, var_name, scope):
-        """ Returns the calculated statistics for var_name over previously defined scope.
+        """ DEPRECIATED: Returns the calculated statistics for var_name over previously
+        defined scope.
 
-        Retrieve statistics stored in self.__means and self.__vars for var_name over the scope
-        period. The statistics must have been previously calculated with the calculate_stats method.
+        Retrieve statistics stored in self_norm_info for var_name over the scope period.
+        The statistics must have been previously calculated with the calculate_norm_stats
+        method.
 
         Parameters
         ----------
         var_name : str
             Hashable key pointing to variable stored in self.__raw_vals.
         scope : str
-            Hashable key pointing to predefined scope in self.__means and self.__stds.
+            Hashable key pointing to predefined scope in self.__norm_info.
 
         Returns
         -------
@@ -354,42 +486,39 @@ class Animal():
         float
             Standard deviation of var_name over scope period.
         """
+        print("WARNING: get_stats() is depreciated. Use get_norm_stats() instead.")
         try:
-            means = self.__means[var_name][scope]
-            stds = self.__stds[var_name][scope]
+            means = self.__norm_info[var_name][scope]["mean"]
+            stds = self.__norm_info[var_name][scope]["std"]
         except KeyError as wrong_key:
             raise KeyError("get_stats : %s is not a valid variable name or scope."
                            % wrong_key)
         return means, stds
 
-    def get_stat_keys(self, var_name):
-        """Returns the existing keys in stat dictionaries for given var_name.
+    def populate_stats(self, var_name, scope, start_frame, end_frame):
+        """ Calculates and updates self.__norm_info for raw value var_name.
 
-        Since calculate_stats method uses the same keys when adding to the self.__means and
-        self.__stds dictionaries, this function assumes that the keys are the same in
-        both dictionaries for a given var_name.
+        Calculates statistics (means and standard deviation) of var_name over a specific scope,
+        as defined by start_frame and end_frame. Uses the norm() method to do so. The function
+        then initializes (if not already initialized) and updates the dictionary entries for
+        var_name in self.__norm_info.
 
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
-
-        Returns
-        -------
-        dict_keys
-            The keys of the self.__means dictionary.
+            Hashable key pointing to variables stored in dict self.__raw_vals.
+        scope : str
+            Hashable key that will be used to point to scope defined by start_frame and end_frame.
+        start_frame : int
+            Starting frame of scope.
+        end_frame : int
+            Ending frame of scope.
         """
-        # check if keys match up
-        try:
-            means = self.__means[var_name]
-            stds = self.__stds[var_name]
-        except KeyError as wrong_key:
-            raise KeyError("get_stats : %s is not a valid variable name."
-                           % wrong_key)
-        if means.keys() != stds.keys():
-            print("WARNING: stat dictionaries for %s do not have the same keys."
-                  % var_name)
-        return means.keys()
+        if var_name not in self.__norm_info:
+            self.init_norm_dict(var_name)
+        mean, std = calculate_norm_stats(self.__raw_vals[var_name][start_frame:end_frame])
+        self.__norm_info[var_name].update({scope:{"mean": mean,
+                                                  "std" : std}})
 
     ################################
     ### Functions for heatmap.py ###
@@ -598,7 +727,7 @@ class Animal():
 ### Basic Functions ###
 #######################
 
-def norm(data, rm_outliers=True):
+def calculate_norm_stats(data, rm_outliers=True):
     """ Calculates the mean and standard deviation of data.
 
     Given data, find the mean and standard deviation. If rm_outliers is True, the
@@ -626,8 +755,41 @@ def norm(data, rm_outliers=True):
     return mean, std
 
 
-def normalize(data, mean, std):
+def normalize_bounded(data, lower, upper):
     """ Normalize data given mean and standard deviation.
+
+    Shifts and scales data so the range is between 0 and 1.
+
+    Parameters
+    ----------
+    data : list of floats
+        List of data values to normalize.
+    mean : float
+        Mean of data values.
+    std : float
+        Standard deviation of data values
+
+    Returns
+    -------
+    np.array of floats
+        Array of normalized data. If std == 0, then returns an array of 0.
+    """
+    data = np.array(data)
+    print(data[:10])
+    transformed = (data - lower)/(upper - lower)
+    too_low_ind, too_high_ind = transformed < 0, transformed > 1
+    if any(too_low_ind):
+        print("WARNING: Values below bounds during normalization. Mapping to 0.")
+        transformed[too_low_ind] = 0.0
+    if any(too_high_ind):
+        print("WARNING: Values above bounds during normalization. Mapping to 1.")
+        transformed[too_high_ind] = 1.0
+    print(transformed[:10])
+    return transformed
+
+
+def normalize_standard(data, mean, std):
+    """ Standard Normalization on data given mean and standard deviation.
 
     Shifts and scales data so the range is between 0 and 1.
 
@@ -770,8 +932,8 @@ def setup_raw_data(animal):
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)
     baseline_end_frame = calculate_frame_num(animal, baseline_end)
-    animal.calculate_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
-    animal.calculate_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.populate_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.populate_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
 def _init_animal(json_item, group_no):
