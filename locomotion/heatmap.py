@@ -62,6 +62,7 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None,
         Default value: None
     """
     # pylint:disable=too-many-locals
+    # pylint:disable=too-many-arguments
 
     #Check if start_time or end_time need to be set:
     if start_time is None:

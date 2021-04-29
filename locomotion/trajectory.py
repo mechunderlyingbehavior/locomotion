@@ -57,13 +57,15 @@ def populate_velocity(animal_obj, col_names=None):
         col_names = ['X', 'Y']
     n_dims = len(col_names)
     if n_dims < 2 or n_dims > 3:
-        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+        raise ValueError("length of col_names is %s, but it should be 2 or 3."
+                         % (n_dims))
     coords = []
     for col in col_names:
         try:
             coords.append(animal_obj.get_raw_vals(col))
         except KeyError:
-            raise Exception("column name {} does not exist in animal dataset".format(col))
+            raise ValueError("column name %s does not exist in animal dataset"
+                             % (col)) from None
 
     # Calculate first derivative and adjust units
     coords = np.array(coords) # MM
@@ -122,13 +124,15 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
             col_names = ['X', 'Y']
         n_dims = len(col_names)
         if n_dims < 2 or n_dims > 3:
-            raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+            raise ValueError("length of col_names is %s, but it should be 2 or 3."
+                             % (n_dims))
         coords = []
         for col in col_names:
             try:
                 coords.append(animal_obj.get_raw_vals(col))
             except KeyError:
-                raise Exception("column name {} does not exist in animal dataset".format(col))
+                raise ValueError("column name %s does not exist in animal dataset"
+                                 % (col)) from None
         coords = np.array(coords) # MM
 
         first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
@@ -137,9 +141,9 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
     else:
         # Quick sense check of given first_deriv and velocity
         if first_deriv is None or velocity is None:
-            raise Exception("populate_curvature: both first_deriv and velocity must be given.")
+            raise ValueError("populate_curvature: both first_deriv and velocity must be given.")
         if len(velocity) != first_deriv.shape[1]:
-            raise Exception("populate_curvature: shape of first_deriv and velocity don't match.")
+            raise ValueError("populate_curvature: shape of first_deriv and velocity don't match.")
 
     second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
     second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
@@ -190,24 +194,25 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
         try:
             coords.append(animal_obj.get_raw_vals(col))
         except KeyError:
-            raise KeyError("column name {} does not exist in animal dataset".format(col))
+            raise ValueError("column name %s does not exist in animal dataset"
+                             % (col)) from None
 
     # extract goal coordinates
     try:
         point = animal_obj.get_info(point_key)
     except KeyError:
-        raise KeyError("%s is not a valid key stored in Animal Object %s"
-                       % (point_key, animal_obj.get_name()))
-    if not(isinstance(point, (list, tuple, np.ndarray))):
-        raise Exception("Point is of type %s, but it should be a list, tuple, or numpy array"
+        raise ValueError("%s is not a valid key stored in Animal Object %s"
+                       % (point_key, animal_obj.get_name())) from None
+    if not isinstance(point, (list, tuple, np.ndarray)):
+        raise TypeError("Point is of type %s, but it should be a list, tuple, or numpy array"
                         % type(point))
-    elif len(point) != n_dims:
-        raise Exception("Dimension of point is not the same as dimension of coordinates.")
+    if len(point) != n_dims:
+        raise ValueError("Dimension of point is not the same as dimension of coordinates.")
 
     # euclidean distance calculation
     goal = np.array(point)
     coords = np.array(coords).T
-    distances = np.sqrt(np.sum((coords - point)**2, axis=1))
+    distances = np.sqrt(np.sum((coords - goal)**2, axis=1))
 
     start_time, end_time = animal_obj.get_baseline_times()
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
@@ -252,13 +257,15 @@ def populate_curve_data(animal_obj, col_names=None):
         col_names = ['X', 'Y']
     n_dims = len(col_names)
     if n_dims < 2 or n_dims > 3:
-        raise Exception("length of col_names is {}, but it should be 2 or 3.".format(n_dims))
+        raise ValueError("length of col_names is %s, but it should be 2 or 3."
+                         % (n_dims))
     coords = []
     for col in col_names:
         try:
             coords.append(animal_obj.get_raw_vals(col))
         except KeyError:
-            raise Exception("column name {} does not exist in animal dataset".format(col))
+            raise ValueError("column name %s does not exist in animal dataset"
+                             % (col)) from None
 
     # Calculate derivatives and adjust units
     coords = np.array(coords) # MM
@@ -322,15 +329,17 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     # required for now, consider using tuples for time pairs?
     # pylint: disable=too-many-locals
     # function is long, requires many local variables
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-statements
 
     # Argument Validation
     if fullmode and outdir is None:
-        raise Exception("compute_one_bdd : Full mode requires the path to output directory.")
+        raise ValueError("compute_one_bdd : Full mode requires the path to output directory.")
     seg_diff = abs((seg_end_time_0 - seg_start_time_0) - (seg_end_time_1 - seg_start_time_1))
     if seg_diff >= EPSILON:
-        raise Exception("compute_one_bdd : segments need to be of the same length.")
+        raise ValueError("compute_one_bdd : segments need to be of the same length.")
     if not isinstance(norm_mode, (list, str)):
-        raise Exception("compute_one_bdd: norm_mode should be a str or a list of str.")
+        raise TypeError("compute_one_bdd: norm_mode should be a str or a list of str.")
 
     # Extract relevant information from Animal() objects
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
@@ -350,7 +359,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
         norm_mode = [norm_mode] * num_vars
     else:
         if len(norm_mode) != num_vars:
-            raise Exception("compute_one_bdd: norm_mode should be as long as var_names.")
+            raise ValueError("compute_one_bdd: norm_mode should be as long as var_names.")
     for i in range(num_vars):
         norm_method = norm_mode[i]
         if norm_method == 'spec':
@@ -480,9 +489,11 @@ def compute_all_to_one_bdd(animal_list, target_animal, varnames,
         i-th entry bdds[i] is the bdd between trajectories of animal_list[i] and
         target_animal.
     """
+    # pylint: disable=too-many-arguments
     bdds = ['' for _ in animal_list]
-    for i, a in enumerate(animal_list):
-        bdd = compute_one_bdd(a, target_animal, varnames, seg_start_time, seg_end_time,
+    for i, animal_obj in enumerate(animal_list):
+        bdd = compute_one_bdd(animal_obj, target_animal, varnames,
+                              seg_start_time, seg_end_time,
                               seg_start_time, seg_end_time, norm_mode)
         bdds[i] = bdd
     return bdds
@@ -542,7 +553,7 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
         else:
             # sanity check for interval_length
             if 2 * interval_length > end_time - start_time:
-                raise Exception("compute_one_iibdd : interval length too long.")
+                raise ValueError("compute_one_iibdd : interval length too long.")
             intervals = sorted([2 * interval_length + start_time] +
                                [random.uniform(2 * interval_length + start_time, end_time)
                                 for i in range(2)])
@@ -634,14 +645,13 @@ def _calculate_signed_curvature(first_deriv, second_deriv, velocity):
         data as ordered by col_names.
     velocity : numpy array
         The computed velocity at each frame.
-
     Returns
     -------
     curvatures : numpy array
         The computed curvature at each frame.
     """
     if first_deriv.shape != second_deriv.shape:
-        raise Exception("first_deriv and second_deriv should be of the same shape.")
+        raise ValueError("first_deriv and second_deriv should be of the same shape.")
     n_dims = first_deriv.shape[0]
     if n_dims == 2:
         mats = np.transpose(np.array([first_deriv, second_deriv]), (2, 0, 1))
@@ -674,5 +684,3 @@ def _calculate_velocity(coordinates):
     """
     velocity = np.sqrt(np.sum(np.power(coordinates, 2), axis=0))
     return velocity
-
-

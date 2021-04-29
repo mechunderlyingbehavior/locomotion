@@ -12,6 +12,8 @@ and process the tracked data of an animal subject. On initialization, the animal
 extracts various pieces of information from JSON files, such as experimental parameters
 and coordinate data of the subjects, and prepares them for analysis.
 """
+# pylint:disable=too-many-lines
+
 import os
 import csv
 import re
@@ -20,7 +22,6 @@ import warnings
 from math import ceil
 import numpy as np
 from scipy.special import expit
-import locomotion.write as write
 from scipy.signal import savgol_filter
 
 ####################
@@ -99,7 +100,7 @@ class Animal():
             If false, the function will not replace the value if there info_key is already
             pointing to a value. Default value : True.
         """
-        if info_key in self.__info and not(replace):
+        if info_key in self.__info and not replace:
             print("WARNING: %s is already in %s. Since replace is False, will not update."
                   % (info_key, self.get_name()))
         else:
@@ -184,8 +185,8 @@ class Animal():
         try:
             norm_info = self.__norm_info[var_name]
         except KeyError as wrong_key:
-            raise KeyError("check_existing_scope() : %s is not a valid variable name."
-                           % wrong_key)
+            raise ValueError("check_existing_scope() : %s is not a valid variable name."
+                             % wrong_key) from None
         return scope in norm_info
 
     def check_if_standard(self, var_name, scope):
@@ -211,13 +212,13 @@ class Animal():
         try:
             norm_info = self.__norm_info[var_name]
         except KeyError as wrong_key:
-            raise KeyError("check_existing_scope() : %s is not a valid variable name."
-                           % wrong_key)
+            raise ValueError("check_existing_scope() : %s is not a valid variable name."
+                             % wrong_key) from None
         try:
             scope_dict = norm_info[scope]
         except KeyError as wrong_scope:
-            raise KeyError("check_existing_scope() : %s is not a valid scope for %s."
-                           % (wrong_scope, var_name))
+            raise ValueError("check_existing_scope() : %s is not a valid scope for %s."
+                             % (wrong_scope, var_name)) from None
         return ("mean" in scope_dict) and ("std" in scope_dict)
 
     def init_norm_dict(self, var_name):
@@ -334,8 +335,8 @@ class Animal():
         try:
             value = self.__info[info_key]
         except KeyError:
-            raise KeyError("get_info : %s not an entry in animal object %s."
-                           % (info_key, self.__name))
+            raise ValueError("get_info : %s not found in animal object %s."
+                             % (info_key, self.__name)) from None
         return value
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
@@ -379,8 +380,8 @@ class Animal():
             lower = self.__norm_info[var_name][scope]["lower"]
             upper = self.__norm_info[var_name][scope]["upper"]
         except KeyError as wrong_key:
-            raise KeyError("get_norm_bounds : %s is not a valid variable name or scope."
-                           % wrong_key)
+            raise ValueError("get_norm_bounds : %s is not a valid variable name or scope."
+                             % wrong_key) from None
         return lower, upper
 
     def get_norm_stats(self, var_name, scope):
@@ -408,8 +409,8 @@ class Animal():
             mean = self.__norm_info[var_name][scope]["mean"]
             std = self.__norm_info[var_name][scope]["std"]
         except KeyError as wrong_key:
-            raise KeyError("get_norm_stats : %s is not a valid variable name or scope."
-                           % wrong_key)
+            raise ValueError("get_norm_stats : %s is not a valid variable name or scope."
+                             % wrong_key) from None
         return mean, std
 
     def get_stat_keys(self, var_name):
@@ -429,8 +430,8 @@ class Animal():
         try:
             norm_info = self.__norm_info[var_name]
         except KeyError as wrong_key:
-            raise KeyError("get_stat_keys : %s is not a valid variable name."
-                           % wrong_key)
+            raise ValueError("get_stat_keys : %s is not a valid variable name."
+                             % wrong_key) from None
         return norm_info.keys()
 
     def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
@@ -456,7 +457,8 @@ class Animal():
         try:
             values = self.__raw_vals[var_name]
         except KeyError:
-            raise KeyError("get_raw_vals: {} not found in animal object.".format(var_name))
+            raise ValueError("get_raw_vals: %s not found in animal object."
+                             % (var_name)) from None
         if start_frame > end_frame:
             raise ValueError("get_raw_vals: Start frame is after End frame.")
         if start_frame > len(values):
@@ -493,8 +495,8 @@ class Animal():
             means = self.__norm_info[var_name][scope]["mean"]
             stds = self.__norm_info[var_name][scope]["std"]
         except KeyError as wrong_key:
-            raise KeyError("get_stats : %s is not a valid variable name or scope."
-                           % wrong_key)
+            raise ValueError("get_stats : %s is not a valid variable name or scope."
+                             % wrong_key) from None
         return means, stds
 
     def populate_stats(self, var_name, scope, start_frame, end_frame):
@@ -646,7 +648,7 @@ class Animal():
             Size of each grid. Must divide self.__dim_x and self.__dim_y.
         """
         if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
-            raise Exception("grid_size does not divide dim x or dim y.")
+            raise ValueError("grid_size does not divide dim x or dim y.")
         self.__grid_size = grid_size
         self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
         self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
@@ -869,7 +871,7 @@ def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=5
     """
     # check if infofiles is a list:
     if not isinstance(infofiles, list):
-        raise Exception("setup_animal_objs: infofiles variable needs to be a list.")
+        raise TypeError("setup_animal_objs: infofiles variable needs to be a list.")
     if not isinstance(smooth_order, int):
         raise TypeError("setup_animal_objs : smooth_order must be an int.")
     if not (isinstance(smooth_window, int) and smooth_window % 2 == 1):
@@ -913,12 +915,13 @@ def setup_raw_data(animal, smooth_order, smooth_window):
         elif ',' in header:
             delim = ','
         else:
-            raise Exception("setup_raw_data : Incorrect type of Data file in animal object.")
+            raise TypeError("setup_raw_data : Incorrect type of Data file in animal object.")
         header = list(map(lambda x: x.strip(), header.split(delim)))
         try: # verify the file can be parsed
             reader = csv.reader(infile, delimiter=delim)
         except FileNotFoundError:
-            raise Exception("setup_raw_data : Data file not found in animal object.")
+            raise ValueError("setup_raw_data : Data file not found in animal object.") \
+                from None
 
         x_ind = find_col_index(header, 'X')
         y_ind = find_col_index(header, 'Y')
@@ -1023,7 +1026,7 @@ def find_col_index(header, col_name):
     for i, _ in enumerate(header):
         if re.match(pat, header[i].lower()):
             return i
-    raise Exception("Column name not found: %s" % col_name)
+    raise ValueError("Column name not found: %s" % col_name)
 
 
 def _remove_outliers(data):
