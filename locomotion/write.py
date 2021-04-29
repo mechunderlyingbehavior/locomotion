@@ -16,6 +16,7 @@ import csv
 import operator
 import numpy as np
 import plotly
+import plotly.express as px
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
@@ -91,6 +92,79 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
                                     color_min, color_max)
 
 
+def plot_heatmap(animal, frequencies, outdir):
+    """ Plot heatmap representing the frequencies used for CSD.
+
+    Given a 2D matrix of frequencies where frequencies[y][x] represents the number of
+    frames that animal spends in the grid indexed by x and y, plot and save a heatmap
+    that represents the frequencies in the matrix.
+
+    Parameters
+    ----------
+    animal: Animal() object
+        Animal object containing the coordinate data to be plotted. animal.set_grid_size()
+        should also be run on the animal prior to running plot_heatmap.
+    frequencies: 2-dimensional array of int
+        Frequency matrix corresponding to animal's frequency in each grid.
+    outdir: str
+        File path to output directory where the output is to be saved.
+    """
+    animal_name = animal.get_name()
+    filename = "plot_%s_frequency_heatmap" % (animal_name)
+    html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
+
+    fig = px.imshow(frequencies)
+    fig.update_yaxes(autorange=True)
+    fig.update_layout(title_text="Frequency Heatmap for %s" % animal_name)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
+    print("Saved heatmap in %s" % html_outpath)
+
+
+def plot_path(animal, outdir):
+    """ Plot path of animal.
+
+    Given the X and Y coordinates stored in animal, plot the path of the animal,
+    using x_lims and y_lims to determine the size of the canvas.
+
+    Parameters
+    ----------
+    animal: Animal() object
+        Animal object containing the coordinate data to be plotted.
+    outdir: str
+        File path to output directory where the output is to be saved.
+    """
+    animal_name = animal.get_name()
+    filename = "plot_%s_smoothened_path" % (animal_name)
+    html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
+
+    x_lims, y_lims = animal.get_lims()
+    x_vals = animal.get_raw_vals('X')
+    y_vals = animal.get_raw_vals('Y')
+
+    data = [
+        go.Scatter(x=x_vals, y=y_vals,
+                   mode='lines', showlegend=False,
+                   marker={'color':'cyan'},
+                   line={'width':3},
+                   name=animal_name)
+    ]
+    figure = {
+        'data': data,
+        'layout': {'height': 500, 'width': 500,
+                   'title': "Smoothened Coordinates for %s" % animal_name,
+                   'plot_bgcolor' : 'white',
+                   'xaxis': {'title': 'X axis (px)', 'range': x_lims},
+                   'yaxis': {'title': 'Y axis (px)', 'range': y_lims}}
+    }
+    fig = go.Figure(figure)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(figure, filename=html_outpath, auto_open=False)
+    print("Saved path plot in %s" % html_outpath)
+
+
 def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
     """ Prints the alignment plot between 2 animal objects.
 
@@ -110,6 +184,7 @@ def render_alignment(alignment, animal_obj_0, animal_obj_1, varnames, outdir):
     outdir : str
         Absolute path to the output directory for the .html file.
     """
+    # pylint: disable=too-many-locals
     filename = "figure_%s-%s_%s_alignment" % (animal_obj_0.get_name(),
                                               animal_obj_1.get_name(),
                                               '-'.join(varnames))

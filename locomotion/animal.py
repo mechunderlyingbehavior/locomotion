@@ -12,6 +12,8 @@ and process the tracked data of an animal subject. On initialization, the animal
 extracts various pieces of information from JSON files, such as experimental parameters
 and coordinate data of the subjects, and prepares them for analysis.
 """
+# pylint:disable=too-many-lines
+
 import os
 import csv
 import re
@@ -20,6 +22,7 @@ import warnings
 from math import ceil
 import numpy as np
 from scipy.special import expit
+from scipy.signal import savgol_filter
 
 ####################
 ### Animal class ###
@@ -97,7 +100,7 @@ class Animal():
             If false, the function will not replace the value if there info_key is already
             pointing to a value. Default value : True.
         """
-        if info_key in self.__info and not(replace):
+        if info_key in self.__info and not replace:
             print("WARNING: %s is already in %s. Since replace is False, will not update."
                   % (info_key, self.get_name()))
         else:
@@ -182,8 +185,8 @@ class Animal():
         try:
             norm_info = self.__norm_info[var_name]
         except KeyError as wrong_key:
-            raise KeyError("check_existing_scope() : %s is not a valid variable name."
-                           % wrong_key)
+            raise ValueError("check_existing_scope() : %s is not a valid variable name."
+                             % wrong_key) from None
         return scope in norm_info
 
     def check_if_standard(self, var_name, scope):
@@ -209,13 +212,13 @@ class Animal():
         try:
             norm_info = self.__norm_info[var_name]
         except KeyError as wrong_key:
-            raise KeyError("check_existing_scope() : %s is not a valid variable name."
-                           % wrong_key)
+            raise ValueError("check_existing_scope() : %s is not a valid variable name."
+                             % wrong_key) from None
         try:
             scope_dict = norm_info[scope]
         except KeyError as wrong_scope:
-            raise KeyError("check_existing_scope() : %s is not a valid scope for %s."
-                           % (wrong_scope, var_name))
+            raise ValueError("check_existing_scope() : %s is not a valid scope for %s."
+                             % (wrong_scope, var_name)) from None
         return ("mean" in scope_dict) and ("std" in scope_dict)
 
     def init_norm_dict(self, var_name):
@@ -332,8 +335,8 @@ class Animal():
         try:
             value = self.__info[info_key]
         except KeyError:
-            raise KeyError("get_info : %s not an entry in animal object %s."
-                           % (info_key, self.__name))
+            raise ValueError("get_info : %s not found in animal object %s."
+                             % (info_key, self.__name)) from None
         return value
 
     def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
@@ -377,8 +380,8 @@ class Animal():
             lower = self.__norm_info[var_name][scope]["lower"]
             upper = self.__norm_info[var_name][scope]["upper"]
         except KeyError as wrong_key:
-            raise KeyError("get_norm_bounds : %s is not a valid variable name or scope."
-                           % wrong_key)
+            raise ValueError("get_norm_bounds : %s is not a valid variable name or scope."
+                             % wrong_key) from None
         return lower, upper
 
     def get_norm_stats(self, var_name, scope):
@@ -406,8 +409,8 @@ class Animal():
             mean = self.__norm_info[var_name][scope]["mean"]
             std = self.__norm_info[var_name][scope]["std"]
         except KeyError as wrong_key:
-            raise KeyError("get_norm_stats : %s is not a valid variable name or scope."
-                           % wrong_key)
+            raise ValueError("get_norm_stats : %s is not a valid variable name or scope."
+                             % wrong_key) from None
         return mean, std
 
     def get_stat_keys(self, var_name):
@@ -427,8 +430,8 @@ class Animal():
         try:
             norm_info = self.__norm_info[var_name]
         except KeyError as wrong_key:
-            raise KeyError("get_stat_keys : %s is not a valid variable name."
-                           % wrong_key)
+            raise ValueError("get_stat_keys : %s is not a valid variable name."
+                             % wrong_key) from None
         return norm_info.keys()
 
     def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
@@ -454,7 +457,8 @@ class Animal():
         try:
             values = self.__raw_vals[var_name]
         except KeyError:
-            raise KeyError("get_raw_vals: {} not found in animal object.".format(var_name))
+            raise ValueError("get_raw_vals: %s not found in animal object."
+                             % (var_name)) from None
         if start_frame > end_frame:
             raise ValueError("get_raw_vals: Start frame is after End frame.")
         if start_frame > len(values):
@@ -491,8 +495,8 @@ class Animal():
             means = self.__norm_info[var_name][scope]["mean"]
             stds = self.__norm_info[var_name][scope]["std"]
         except KeyError as wrong_key:
-            raise KeyError("get_stats : %s is not a valid variable name or scope."
-                           % wrong_key)
+            raise ValueError("get_stats : %s is not a valid variable name or scope."
+                             % wrong_key) from None
         return means, stds
 
     def populate_stats(self, var_name, scope, start_frame, end_frame):
@@ -644,7 +648,7 @@ class Animal():
             Size of each grid. Must divide self.__dim_x and self.__dim_y.
         """
         if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
-            raise Exception("grid_size does not divide dim x or dim y.")
+            raise ValueError("grid_size does not divide dim x or dim y.")
         self.__grid_size = grid_size
         self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
         self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
@@ -841,7 +845,7 @@ def read_info(infile_path):
     return info
 
 
-def setup_animal_objs(infofiles, name_list=None):
+def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=51):
     """ Generates and initializes Animal objects from a list of JSONs.
 
     Given a list of JSON files, generate and return the Animal object. If name_list is
@@ -854,6 +858,10 @@ def setup_animal_objs(infofiles, name_list=None):
         as a dict, which should contain an entry for each animal in the group.
     name_list : list of strs, optional
         Names of animals to be generated.
+    smooth_order : int
+        Order of the polynomial used in the smoothening function. Default value : 3.
+    smooth_window : int
+        Window of frames used for smoothening. Must be odd. Default value : 51.
 
     Returns
     -------
@@ -863,19 +871,25 @@ def setup_animal_objs(infofiles, name_list=None):
     """
     # check if infofiles is a list:
     if not isinstance(infofiles, list):
-        raise Exception("setup_animal_objs: infofiles variable needs to be a list.")
+        raise TypeError("setup_animal_objs: infofiles variable needs to be a list.")
+    if not isinstance(smooth_order, int):
+        raise TypeError("setup_animal_objs : smooth_order must be an int.")
+    if not (isinstance(smooth_window, int) and smooth_window % 2 == 1):
+        raise TypeError("setup_animal_objs : smooth_window must be an odd int.")
     objs = []
     for group_no, infofile in enumerate(infofiles):
         info = read_info(infofile)
         if name_list is not None:
-            objs += [_init_animal(item, group_no) for item in info
-                     if item["name"] in name_list]
+            objs += [_init_animal(item, group_no, smooth_order=smooth_order,
+                                  smooth_window=smooth_window) for item in info if
+                     item["name"] in name_list]
         else:
-            objs += [_init_animal(item, group_no) for item in info]
+            objs += [_init_animal(item, group_no, smooth_order=smooth_order,
+                                  smooth_window=smooth_window) for item in info]
     return objs
 
 
-def setup_raw_data(animal):
+def setup_raw_data(animal, smooth_order, smooth_window):
     """ Extracts the raw data from the data file linked in the Animal() object.
 
     Store the raw data values from the data file location of the animal object
@@ -885,9 +899,14 @@ def setup_raw_data(animal):
     ----------
     animal : Animal() object
         The Animal() object that the raw data is to be set up for.
+    smooth_order : int
+        Order of the polynomial used in the smoothening function.
+    smooth_window : int
+        Window of frames used for smoothening. Must be odd.
     """
     # pylint: disable=too-many-locals
     # Function is complicated, the local variables are necessary.
+    # Argument Checks & Validations
     with open(animal.get_data_file_location(), 'r') as infile:
         print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
         header = infile.readline()#.replace('\r','').replace('\n','')
@@ -896,12 +915,13 @@ def setup_raw_data(animal):
         elif ',' in header:
             delim = ','
         else:
-            raise Exception("setup_raw_data : Incorrect type of Data file in animal object.")
+            raise TypeError("setup_raw_data : Incorrect type of Data file in animal object.")
         header = list(map(lambda x: x.strip(), header.split(delim)))
         try: # verify the file can be parsed
             reader = csv.reader(infile, delimiter=delim)
         except FileNotFoundError:
-            raise Exception("setup_raw_data : Data file not found in animal object.")
+            raise ValueError("setup_raw_data : Data file not found in animal object.") \
+                from None
 
         x_ind = find_col_index(header, 'X')
         y_ind = find_col_index(header, 'Y')
@@ -922,12 +942,12 @@ def setup_raw_data(animal):
                 raise Exception("Data file in animal object might be truncated.")
             x_vals.append(float(x_val)/animal.get_pixel_density()) #scaling for pixel density
             y_vals.append(float(y_val)/animal.get_pixel_density())
-            #DEFN: baseline norm is where we take the stats from the first two minutes of the
-            #      exp to get the "baseline normal" numbers
-            #DEFN: exp norm is where we take the stats from the whole exp duration and take all
-            #      'local data' into consideration
-    animal.add_raw_vals('X', np.array(x_vals))
-    animal.add_raw_vals('Y', np.array(y_vals))
+
+    smooth_x = _smooth(np.array(x_vals), smooth_order, smooth_window)
+    smooth_y = _smooth(np.array(y_vals), smooth_order, smooth_window)
+
+    animal.add_raw_vals('X', smooth_x)
+    animal.add_raw_vals('Y', smooth_y)
 
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)
@@ -936,7 +956,7 @@ def setup_raw_data(animal):
     animal.populate_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
-def _init_animal(json_item, group_no):
+def _init_animal(json_item, group_no, smooth_order, smooth_window):
     """ Initializes the Animal() object.
 
     Given a json entry, extracts the relevant information and returns an initialized
@@ -949,6 +969,10 @@ def _init_animal(json_item, group_no):
         object.
     group_no : int
         Group number that the Animal() object is a part of.
+    smooth_order : int
+        Order of the polynomial used in the smoothening function.
+    smooth_window : int
+        Window of frames used for smoothening. Must be odd.
 
     Returns
     -------
@@ -956,7 +980,7 @@ def _init_animal(json_item, group_no):
         Initialized Animal() object.
     """
     animal = Animal(json_item)
-    setup_raw_data(animal)
+    setup_raw_data(animal, smooth_order=smooth_order, smooth_window=smooth_window)
     animal.set_group(group_no)
     return animal
 
@@ -1002,7 +1026,7 @@ def find_col_index(header, col_name):
     for i, _ in enumerate(header):
         if re.match(pat, header[i].lower()):
             return i
-    raise Exception("Column name not found: %s" % col_name)
+    raise ValueError("Column name not found: %s" % col_name)
 
 
 def _remove_outliers(data):
@@ -1025,3 +1049,20 @@ def _remove_outliers(data):
     iqr = third_quart - first_quart
     idx = (data > first_quart - 1.5 * iqr) & (data < third_quart + 1.5 * iqr)
     return data[idx]
+
+
+def _smooth(sequence, smooth_order, smooth_window):
+    """ Smooths sequence by applying Savitzky-Golay smoothing.
+
+    Parameters
+    ----------
+    sequence : list of floats
+        Sequence to be smoothed.
+
+    Returns
+    -------
+    smoothed : list of floats
+        Smoothed sequence.
+    """
+    smoothed = savgol_filter(sequence, smooth_window, smooth_order)
+    return smoothed

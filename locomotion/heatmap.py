@@ -35,7 +35,8 @@ ENABLE_BOUNDARY_WARNINGS = False
 ### Main Functions ###
 ######################
 
-def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None):
+def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None,
+                          plot_heatmap=False, outdir=None):
     """ Computes the heatmap representation of an animal's movement.
 
     Computes the heatmap for a given animal trajectory representing the amount of time
@@ -51,17 +52,25 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
         Specifies the bin size for calculating the heatmap. Value must divide both x_dim
         and y_dim stored in animal_obj, where smaller values yield finer triangulations
         and larger values yield coarser triangulations
-    start/end_time : float or int, optional.
+    start/end_time : float or int, optional
         Time in minutes. If unspecified, start/end time for the experiment will be used.
         Default value: None.
+    plot_heatmap : bool, optional
+        If True, the function will plot the heatmap of frequencies. Default value: False.
+    outdir: str, optional
+        Path to the output directory. If plot_heatmap is True, outdir must be given.
+        Default value: None
     """
     # pylint:disable=too-many-locals
+    # pylint:disable=too-many-arguments
 
     #Check if start_time or end_time need to be set:
     if start_time is None:
         start_time = animal_obj.get_exp_start_time()
     if end_time is None:
         end_time = animal_obj.get_exp_end_time()
+    if plot_heatmap and (outdir is None):
+        raise Exception("populate_surface_data : Plot Heatmap requires output directory.")
 
     #store given parameters
     animal_obj.set_grid_size(grid_size)
@@ -70,6 +79,9 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None)
 
     #calculate heatmap
     frequencies = _assemble_frequencies(animal_obj, start_time, end_time)
+
+    if plot_heatmap:
+        write.plot_heatmap(animal_obj, frequencies, outdir)
 
     print("Calculating triangulation for %s..." % animal_obj.get_name())
 
@@ -316,6 +328,10 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
             offset = y_lims[0] - y_min + perturb
             y_vals = y_vals + offset
 
+    # Translate all values to positive.
+    x_vals = x_vals - x_lims[0]
+    y_vals = y_vals - y_lims[0]
+
     #iterate through each frame and update frequency matrix
     for i, x_val in enumerate(x_vals):
         if x_val < 0:
@@ -324,10 +340,10 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
         x_index = int(x_val/grid_size)
         y_val = y_vals[i]
         if y_val < 0:
-            print("WARNING: Y data is out of bounds. Frame #%d, x=%f" % (i+1, y_vals[i]))
+            print("WARNING: Y data is out of bounds. Frame #%d, y=%f" % (i+1, y_vals[i]))
             y_val = 0
         y_index = int(y_val/grid_size)
-        freqency_matrix[x_index][y_index] += 1
+        freqency_matrix[y_index][x_index] += 1
     return freqency_matrix
 
 
