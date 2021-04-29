@@ -16,6 +16,7 @@ import csv
 import operator
 import numpy as np
 import plotly
+import plotly.express as px
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
@@ -89,6 +90,20 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
         write_dist_table_to_heatmap(animal_list, dists, outdir,
                                     "%s" % outfilename+"_sorted.html",
                                     color_min, color_max)
+
+
+def plot_heatmap(animal, frequencies, outdir):
+    animal_name = animal.get_name()
+    filename = "plot_%s_frequency_heatmap" % (animal_name)
+    html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
+
+    fig = px.imshow(frequencies)
+    fig.update_yaxes(autorange=True)
+    fig.update_layout(title_text="Frequency Heatmap for %s" % animal_name)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
+    print("Saved heatmap in %s" % html_outpath)
 
 
 def plot_path(animal, outdir):
