@@ -10,11 +10,11 @@
         "capture_attributes": {
             "x_lims": [
                 0,
-                200
+                300
             ],
             "y_lims": [
                 0,
-                100
+                200
             ],
             "pixels_per_mm": 1.6,
             "frames_per_sec": 20,
@@ -41,11 +41,11 @@
         "capture_attributes": {
             "x_lims": [
                 0,
-                200
+                300
             ],
             "y_lims": [
                 0,
-                100
+                200
             ],
             "pixels_per_mm": 1.6,
             "frames_per_sec": 20,

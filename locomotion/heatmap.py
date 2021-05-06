@@ -292,7 +292,7 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
     y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
 
     #initialize frequency matrix
-    freqency_matrix = [[0 for j in range(num_y_grid)] for i in range(num_x_grid)]
+    freqency_matrix = [[0 for j in range(num_x_grid)] for i in range(num_y_grid)]
 
     #check that coordinate data is within the specified bounds
     x_max = max(x_vals)
@@ -410,7 +410,7 @@ def _assemble_vertex_coordinates(animal_obj, freqs):
     #append coordinates for the lower left corner of each square in the heat map grid
     for i in range(num_x_grid):
         for j in range(num_y_grid):
-            coordinates.append([i*grid_size, j*grid_size, freqs[i][j]])
+            coordinates.append([i*grid_size, j*grid_size, freqs[j][i]])
     return coordinates
 
 
