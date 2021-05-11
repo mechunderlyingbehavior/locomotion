@@ -306,7 +306,7 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     seg_start/end_time_0/1 : int or float
-        Segment start / end time in minutes.
+        Segment start / end time in seconds.
     norm_mode : str or list of str, 'spec' or any defined norm_mode in self.__norm_info
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
@@ -432,7 +432,7 @@ def compute_all_bdd(animal_list, varnames, seg_start_time, seg_end_time, norm_mo
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     seg_start/end_time : int or float
-        Segment start / end ime in minutes.
+        Segment start / end ime in seconds.
     norm_mode : str, 'spec' or any defined norm_mode in self.__norm_info[varname]
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
@@ -475,7 +475,7 @@ def compute_all_to_one_bdd(animal_list, target_animal, varnames,
         List of hashable keys pointing to values stored in the Animal() objects to be used
         to calculate the BDD.
     seg_start/end_time : int or float
-        Segment start / end ime in minutes.
+        Segment start / end ime in seconds.
     norm_mode : str, 'spec' or any defined norm_mode in self.__norm_info[varname]
         If 'spec', normalization uses the mean and standard deviation from the time period
         specified for this comparison.
@@ -523,11 +523,11 @@ def compute_one_iibdd(animal_obj, varnames, norm_mode, num_samples,
     num_samples : int
         Number of samples generated and used in calculating the average bdd.
     interval_legth : int or float, optional
-        Length of the interval to use, in minutes. If unspecified, generate at random.
+        Length of the interval to use, in seconds. If unspecified, generate at random.
     start_time : float, optional
-        Time in minutes where the intervals can start. If omitted, exp start time is used.
+        Time in seconds where the intervals can start. If omitted, exp start time is used.
     end_time : float, optional
-        Time in minutes where the intervals can end. If omitted, exp end time is used.
+        Time in seconds where the intervals can end. If omitted, exp end time is used.
 
     Returns
     -------
@@ -597,11 +597,11 @@ def compute_all_iibdd(animal_list, varnames, norm_mode, num_samples,
     num_samples : int
         Number of samples generated and used in calculating the average bdd.
     interval_legth : int or float, optional
-        Length of the interval to use, in minutes. If unspecified, generate at random.
+        Length of the interval to use, in seconds. If unspecified, generate at random.
     start_time : float, optional
-        Time in minutes where the intervals can start. If omitted, exp start time is used.
+        Time in seconds where the intervals can start. If omitted, exp start time is used.
     end_time : float, optional
-        Time in minutes where the intervals can end. If omitted, exp end time is used.
+        Time in seconds where the intervals can end. If omitted, exp end time is used.
 
     Returns
     -------

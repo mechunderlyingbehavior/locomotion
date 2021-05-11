@@ -48,8 +48,8 @@ class Animal():
         """
         self.__animal_id = json_item["animal_attributes"]["ID"]
         self.__animal_type = json_item["animal_attributes"]["species"]
-        self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Minutes
-        self.__baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Minutes
+        self.__baseline_start = json_item["capture_attributes"]["baseline_start_time"] # In Seconds
+        self.__baseline_end = json_item["capture_attributes"]["baseline_end_time"]     # In Seconds
         self.__data_file = os.path.abspath(json_item["data_file_location"])
         self.__exp_type = json_item["animal_attributes"]["exp_type"]
         self.__filename = os.path.basename(self.__data_file)
@@ -59,8 +59,8 @@ class Animal():
         self.__input_unit = json_item["capture_attributes"]["input_unit"]
         self.__output_unit = json_item["capture_attributes"]["output_unit"]
         self.__unit_conversion = json_item["capture_attributes"]["input_per_output_unit"]
-        self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
-        self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
+        self.__start = json_item["capture_attributes"]["start_time"] # In Seconds
+        self.__end = json_item["capture_attributes"]["end_time"]         # In Seconds
         self.__info = json_item["additional_info"]
         self.__x_lims = json_item["capture_attributes"]["x_lims"] # Tuple of Pixels
         self.__y_lims = json_item["capture_attributes"]["y_lims"] # Tuple of Pixels
@@ -248,8 +248,8 @@ class Animal():
         Returns
         -------
         tuple
-            First entry of tuple is the baseline start time (in minutes), and the second entry
-            is the baseline end time (in minutes).
+            First entry of tuple is the baseline start time (in seconds), and the second entry
+            is the baseline end time (in seconds).
         """
         return (self.__baseline_start, self.__baseline_end)
 
@@ -287,8 +287,8 @@ class Animal():
         Returns
         -------
         tuple
-            First entry of tuple is the experiment start time (in minutes), and the second entry
-            is the experiment end time (in minutes).
+            First entry of tuple is the experiment start time (in seconds), and the second entry
+            is the experiment end time (in seconds).
         """
         return (self.__start, self.__end)
 
@@ -462,9 +462,9 @@ class Animal():
             Ending frame of portion to extract. Default value : None.
         """
         if start_frame is None:
-            start_frame = self.__start*60*self.__frame_rate
+            start_frame = self.__start*self.__frame_rate
         if end_frame is None:
-            end_frame = self.__end*60*self.__frame_rate
+            end_frame = self.__end*self.__frame_rate
         # logic check
         try:
             values = self.__raw_vals[var_name]
@@ -1040,19 +1040,19 @@ def _init_animal(json_item, group_no, smooth_order, smooth_window):
 ### Other Functions ###
 #######################
 
-def calculate_frame_num(animal, time_in_minutes):
+def calculate_frame_num(animal, time_in_seconds):
     """ Convert time_in_minutes to frame number with stored framerate.
 
-    Calculate the frame number given the time in minutes using the frame rate
+    Calculate the frame number given the time in seconds using the frame rate
     stored in the animal object. Framerate is in frames per second, and the time
-    in minutes is converted to time in seconds for the conversion.
+    is in seconds.
 
     Parameters
     ----------
-    time_in_minutes : float.
-        Time to be converted in minutes.
+    time_in_seconds : float.
+        Time to be converted.
     """
-    return int(animal.get_frame_rate() * time_in_minutes * 60)
+    return int(animal.get_frame_rate() * time_in_seconds)
 
 
 def find_col_index(header, col_name):

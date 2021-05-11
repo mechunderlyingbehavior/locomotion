@@ -277,7 +277,7 @@ def render_aligned_graphs(points_0, points_1, alignment,
     animal_obj_0/1 : Animal() object
         For each respective animal.
     seg_len : float
-        Length of the segment (in minutes).
+        Length of the segment (in seconds).
     varname : str
         The name of the variable to be plotted.
     outdir : str
@@ -295,7 +295,7 @@ def render_aligned_graphs(points_0, points_1, alignment,
 
     fr_0 = animal_obj_0.get_frame_rate()
     fr_1 = animal_obj_1.get_frame_rate()
-    fr_param = nums/(seg_len * 60)
+    fr_param = nums/(seg_len)
 
     original_trace_0 = go.Scatter(x=[alignment[0][k]/fr_0 for k in range(nums)],
                                   y=[points_0[alignment[0][k]] for k in range(nums)],
