@@ -156,8 +156,10 @@ def plot_path(animal, outdir):
         'layout': {'height': 500, 'width': 500,
                    'title': "Smoothened Coordinates for %s" % animal_name,
                    'plot_bgcolor' : 'white',
-                   'xaxis': {'title': 'X axis (px)', 'range': x_lims},
-                   'yaxis': {'title': 'Y axis (px)', 'range': y_lims}}
+                   'xaxis': {'title': "X axis (%s)" % animal.get_output_unit(),
+                             'range': x_lims},
+                   'yaxis': {'title': "Y axis (%s)" % animal.get_output_unit(),
+                             'range': y_lims}}
     }
     fig = go.Figure(figure)
     fig.write_image(png_outpath)
