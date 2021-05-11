@@ -56,7 +56,9 @@ class Animal():
         self.__frame_rate = json_item["capture_attributes"]["frames_per_sec"] # Frames per Second
         self.__group = None
         self.__name = json_item["name"]
-        self.__pix = json_item["capture_attributes"]["pixels_per_mm"]         # Pixels per MM
+        self.__input_unit = json_item["capture_attributes"]["input_unit"]
+        self.__output_unit = json_item["capture_attributes"]["output_unit"]
+        self.__unit_conversion = json_item["capture_attributes"]["input_per_output_unit"]
         self.__start = json_item["capture_attributes"]["start_time"] # In Minutes
         self.__end = json_item["capture_attributes"]["end_time"]         # In Minutes
         self.__info = json_item["additional_info"]
@@ -304,6 +306,10 @@ class Animal():
         """Getter function for self.__animal_id."""
         return self.__animal_id
 
+    def get_input_unit(self):
+        """Getter function for self.__input_unit"""
+        return self.__input_unit
+
     def get_lims(self):
         """Getter function for self.__x_lims and self.__y_lims."""
         return self.__x_lims, self.__y_lims
@@ -312,9 +318,13 @@ class Animal():
         """Getter function for self.__name."""
         return self.__name
 
-    def get_pixel_density(self):
-        """Getter function for self.__pix."""
-        return self.__pix
+    def get_output_unit(self):
+        """Getter function for self.__output_unit"""
+        return self.__output_unit
+
+    def get_unit_conversion(self):
+        """Getter function for self.__unit_conversion."""
+        return self.__unit_conversion
 
     def set_group(self, group_no):
         """Setter function for self.__group."""
@@ -908,7 +918,10 @@ def setup_raw_data(animal, smooth_order, smooth_window):
     # Function is complicated, the local variables are necessary.
     # Argument Checks & Validations
     with open(animal.get_data_file_location(), 'r') as infile:
-        print("LOG: Extracting coordinates for Animal %s..." % animal.get_name())
+        print("LOG: Extracting coordinates for Animal %s, converting from %s to %s."
+              % (animal.get_name(),
+                 animal.get_input_unit(),
+                 animal.get_output_unit()))
         header = infile.readline()#.replace('\r','').replace('\n','')
         if '\t' in header:
             delim = '\t'
@@ -940,8 +953,8 @@ def setup_raw_data(animal, smooth_order, smooth_window):
             if len(x_val) == 0 or x_val == ' ' or len(y_val) == 0 or y_val == ' ':
                 print(row)
                 raise Exception("Data file in animal object might be truncated.")
-            x_vals.append(float(x_val)/animal.get_pixel_density()) #scaling for pixel density
-            y_vals.append(float(y_val)/animal.get_pixel_density())
+            x_vals.append(float(x_val)/animal.get_unit_conversion()) #scaling for pixel density
+            y_vals.append(float(y_val)/animal.get_unit_conversion())
 
     smooth_x = _smooth(np.array(x_vals), smooth_order, smooth_window)
     smooth_y = _smooth(np.array(y_vals), smooth_order, smooth_window)
