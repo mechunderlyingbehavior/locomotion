@@ -71,15 +71,17 @@ class Animal():
         self.__central_vertex = None
         self.__colors = None
         self.__flat_coords = None
-        self.__grid_size = None
+        self.__frequencies = None
         self.__num_verts = None
         self.__num_triangles = None
-        self.__num_x_grid = None
-        self.__num_y_grid = None
         self.__reg_coords = None
         self.__triangulation = None
         self.__triangle_triangle_adjacency = None
         self.__vertex_bfs = None
+        self.__x_grid_count = None
+        self.__y_grid_count = None
+        self.__x_grid_len = None
+        self.__y_grid_len = None
 
     ############################
     ### Population Functions ###
@@ -548,17 +550,21 @@ class Animal():
         """Getter functions for self.__flat_coords"""
         return self.__flat_coords
 
-    def get_grid_size(self):
-        """Getter functions for self.__num_x_grid and self.__num_y_grid"""
-        return self.__grid_size
+    def get_frequencies(self):
+        """Getter function for self.__frequencies"""
+        return self.__frequencies
+
+    def get_grid_counts(self):
+        """Getter functions for self.__x_grid_count and self.__y_grid_count"""
+        return self.__x_grid_count, self.__y_grid_count
+
+    def get_grid_lens(self):
+        """Getter functions for self.__x_grid_len and self.__y_grid_len"""
+        return self.__x_grid_len, self.__y_grid_len
 
     def get_interior_vertex_bfs(self):
         """Getter functions for self.__vertex_bfs"""
         return self.__vertex_bfs
-
-    def get_num_grids(self):
-        """Getter functions for self.__num_x_grid and self.__num_y_grid"""
-        return self.__num_x_grid, self.__num_y_grid
 
     def get_num_triangles(self):
         """Getter functions for self.__num_triangles"""
@@ -635,23 +641,55 @@ class Animal():
         """
         self.__flat_coords = coordinates
 
-    def set_grid_size(self, grid_size):
-        """ Setter function for self.__grid_size, self.__num_x_grid, self.__num_y_grid.
-
-        Setter function for self.__grid_size, self.__num_x_grid, and self.__num_y_grid.
-        Number of x and y grids is calculated by dividing self.__dim_x and self.__dim_y
-        by grid_size.
+    def set_frequencies(self, frequencies):
+        """ Setter function for self.__frequencies.
 
         Parameters
         ----------
-        grid_size : int.
-            Size of each grid. Must divide self.__dim_x and self.__dim_y.
+        frequencies : list of lists of floats.
+            self.__x_grid_count by self.__y_grid_count histrogram of animal trajectory.
         """
-        if self.__dim_x % grid_size != 0 or self.__dim_y % grid_size != 0:
-            raise ValueError("grid_size does not divide dim x or dim y.")
-        self.__grid_size = grid_size
-        self.__num_x_grid = int(ceil(self.__dim_x/grid_size))
-        self.__num_y_grid = int(ceil(self.__dim_y/grid_size))
+        self.__frequencies = frequencies
+
+    def set_grid_counts(self, x_grid_count, y_grid_count):
+        """ Setter function for self.__x_grid_count and self.__y_grid_count.
+
+        Updates self.__x_grid_len and self.__y_grid_len as necessary to ensure grid lengths 
+        and counts match the overall dimensions (self.__dim_x and self.__dim_y).
+
+        Parameters
+        ----------
+        x_grid_count, y_grid_count : int.
+            Numbers of columns and rows in grid.
+        """
+        self.__x_grid_count = x_grid_count
+        self.__y_grid_count = y_grid_count
+        if self.__x_grid_len == None or self.__x_grid_len * self.__x_grid_count != self.__dim_x:
+            self.__x_grid_len = self.__dim_x / self.__x_grid_count
+            print("LOG: %s horizontal grid length updated to match specified number of columns." % self.__name)
+        if self.__y_grid_len == None or self.__y_grid_len * self.__y_grid_count != self.__dim_y:
+            self.__y_grid_len = self.__dim_y / self.__y_grid_count
+            print("LOG: %s vertical grid length updated to match specified number of rows." % self.__name)
+
+    def set_grid_lens(self, x_grid_len, y_grid_len):
+        """ Setter function for self.__x_grid_len and self.__y_grid_len.
+
+        Updates self.__x_grid_count and self.__y_grid_count as necessary to ensure grid lengths 
+        and counts match the overall dimensions (self.__dim_x and self.__dim_y).
+
+        Parameters
+        ----------
+        x_grid_len, y_grid_len : float.
+            Horizontal and vertical length of grid.
+        """
+        self.__x_grid_len = x_grid_len
+        self.__y_grid_len = y_grid_len
+        if self.__x_grid_count == None or self.__x_grid_len * self.__x_grid_count != self.__dim_x:
+            self.__x_grid_count = self.__dim_x // self.__x_grid_len
+            print("LOG: %s horizontal grid count updated to match specified length." % self.__name)
+        if self.__y_grid_count == None or self.__y_grid_len * self.__y_grid_count != self.__dim_y:
+            self.__y_grid_count = self.__dim_y // self.__y_grid_len
+            print("LOG: %s vertical grid count updated to match specified length." % self.__name)
 
     def set_interior_vertex_bfs(self, vertex_bfs):
         """ Setter function for self.__vertex_bfs.
