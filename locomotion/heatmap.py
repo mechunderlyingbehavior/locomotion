@@ -16,8 +16,8 @@ the one provided in the libigl package (https://libigl.github.io/).
 """
 # pylint:disable=too-many-lines
 
-from math import sin, cos, pi
-from numpy import mean, std, array, linalg
+from math import sin, cos, pi, sqrt
+from numpy import mean, std, array, linalg, cbrt
 from scipy.optimize import minimize
 from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
     adjacency_matrix, bfs, triangle_triangle_adjacency
@@ -35,8 +35,8 @@ ENABLE_BOUNDARY_WARNINGS = False
 ### Main Functions ###
 ######################
 
-def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None,
-                          plot_heatmap=False, outdir=None):
+def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None, 
+                          start_time=None, end_time=None, plot_heatmap=False, outdir=None):
     """ Computes the heatmap representation of an animal's movement.
 
     Computes the heatmap for a given animal trajectory representing the amount of time
@@ -48,10 +48,8 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None,
     ----------
     animal_obj : animal object
         Initialized Animal() object.
-    grid_size : float or int
-        Specifies the bin size for calculating the heatmap. Value must divide both x_dim
-        and y_dim stored in animal_obj, where smaller values yield finer triangulations
-        and larger values yield coarser triangulations
+    x_grid_count/y_grid_count : int, optional
+        Specifies the number of columns and rows used for calculating the heatmap.
     start/end_time : float or int, optional
         Time in minutes. If unspecified, start/end time for the experiment will be used.
         Default value: None.
@@ -72,21 +70,35 @@ def populate_surface_data(animal_obj, grid_size, start_time=None, end_time=None,
     if plot_heatmap and (outdir is None):
         raise Exception("populate_surface_data : Plot Heatmap requires output directory.")
 
-    #store given parameters
-    animal_obj.set_grid_size(grid_size)
+    #gather specified range of frames 
+    start_frame = animal.calculate_frame_num(animal_obj, start_time)
+    end_frame = animal.calculate_frame_num(animal_obj, end_time)
+    x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
+    y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
+
+    #Check if grid needs to be set:
+    if x_grid_count is None or y_grid_count is None: 
+        frame_count = len(x_vals)
+        x_dim, y_dim = animal_obj.get_dims()
+        x_grid_count = int(cbrt(frame_count) * sqrt(x_dim) / sqrt(y_dim))
+        y_grid_count = int(cbrt(frame_count) * sqrt(y_dim) / sqrt(x_dim))
+
+    #set grid
+    animal_obj.set_grid_counts(x_grid_count, y_grid_count)
 
     print("Calculating heatmap for %s..." % animal_obj.get_name())
 
     #calculate heatmap
-    frequencies = _assemble_frequencies(animal_obj, start_time, end_time)
+    frequencies = _assemble_frequencies(animal_obj, x_vals, y_vals)
+    animal_obj.set_frequencies(frequencies)
 
     if plot_heatmap:
-        write.plot_heatmap(animal_obj, frequencies, outdir)
+        write.plot_heatmap(animal_obj, outdir)
 
     print("Calculating triangulation for %s..." % animal_obj.get_name())
 
     #get and record vertices
-    original_coordinates = _assemble_vertex_coordinates(animal_obj, frequencies)
+    original_coordinates = _assemble_vertex_coordinates(animal_obj)
     animal_obj.set_num_verts(len(original_coordinates))
     animal_obj.set_regular_coordinates(original_coordinates)
 
@@ -257,7 +269,7 @@ def compute_all_csd(animal_list):
 ### Assembly Functions ###
 ##########################
 
-def _assemble_frequencies(animal_obj, start_time, end_time):
+def _assemble_frequencies(animal_obj, x_vals, y_vals):
     """ Converts the coordinates of the animal trajectory into frequency data over the grid.
 
     Gathers the frequency data for approximating the heatmap representing the amount of
@@ -267,10 +279,8 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
     ----------
     animal_obj : Animal() object
         Initialized Animal() object.
-    start_time : float
-        Start time (in minutes) of time period.
-    end_time : float
-        End time (in minutes) of time period.
+    x_vals/y_vals : list of floats
+        Lists of x- and y-coordinates from which to calculate frequency data.
 
     Returns
     -------
@@ -280,20 +290,15 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
     """
     # pylint:disable=too-many-locals
 
-    #set or get relevant parameters
+    #gather relevant parameters
     perturb = PERTURBATION
-    start_frame = animal.calculate_frame_num(animal_obj, start_time)
-    end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    grid_size = animal_obj.get_grid_size()
     x_lims, y_lims = animal_obj.get_lims()
     x_dim, y_dim = animal_obj.get_dims()
-    num_x_grid, num_y_grid = animal_obj.get_num_grids()
-    x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
-    y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
-
+    x_grid_count, y_grid_count = animal_obj.get_grid_counts()
+    x_grid_len, y_grid_len = animal_obj.get_grid_lens()
+    
     #initialize frequency matrix
-    freqency_matrix = [[0 for j in range(num_x_grid)] for i in range(num_y_grid)]
-
+    freqency_matrix = [[0 for j in range(y_grid_count)] for i in range(x_grid_count)]
     #check that coordinate data is within the specified bounds
     x_max = max(x_vals)
     x_min = min(x_vals)
@@ -314,7 +319,7 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
             y_vals = y_vals * y_scale
             y_max, y_min = max(y_vals), min(y_vals)
 
-        # Scaling should not be necessary at this point. Check if translation is needed.
+        # Check if translation is necessary.
         if x_max > x_lims[1]:
             offset = x_max - x_lims[1] + perturb
             x_vals = x_vals - offset
@@ -337,15 +342,14 @@ def _assemble_frequencies(animal_obj, start_time, end_time):
         if x_val < 0:
             print("WARNING: X data is out of bounds. Frame #%d, x=%f" % (i+1, x_vals[i]))
             x_val = 0
-        x_index = int(x_val/grid_size)
+        x_index = int(x_val/x_grid_len)
         y_val = y_vals[i]
         if y_val < 0:
             print("WARNING: Y data is out of bounds. Frame #%d, y=%f" % (i+1, y_vals[i]))
             y_val = 0
-        y_index = int(y_val/grid_size)
-        freqency_matrix[y_index][x_index] += 1
+        y_index = int(y_val/y_grid_len)
+        freqency_matrix[x_index][y_index] += 1
     return freqency_matrix
-
 
 def _assemble_triangles(animal_obj):
     """ Computes a basic triangulation on the regular coordinates of an animal.
@@ -362,21 +366,21 @@ def _assemble_triangles(animal_obj):
         a surface.
     """
     #store relevant parameters
-    num_x_grid, num_y_grid = animal_obj.get_num_grids()
+    x_grid_count, y_grid_count = animal_obj.get_grid_counts()
 
     #initialize triangle list
     triangles = []
 
     #iterate through lower left corners of grid and append canonical triangles
-    for i in range(num_x_grid-1):
-        for j in range(num_y_grid-1):
-            triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+j, (i+1)*num_y_grid+(j+1)])
-            triangles.append([i*num_y_grid+j, (i+1)*num_y_grid+(j+1), i*num_y_grid+(j+1)])
+    for i in range(x_grid_count-1):
+        for j in range(y_grid_count-1):
+            triangles.append([i*y_grid_count+j, (i+1)*y_grid_count+j, (i+1)*y_grid_count+(j+1)])
+            triangles.append([i*y_grid_count+j, (i+1)*y_grid_count+(j+1), i*y_grid_count+(j+1)])
 
     return triangles
 
 
-def _assemble_vertex_coordinates(animal_obj, freqs):
+def _assemble_vertex_coordinates(animal_obj):
     """ Calculates the vertex coordinates for a triangulation of the heatmap surface.
 
     Parameters
@@ -393,8 +397,9 @@ def _assemble_vertex_coordinates(animal_obj, freqs):
         triangulation of the surface corresponding to a heat map
     """
     #gather relevant parameters
-    grid_size = animal_obj.get_grid_size()
-    num_x_grid, num_y_grid = animal_obj.get_num_grids()
+    freqs = animal_obj.get_frequencies()
+    x_grid_len, y_grid_len = animal_obj.get_grid_lens()
+    x_grid_count, y_grid_count = animal_obj.get_grid_counts()
 
     #normalize the values to floats between 0 and a specified z-dimension
     f_mean = mean(freqs)
@@ -408,9 +413,9 @@ def _assemble_vertex_coordinates(animal_obj, freqs):
     coordinates = []
 
     #append coordinates for the lower left corner of each square in the heat map grid
-    for i in range(num_x_grid):
-        for j in range(num_y_grid):
-            coordinates.append([i*grid_size, j*grid_size, freqs[j][i]])
+    for i in range(x_grid_count):
+        for j in range(y_grid_count):
+            coordinates.append([i*x_grid_len, j*y_grid_len, freqs[i][j]])
     return coordinates
 
 
@@ -776,12 +781,12 @@ def _find_central_vertex(animal_obj):
     """
     #get the regular coordinates in the x, y dimension to find the central vertex in that plane
     x_y_coordinates = [coord[:2] for coord in animal_obj.get_regular_coordinates()]
-    num_x_grid, num_y_grid = animal_obj.get_num_grids()
-    grid_size = animal_obj.get_grid_size()
+    x_grid_count, y_grid_count = animal_obj.get_grid_counts()
+    x_grid_len, y_grid_len = animal_obj.get_grid_lens()
 
     #get the central coordinate in the grid. It must be a multiple of the grid size.
-    mid_x_coordinate = (num_x_grid // 2) * grid_size
-    mid_y_coordinate = (num_y_grid // 2) * grid_size
+    mid_x_coordinate = (x_grid_count // 2) * x_grid_len
+    mid_y_coordinate = (y_grid_count // 2) * y_grid_len
 
     #find the index of this central coordinate
     central_vertex = x_y_coordinates.index([mid_x_coordinate, mid_y_coordinate])

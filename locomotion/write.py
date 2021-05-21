@@ -92,30 +92,34 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
                                     color_min, color_max)
 
 
-def plot_heatmap(animal, frequencies, outdir):
+def plot_heatmap(animal, outdir):
     """ Plot heatmap representing the frequencies used for CSD.
 
-    Given a 2D matrix of frequencies where frequencies[y][x] represents the number of
+    Given a 2D matrix of frequencies where frequencies[x][y] represents the number of
     frames that animal spends in the grid indexed by x and y, plot and save a heatmap
     that represents the frequencies in the matrix.
 
     Parameters
     ----------
     animal: Animal() object
-        Animal object containing the coordinate data to be plotted. animal.set_grid_size()
-        should also be run on the animal prior to running plot_heatmap.
+        Animal object containing the coordinate data to be plotted. 
+        heatmap.populate_surface_data(animal) should be called before
+        running plot_heatmap.
     frequencies: 2-dimensional array of int
         Frequency matrix corresponding to animal's frequency in each grid.
     outdir: str
         File path to output directory where the output is to be saved.
     """
     animal_name = animal.get_name()
+    freqs = animal.get_frequencies()
     filename = "plot_%s_frequency_heatmap" % (animal_name)
     html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
     png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
+    x_count, y_count = animal.get_grid_counts()
+    freq_matrix = [[freqs[i][j] for i in range(x_count)] for j in range(y_count)] 
+    z_max = 2 * sum(map(sum,freqs)) / (x_count*y_count)**0.5    
 
-    fig = px.imshow(frequencies)
-    fig.update_yaxes(autorange=True)
+    fig = px.imshow(freq_matrix, zmin = 0, zmax = z_max, origin='lower')
     fig.update_layout(title_text="Frequency Heatmap for %s" % animal_name)
     fig.write_image(png_outpath)
     plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
@@ -141,6 +145,7 @@ def plot_path(animal, outdir):
     png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
 
     x_lims, y_lims = animal.get_lims()
+    width, height = x_lims[1]-x_lims[0], y_lims[1]-y_lims[0]
     x_vals = animal.get_raw_vals('X')
     y_vals = animal.get_raw_vals('Y')
 
@@ -153,11 +158,11 @@ def plot_path(animal, outdir):
     ]
     figure = {
         'data': data,
-        'layout': {'height': 500, 'width': 500,
+        'layout': {'height': 500, 'width': int(400*width/height),
                    'title': "Smoothened Coordinates for %s" % animal_name,
                    'plot_bgcolor' : 'white',
                    'xaxis': {'title': 'X axis (px)', 'range': x_lims},
-                   'yaxis': {'title': 'Y axis (px)', 'range': y_lims}}
+                   'yaxis': {'title': 'Y axis (px)', 'range': y_lims, 'scaleanchor': 'x', 'scaleratio': 1}}
     }
     fig = go.Figure(figure)
     fig.write_image(png_outpath)
