@@ -14,7 +14,7 @@ animals = locomotion.setup_animal_objs(info_files,
                                        smooth_window=21) # CHANGE THESE TO TEST SMOOTHENING
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
-    locomotion.heatmap.populate_surface_data(a, 5, plot_heatmap=True,
+    locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
                                              outdir='results/')
 
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####

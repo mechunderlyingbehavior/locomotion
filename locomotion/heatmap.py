@@ -35,7 +35,7 @@ ENABLE_BOUNDARY_WARNINGS = False
 ### Main Functions ###
 ######################
 
-def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None, 
+def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None,
                           start_time=None, end_time=None, plot_heatmap=False, outdir=None):
     """ Computes the heatmap representation of an animal's movement.
 
@@ -70,14 +70,14 @@ def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None,
     if plot_heatmap and (outdir is None):
         raise Exception("populate_surface_data : Plot Heatmap requires output directory.")
 
-    #gather specified range of frames 
+    #gather specified range of frames
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
     y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
 
     #Check if grid needs to be set:
-    if x_grid_count is None or y_grid_count is None: 
+    if x_grid_count is None or y_grid_count is None:
         frame_count = len(x_vals)
         x_dim, y_dim = animal_obj.get_dims()
         x_grid_count = int(cbrt(frame_count) * sqrt(x_dim) / sqrt(y_dim))

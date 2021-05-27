@@ -102,7 +102,7 @@ def plot_heatmap(animal, outdir):
     Parameters
     ----------
     animal: Animal() object
-        Animal object containing the coordinate data to be plotted. 
+        Animal object containing the coordinate data to be plotted.
         heatmap.populate_surface_data(animal) should be called before
         running plot_heatmap.
     frequencies: 2-dimensional array of int
@@ -116,10 +116,11 @@ def plot_heatmap(animal, outdir):
     html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
     png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
     x_count, y_count = animal.get_grid_counts()
-    freq_matrix = [[freqs[i][j] for i in range(x_count)] for j in range(y_count)] 
-    z_max = 2 * sum(map(sum,freqs)) / (x_count*y_count)**0.5    
+    freq_matrix = np.array([[np.log(freqs[i][j]+1) for i in range(x_count)]
+                            for j in range(y_count)])
+    freq_matrix = freq_matrix/np.max(freq_matrix)
 
-    fig = px.imshow(freq_matrix, zmin = 0, zmax = z_max, origin='lower')
+    fig = px.imshow(freq_matrix, zmin = 0, zmax = 1, origin='lower')
     fig.update_layout(title_text="Frequency Heatmap for %s" % animal_name)
     fig.write_image(png_outpath)
     plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
