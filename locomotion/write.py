@@ -116,14 +116,36 @@ def plot_heatmap(animal, outdir):
     html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
     png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
     x_count, y_count = animal.get_grid_counts()
-    freq_matrix = np.array([[np.log(freqs[i][j]+1) for i in range(x_count)]
+    x_len, y_len = animal.get_grid_lens()
+    x_lims, y_lims = animal.get_lims()
+    z = np.array([[np.log(freqs[i][j]+1) for i in range(x_count)]
                             for j in range(y_count)])
-    freq_matrix = freq_matrix/np.max(freq_matrix)
+    z = z/np.max(z)
+    x = np.arange(x_lims[0], x_lims[1]+x_len, x_len)
+    y = np.arange(y_lims[0], y_lims[1]+y_len, y_len)
 
-    fig = px.imshow(freq_matrix, zmin = 0, zmax = 1, origin='lower')
-    fig.update_layout(title_text="Frequency Heatmap for %s" % animal_name)
+    figure = {'data': [], 'layout': {}}
+    trace = go.Heatmap(
+        z=z, x=x, y=y,
+        name='Heatmap',
+        colorscale='plasma',
+        showscale=True,
+        visible=True,
+        zmin=0,
+        zmax=1
+    )
+    figure['data'].append(trace)
+    figure['layout'] = dict(
+        height=500, width=int(400*(x_lims[1]-x_lims[0])/(y_lims[1]-y_lims[0])),
+        title="Frequency Heatmap for %s" % animal_name,
+        xaxis={'title': "X axis (%s)" % animal.get_output_unit(),
+               'range': x_lims},
+        yaxis={'title': "Y axis (%s)" % animal.get_output_unit(),
+               'range': y_lims}
+    )
+    fig = go.Figure(figure)
     fig.write_image(png_outpath)
-    plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
+    plotly.offline.plot(figure, filename=html_outpath, auto_open=False)
     print("Saved heatmap in %s" % html_outpath)
 
 
