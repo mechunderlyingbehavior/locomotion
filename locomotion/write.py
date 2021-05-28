@@ -92,7 +92,7 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
                                     color_min, color_max)
 
 
-def plot_heatmap(animal, outdir):
+def plot_heatmap(animal, outdir, add_path=True):
     """ Plot heatmap representing the frequencies used for CSD.
 
     Given a 2D matrix of frequencies where frequencies[x][y] represents the number of
@@ -135,6 +135,17 @@ def plot_heatmap(animal, outdir):
         zmax=1
     )
     figure['data'].append(trace)
+
+    if add_path:
+        x_vals = animal.get_raw_vals('X')
+        y_vals = animal.get_raw_vals('Y')
+        path = go.Scatter(x=x_vals, y=y_vals,
+                          mode='lines', showlegend=False,
+                          marker={'color':'rgba(0,255,255,0.7)'},
+                          line={'width':2},
+                          name=animal_name)
+        figure['data'].append(path)
+
     figure['layout'] = dict(
         height=500, width=int(400*(x_lims[1]-x_lims[0])/(y_lims[1]-y_lims[0])),
         title="Frequency Heatmap for %s" % animal_name,
