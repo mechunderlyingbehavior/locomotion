@@ -23,6 +23,7 @@ from math import ceil
 import numpy as np
 from scipy.special import expit
 from scipy.signal import savgol_filter
+from numpy.polynomial import polynomial as P
 
 ####################
 ### Animal class ###
@@ -893,7 +894,7 @@ def read_info(infile_path):
     return info
 
 
-def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=51):
+def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=20):
     """ Generates and initializes Animal objects from a list of JSONs.
 
     Given a list of JSON files, generate and return the Animal object. If name_list is
@@ -909,7 +910,7 @@ def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=5
     smooth_order : int
         Order of the polynomial used in the smoothening function. Default value : 3.
     smooth_window : int
-        Window of frames used for smoothening. Must be odd. Default value : 51.
+        Half-window of frames used for smoothening. Default value : 20.
 
     Returns
     -------
@@ -922,8 +923,8 @@ def setup_animal_objs(infofiles, name_list=None, smooth_order=3, smooth_window=5
         raise TypeError("setup_animal_objs: infofiles variable needs to be a list.")
     if not isinstance(smooth_order, int):
         raise TypeError("setup_animal_objs : smooth_order must be an int.")
-    if not (isinstance(smooth_window, int) and smooth_window % 2 == 1):
-        raise TypeError("setup_animal_objs : smooth_window must be an odd int.")
+    if not isinstance(smooth_window, int):
+        raise TypeError("setup_animal_objs : smooth_window must be an int.")
     objs = []
     for group_no, infofile in enumerate(infofiles):
         info = read_info(infofile)
@@ -950,7 +951,7 @@ def setup_raw_data(animal, smooth_order, smooth_window):
     smooth_order : int
         Order of the polynomial used in the smoothening function.
     smooth_window : int
-        Window of frames used for smoothening. Must be odd.
+        Half-window of frames used for smoothening.
     """
     # pylint: disable=too-many-locals
     # Function is complicated, the local variables are necessary.
@@ -1102,18 +1103,66 @@ def _remove_outliers(data):
     return data[idx]
 
 
-def _smooth(sequence, smooth_order, smooth_window):
+def _smooth(sequence, degree, half_window):
     """ Smooths sequence by applying Savitzky-Golay smoothing.
 
     Parameters
     ----------
     sequence : list of floats
         Sequence to be smoothed.
+    degree : int
+        Degree of polynomials to be used for fitting
+    half_window : int
+        Used to determine window length. Window = (2 * half_window) + 1
 
     Returns
     -------
     smoothed : list of floats
         Smoothed sequence.
     """
-    smoothed = savgol_filter(sequence, smooth_window, smooth_order)
+    fitted = np.array([0.0 for _ in sequence])
+    n = len(sequence)
+    window = (half_window * 2) + 1
+    xarr = np.arange(-half_window, half_window+1)
+
+    # Step 1: Weighted Polyfit
+    weight = (1 - (np.abs(xarr)/half_window) ** 3) ** 3
+
+    for i in range(half_window, n-half_window):
+        z = P.polyfit(xarr, sequence[i-half_window:i+half_window+1],
+                      deg=degree, w=weight)
+        fitted[i] = P.polyval(0.0, z)
+
+    z = P.polyfit(xarr, sequence[:window], deg=degree, w=weight)
+    for i in range(half_window):
+        fitted[i] = P.polyval(xarr[i], z)
+
+    z = P.polyfit(xarr, sequence[-window:], deg=degree, w=weight)
+    for i in range(half_window):
+        fitted[n-half_window+i] = P.polyval(xarr[i+half_window+1], z)
+
+    smoothed = fitted
+    # # Step 2: Running Median
+    res = sequence - fitted
+    def new_weights(i):
+        res_interval = res[i-half_window:i+half_window+1]
+        med = np.median(np.abs(res_interval))
+        deltas = (1 - (res_interval/(6 * med)) ** 2) ** 2
+        deltas[np.abs(res_interval) > 6 * med] = 0
+        return deltas * weight
+
+    smoothed = np.array([0.0 for _ in sequence])
+    for i in range(half_window, n-half_window):
+        z = P.polyfit(xarr, sequence[i-half_window:i+half_window+1],
+                      deg=degree, w=new_weights(i))
+        smoothed[i] = P.polyval(0.0, z)
+
+    z = P.polyfit(xarr, sequence[:window], deg=degree, w=new_weights(half_window))
+    for i in range(half_window):
+        smoothed[i] = P.polyval(xarr[i], z)
+
+    z = P.polyfit(xarr, sequence[-window:], deg=degree, w=new_weights(n-half_window-1))
+    for i in range(half_window):
+        smoothed[n-half_window+i] = P.polyval(xarr[i+half_window+1], z)
+
     return smoothed
