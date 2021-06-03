@@ -16,7 +16,9 @@
                 0,
                 200
             ],
-            "pixels_per_mm": 1.6,
+            "input_unit": "px",
+            "output_unit": "mm",
+            "input_per_output_unit": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
             "end_time": 2,
@@ -47,7 +49,9 @@
                 0,
                 200
             ],
-            "pixels_per_mm": 1.6,
+            "input_unit": "px",
+            "output_unit": "mm",
+            "input_per_output_unit": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
             "end_time": 2,
