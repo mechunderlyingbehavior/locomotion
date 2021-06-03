@@ -92,7 +92,7 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
                                     color_min, color_max)
 
 
-def plot_heatmap(animal, outdir, add_path=True):
+def plot_heatmap(animal, outdir, add_path=False):
     """ Plot heatmap representing the frequencies used for CSD.
 
     Given a 2D matrix of frequencies where frequencies[x][y] represents the number of
@@ -105,10 +105,10 @@ def plot_heatmap(animal, outdir, add_path=True):
         Animal object containing the coordinate data to be plotted.
         heatmap.populate_surface_data(animal) should be called before
         running plot_heatmap.
-    frequencies: 2-dimensional array of int
-        Frequency matrix corresponding to animal's frequency in each grid.
     outdir: str
         File path to output directory where the output is to be saved.
+    add_path: bool
+        If True, the path of the animal will be overlayed over the heatmap plot.
     """
     animal_name = animal.get_name()
     freqs = animal.get_frequencies()
