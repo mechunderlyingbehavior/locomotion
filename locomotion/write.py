@@ -446,7 +446,7 @@ def render_single_animal_graph(points, animal_obj, varname, outdir):
     html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
     png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
     num_points = len(points)
-    trace = go.Scatter(x=range(num_points)/animal_obj.get_frame_rate(), y=points,
+    trace = go.Scatter(x=np.arange(num_points)/animal_obj.get_frame_rate(), y=points,
                        mode='lines', showlegend=False, line={'width':4})
     data = [trace]
     fig = go.Figure()
