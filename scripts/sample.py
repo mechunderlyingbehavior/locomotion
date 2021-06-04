@@ -6,17 +6,17 @@ PATH_TO_DIRECTORY = os.getcwd()
 # If this works, then locomotion has been installed into your system.
 import locomotion
 
-# outfile = PATH_TO_DIRECTORY + "/../data/rodent_sample/rodent_JSON.json"
-outfile = PATH_TO_DIRECTORY + "/../samples/sample_check_SS.json"
+outfile = PATH_TO_DIRECTORY + "/../data/rodent_sample/rodent_JSON.json"
+# outfile = PATH_TO_DIRECTORY + "/../samples/sample_check_SS.json"
 info_files = [outfile] # 5 animals in this json
 animals = locomotion.setup_animal_objs(info_files,
                                        smooth_order=3,
                                        smooth_window=21) # CHANGE THESE TO TEST SMOOTHENING
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
-    locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
-                                             outdir='results/')
-
+    first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
+    _, _, _, curvature = locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
+    locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
 #     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
 #     locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)

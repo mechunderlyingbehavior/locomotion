@@ -21,9 +21,9 @@
             "input_per_output_unit": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
-            "end_time": 2,
+            "end_time": 120,
             "baseline_start_time": 0,
-            "baseline_end_time": 1
+            "baseline_end_time": 60
         },
         "additional_info": {
             "point": [
@@ -54,9 +54,9 @@
             "input_per_output_unit": 1.6,
             "frames_per_sec": 20,
             "start_time": 0,
-            "end_time": 2,
+            "end_time": 120,
             "baseline_start_time": 0,
-            "baseline_end_time": 1
+            "baseline_end_time": 60
         },
         "additional_info": {
             "point": [

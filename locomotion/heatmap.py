@@ -51,7 +51,7 @@ def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None,
     x_grid_count/y_grid_count : int, optional
         Specifies the number of columns and rows used for calculating the heatmap.
     start/end_time : float or int, optional
-        Time in minutes. If unspecified, start/end time for the experiment will be used.
+        Time in seconds. If unspecified, start/end time for the experiment will be used.
         Default value: None.
     plot_heatmap : bool, optional
         If True, the function will plot the heatmap of frequencies. Default value: False.
