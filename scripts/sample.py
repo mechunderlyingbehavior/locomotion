@@ -11,7 +11,7 @@ outfile = PATH_TO_DIRECTORY + "/../data/rodent_sample/rodent_JSON.json"
 info_files = [outfile] # 5 animals in this json
 animals = locomotion.setup_animal_objs(info_files,
                                        smooth_order=3,
-                                       smooth_window=7) # CHANGE THESE TO TEST SMOOTHENING
+                                       smooth_window=10) # CHANGE THESE TO TEST SMOOTHENING
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
