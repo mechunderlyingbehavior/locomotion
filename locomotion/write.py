@@ -17,8 +17,10 @@ import operator
 import numpy as np
 import plotly
 import plotly.express as px
+import plotly.figure_factory as ff
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from scipy.cluster.hierarchy import linkage
 
 COLORS = plotly.colors.qualitative.Plotly
 
@@ -424,6 +426,24 @@ def render_aligned_graphs(points_0, points_1, alignment,
     fig.write_image(png_outpath)
     plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
     print("Saved the alignment graphs in directory %s" % outdir)
+
+
+def render_dendrogram(animal_list, results, outdir, outfilename, threshold=1.5):
+    # TODO: Finish working on the full Dendrogram print.
+    html_outpath = os.path.join(outdir, outfilename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, outfilename + '.png').replace(' ', '')
+
+    # Flatten results into condensed distance array
+    dists = [item for sublist in results for item in sublist]
+    dists = np.array([[d for d in dists if d != '']])
+
+    fig = ff.create_dendrogram(dists,
+                               labels=[a.get_name() for a in animal_list],
+                               distfun=lambda x:x[0],
+                               linkagefun=lambda y:linkage(y, 'ward'),
+                               color_threshold=threshold)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
 
 
 def render_single_animal_graph(points, animal_obj, varname, outdir):

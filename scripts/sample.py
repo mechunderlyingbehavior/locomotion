@@ -17,41 +17,43 @@ for a in animals:
     locomotion.write.plot_path(a, 'results/')
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
     _, _, _, curvature = locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
-    locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
-    print(f"Av Curvature for {a.get_name()} : {np.mean(np.abs(curvature))}")
+    
+    # locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
+    # print(f"Av Curvature for {a.get_name()} : {np.mean(np.abs(curvature))}")
     # locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
     #                                          outdir='results/')
 
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
-#     locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
+    locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
 
-# variables = ['Velocity', 'Curvature', 'Dist to Point']
-# norm_mode = ['universal','universal', 'bounded']
-# start_time, end_time = 0, 1
+variables = ['Velocity', 'Curvature', 'Dist to Point']
+norm_mode = ['universal','universal', 'bounded']
+start_time, end_time = 0, 60
 
 # # Populating mean and std into animal objects for norm_mode = 'universal'
-# raw_vals = {}
-# for var in variables:
-#     raw_vals.update({var:[]})
+raw_vals = {}
+for var in variables:
+    raw_vals.update({var:[]})
 
-# for a in animals:
-#     for var in variables:
-#         raw_vals[var].extend(a.get_raw_vals(var, start_time, end_time))
+for a in animals:
+    for var in variables:
+        raw_vals[var].extend(a.get_raw_vals(var, start_time, end_time))
 
-# for var in variables[:2]:
-#     mean = np.mean(raw_vals[var])
-#     std = np.std(raw_vals[var])
-#     for a in animals:
-#         a.add_norm_standard(var, 'universal', mean, std)
+for var in variables[:2]:
+    mean = np.mean(raw_vals[var])
+    std = np.std(raw_vals[var])
+    for a in animals:
+        a.add_norm_standard(var, 'universal', mean, std)
 
-# # NEW BOUNDED NORMALIZATION FOR DISTANCE TYPE METHODS
-# # TODO: Find proper bounds for Dist to Point
-# lower_bound = 0
-# upper_bound = 100
-# for a in animals:
-#     a.add_norm_bounded('Dist to Point', 'bounded', lower_bound, upper_bound)
+# NEW BOUNDED NORMALIZATION FOR DISTANCE TYPE METHODS
+# TODO: Find proper bounds for Dist to Point
+lower_bound = 0
+upper_bound = 100
+for a in animals:
+    a.add_norm_bounded('Dist to Point', 'bounded', lower_bound, upper_bound)
 
-
+bdds = locomotion.trajectory.compute_all_bdd(animals, variables, start_time, end_time, norm_mode)
+locomotion.write.render_dendrogram(animals, bdds, 'results/', 'dendrogram')
 
 # # IF YOU ARE RUNNING PAIRWISE BDD COMPARISONS ON FULL MODE:
 # a1 = animals[0]
