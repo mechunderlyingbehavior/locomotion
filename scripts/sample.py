@@ -18,9 +18,6 @@ for a in animals:
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
     _, _, _, curvature = locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
     locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
-    print(f"Av Curvature for {a.get_name()} : {np.mean(np.abs(curvature))}")
-    # locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
-    #                                          outdir='results/')
 
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
 #     locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
