@@ -192,7 +192,7 @@ def plot_path(animal, outdir):
     ]
     figure = {
         'data': data,
-        'layout': {'height': 500, 'width': int(400*width/height),
+        'layout': {'height': 500, 'width': int(500*width/height),
                    'title': "Smoothened Coordinates for %s" % animal_name,
                    'plot_bgcolor' : 'white',
                    'xaxis': {'title': "X axis (%s)" % animal.get_output_unit(),
