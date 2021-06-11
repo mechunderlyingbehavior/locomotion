@@ -11,12 +11,14 @@ outfile = PATH_TO_DIRECTORY + "/../data/rodent_sample/rodent_JSON.json"
 info_files = [outfile] # 5 animals in this json
 animals = locomotion.setup_animal_objs(info_files,
                                        smooth_order=3,
-                                       smooth_window=10) # CHANGE THESE TO TEST SMOOTHENING
+                                       smooth_window=5,
+                                       smooth_method="lowess") # CHANGE THESE TO TEST SMOOTHENING
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
     _, _, _, curvature = locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
     locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
+    print(f"Av Curvature for {a.get_name()} : {np.mean(np.abs(curvature))}")
     # locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
     #                                          outdir='results/')
 
