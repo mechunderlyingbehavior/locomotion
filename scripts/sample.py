@@ -7,12 +7,15 @@ PATH_TO_DIRECTORY = os.getcwd()
 import locomotion
 
 outfile = PATH_TO_DIRECTORY + "/../data/rodent_sample/rodent_JSON.json"
-# outfile = PATH_TO_DIRECTORY + "/../samples/sample_check_SS.json"
-info_files = [outfile] # 5 animals in this json
+info_files = [outfile]
+
+# outfile_ss = PATH_TO_DIRECTORY + "/../data/SS_NSS/info_med_SS.json"
+# outfile_nss = PATH_TO_DIRECTORY + "/../data/SS_NSS/info_med_NSS.json"
+# info_files = [outfile_ss, outfile_nss]
 animals = locomotion.setup_animal_objs(info_files,
                                        smooth_order=3,
-                                       smooth_window=5,
-                                       smooth_method="lowess") # CHANGE THESE TO TEST SMOOTHENING
+                                       smooth_window=11,
+                                       smooth_method="savgol") # CHANGE THESE TO TEST SMOOTHENING
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
@@ -24,11 +27,11 @@ for a in animals:
     #                                          outdir='results/')
 
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
-    locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
+    # locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
 
-variables = ['Velocity', 'Curvature', 'Dist to Point']
-norm_mode = ['universal','universal', 'bounded']
-start_time, end_time = 0, 60
+variables = ['Velocity', 'Curvature']
+norm_mode = ['universal','universal']
+start_time, end_time = 0, 120
 
 # # Populating mean and std into animal objects for norm_mode = 'universal'
 raw_vals = {}
