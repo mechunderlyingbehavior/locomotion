@@ -469,7 +469,8 @@ def render_dendrogram(animal_list, results, outdir, outfilename, threshold=0.5):
         text = animal.get_name()
         return f"<span style='color:{str(color)}'> {str(text)} </span>"
 
-    fig.update_layout(xaxis={'ticktext':[tickgen(a) for a in animals_sorted]})
+    fig.update_layout(xaxis={'ticktext':[tickgen(a) for a in animals_sorted],
+                             'range':[0, label_vals[0]+label_vals[-1]]})
     fig.write_image(png_outpath)
     plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
 
