@@ -14,12 +14,22 @@ outfile_nss = PATH_TO_DIRECTORY + "/../data/SS_NSS/info_med_NSS.json"
 info_files = [outfile_ss, outfile_nss]
 animals = locomotion.setup_animal_objs(info_files,
                                        smooth_order=3,
-                                       smooth_window=11,
+                                       smooth_window=25,
                                        smooth_method="savgol") # CHANGE THESE TO TEST SMOOTHENING
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
     _, _, _, curvature = locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
+
+variables = ['Velocity', 'Curvature']
+norm_mode = 'baseline'
+
+times = [(0, 2), (2, 4), (4, 6), (6, 8), (8,  10)]
+for start, end in times:
+    bdds = locomotion.trajectory.compute_all_bdd(animals, variables, start * 60, end * 60, norm_mode)
+    locomotion.write.render_dendrogram(animals, bdds, 'results/',
+                                       f'dendro_{start}-{end}',
+                                       threshold=0.125)
 
     # locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
     # print(f"Av Curvature for {a.get_name()} : {np.mean(np.abs(curvature))}")
@@ -29,8 +39,6 @@ for a in animals:
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
     # locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
 
-variables = ['Velocity', 'Curvature']
-norm_mode = 'baseline'
 # start_time, end_time = 0, 120
 
 # # Populating mean and std into animal objects for norm_mode = 'universal'
@@ -55,12 +63,6 @@ norm_mode = 'baseline'
 # for a in animals:
 #     a.add_norm_bounded('Dist to Point', 'bounded', lower_bound, upper_bound)
 
-times = [(0, 2), (2, 4), (4, 6), (6, 8), (8,  10)]
-for start, end in times:
-    bdds = locomotion.trajectory.compute_all_bdd(animals, variables, start * 60, end * 60, norm_mode)
-    locomotion.write.render_dendrogram(animals, bdds, 'results/',
-                                       f'dendro_{start}-{end}',
-                                       threshold=0.125)
 
 # # IF YOU ARE RUNNING PAIRWISE BDD COMPARISONS ON FULL MODE:
 # a1 = animals[0]
