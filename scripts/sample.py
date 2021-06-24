@@ -6,87 +6,96 @@ PATH_TO_DIRECTORY = os.getcwd()
 # If this works, then locomotion has been installed into your system.
 import locomotion
 
-# outfile = PATH_TO_DIRECTORY + "/../data/rodent_sample/rodent_JSON.json"
-# info_files = [outfile]
+# Setup animal objects using 1 .json file per group
+group_1_json = PATH_TO_DIRECTORY + "/../samples/sample_check_SS.json"
+group_2_json = PATH_TO_DIRECTORY + "/../samples/sample_check_NSS.json"
 
-outfile_ss = PATH_TO_DIRECTORY + "/../data/SS_NSS/info_med_SS.json"
-outfile_nss = PATH_TO_DIRECTORY + "/../data/SS_NSS/info_med_NSS.json"
-info_files = [outfile_ss, outfile_nss]
+info_files = [group_1_json, group_2_json]
 animals = locomotion.setup_animal_objs(info_files,
-                                       smooth_order=3,
-                                       smooth_window=25,
-                                       smooth_method="savgol") # CHANGE THESE TO TEST SMOOTHENING
+                                       smooth_order=3, # Degree of Polynomial used for Smoothing
+                                       smooth_window=25, # Length of Half-Window
+                                       smooth_method="savgol")
+
+# Before beginning analysis, check the smoothening by plotting animal paths
 for a in animals:
     locomotion.write.plot_path(a, 'results/')
+
+# Populate each animal objects with variables
+for a in animals:
+    # Setup Velocity and Curvature for BDD
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
-    _, _, _, curvature = locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
+    locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
 
-variables = ['Velocity', 'Curvature']
-norm_mode = 'baseline'
+    # Setup Distance to Point using "additional_info" in .json files for BDD
+    locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
 
-times = [(0, 2), (2, 4), (4, 6), (6, 8), (8,  10)]
-for start, end in times:
-    bdds = locomotion.trajectory.compute_all_bdd(animals, variables, start * 60, end * 60, norm_mode)
-    locomotion.write.render_dendrogram(animals, bdds, 'results/',
-                                       f'dendro_{start}-{end}',
-                                       threshold=0.125)
+    # Setup surface data for CSD and Plot Heatmap for checking
+    locomotion.heatmap.populate_surface_data(a, plot_heatmap=True, outdir='results/')
 
-    # locomotion.write.render_single_animal_graph(curvature, a, 'Curvature', 'results/')
-    # print(f"Av Curvature for {a.get_name()} : {np.mean(np.abs(curvature))}")
-    # locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
-    #                                          outdir='results/')
+# Defining 'universal' normalization by using mean and std of all animals (For Velocity and Curvature)
+raw_vals = {'Velocity':[], 'Curvature':[]}
 
+# Extract all values from all animals
+for a in animals:
+    for var in ['Velocity', 'Curvature']:
+        raw_vals[var].extend(a.get_raw_vals(var))
 
-    #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
-    # locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
+# Calculate mean and std and use it to define new normalization method
+for var in ['Velocity', 'Curvature']:
+    mean = np.mean(raw_vals[var])
+    std = np.std(raw_vals[var])
+    for a in animals:
+        a.add_norm_standard(var, 'universal', mean, std)
 
-# start_time, end_time = 0, 120
+# Define bounded normalization method using predefined lower and upper bounds for Dist to Point
+lower_bound = 0
+upper_bound = 100
+for a in animals:
+    a.add_norm_bounded('Dist to Point', 'bounded', lower_bound, upper_bound)
 
-# # Populating mean and std into animal objects for norm_mode = 'universal'
-# raw_vals = {}
-# for var in variables:
-#     raw_vals.update({var:[]})
+# Running BDD Experiments
+variables = ['Velocity', 'Curvature', 'Dist to Point']
+norm_mode = ['universal', 'universal', 'bounded'] # List rather than Str to define different norm methods
+start_time, end_time = 0, 120 # in seconds
 
-# for a in animals:
-#     for var in variables:
-#         raw_vals[var].extend(a.get_raw_vals(var, start_time, end_time))
+# EXAMPLE 1: Calculate BDD between all animals
+bdds = locomotion.trajectory.compute_all_bdd(animals, variables, start_time, end_time, norm_mode)
 
-# for var in variables[:2]:
-#     mean = np.mean(raw_vals[var])
-#     std = np.std(raw_vals[var])
-#     for a in animals:
-#         a.add_norm_standard(var, 'universal', mean, std)
+# Print out a Dendrogram using caluclated BDD matrix
+locomotion.write.render_dendrogram(animals, bdds, 'results/',
+                                   f'dendro_{start_time}-{end_time}',
+                                   threshold=0.125)
+# Plot heatmap of distances
+output_directory, outfile_name = "results/", "bdd_heatmap"
+try: # Safety check to ensure that data folder exists, and makes it otherwise.
+        os.mkdir(output_directory)
+except FileExistsError:
+   pass
 
-# # NEW BOUNDED NORMALIZATION FOR DISTANCE TYPE METHODS
-# # TODO: Find proper bounds for Dist to Point
-# lower_bound = 0
-# upper_bound = 100
-# for a in animals:
-#     a.add_norm_bounded('Dist to Point', 'bounded', lower_bound, upper_bound)
+sort_table, square_table = False, False
+color_min, color_max = 0.05,0.15
+locomotion.write.post_process(animals, bdds, output_directory, outfile_name,
+                              sort_table, square_table, color_min, color_max )
 
+# EXAMPLE 2 : Calculate pairwise BDD with fullmode prints
+a1 = animals[0]
+a2 = animals[1]
 
-# # IF YOU ARE RUNNING PAIRWISE BDD COMPARISONS ON FULL MODE:
-# a1 = animals[0]
-# a2 = animals[1]
-# # a3 = animals[2]
+bdd_12 = locomotion.trajectory.compute_one_bdd(a1, a2, variables,
+                                               start_time, end_time,
+                                               start_time, end_time,
+                                               norm_mode, fullmode=True, outdir='results/')
 
+# EXAMPLE 3 : Calculate CSD between all animals
+csds = locomotion.heatmap.compute_all_csd( animals )
 
-# # a1 and a2
-# bdd_12 = locomotion.trajectory.compute_one_bdd(a1, a2, variables,
-#                                                start_time, end_time,
-#                                                start_time, end_time,
-#                                                norm_mode, fullmode=True, outdir='results/')
+output_directory, outfile_name = "results/", "csd_heatmap"
+try: # Safety check to ensure that data folder exists, and makes it otherwise.
+        os.mkdir(output_directory)
+except FileExistsError:
+   pass
 
-# a1 and a3
-# bdd_13 = locomotion.trajectory.compute_one_bdd(a1, a3, variables,
-#                                                start_time, end_time,
-#                                                start_time, end_time,
-#                                                norm_mode, fullmode=True, outdir='BDD_13/')
-
-# # a2 and a3
-# bdd_23 = locomotion.trajectory.compute_one_bdd(a2, a3, variables,
-#                                                start_time, end_time,
-#                                                start_time, end_time,
-#                                                norm_mode, fullmode=True, outdir='BDD_23/')
-
-# # OTHERWISE, just run locomotion.trajectory.compute_all_bdd() and other write stuff.
+sort_table, square_table = False, False
+color_min, color_max = 0.002,0.008
+locomotion.write.post_process(animals, csds, output_directory, outfile_name,
+                              sort_table, square_table, color_min, color_max )

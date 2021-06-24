@@ -11,6 +11,7 @@ samples/info_med_data/*
 samples/sample_check.json
 scripts/compute*.py
 scripts/results/
+scripts/scratch.py
 tests/robustness_tests
 tests/heatmap
 tests/write_and_window

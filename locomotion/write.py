@@ -59,11 +59,11 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
                 dists[i][j] = dists[j][i]
         write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
         write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    outfilename+".html", color_min, color_max)
+                                    outfilename, color_min, color_max)
     else:
         write_dist_table_to_csv(animal_list, dists, outdir, outfilename+".csv")
         write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    outfilename+".html", color_min, color_max)
+                                    outfilename, color_min, color_max)
     if sort_table:
         dist_means = {}
         for i in range(num_animals):
@@ -90,7 +90,7 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
         write_dist_table_to_csv(animal_list, dists, outdir,
                                 "%s" % outfilename+"_sorted.csv")
         write_dist_table_to_heatmap(animal_list, dists, outdir,
-                                    "%s" % outfilename+"_sorted.html",
+                                    "%s" % outfilename+"_sorted",
                                     color_min, color_max)
 
 
@@ -561,7 +561,8 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
     """
     # pylint:disable=too-many-arguments
     nums = len(animal_list)
-    outpath = os.path.join(outdir, outfilename)
+    html_outpath = os.path.join(outdir, outfilename + ".html")
+    png_outpath = os.path.join(outdir, outfilename + ".png")
     figure = {'data':[], 'layout':{}}
     trace = go.Heatmap(z=[[results[nums-i-1][j] for j in range(nums)]
                           for i in range(nums)],
@@ -592,8 +593,10 @@ def write_dist_table_to_heatmap(animal_list, results, outdir,
                                          'size':7},
                                    textangle=0, showarrow=False)
                               for i in range(nums)])
-    plotly.offline.plot(figure, filename=outpath)
-    print("LOG: Plot the heatmap in %s" % outpath)
+    fig = go.Figure(figure)
+    fig.write_image(png_outpath)
+    plotly.offline.plot(figure, filename=html_outpath, auto_open=False)
+    print("LOG: Plot the heatmap in %s" % html_outpath)
 
 
 def write_off(animal_obj, coordinates, outdir, filename):
