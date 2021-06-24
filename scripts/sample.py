@@ -36,6 +36,7 @@ for start, end in times:
     # locomotion.heatmap.populate_surface_data(a, plot_heatmap=True,
     #                                          outdir='results/')
 
+
     #### EVERYTHING BELOW THIS POINT IS NOT NEEDED FOR SMOOTHENING CHECK ####
     # locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
 
