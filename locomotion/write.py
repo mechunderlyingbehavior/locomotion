@@ -17,8 +17,10 @@ import operator
 import numpy as np
 import plotly
 import plotly.express as px
+import plotly.figure_factory as ff
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from scipy.cluster.hierarchy import linkage
 
 COLORS = plotly.colors.qualitative.Plotly
 
@@ -424,6 +426,53 @@ def render_aligned_graphs(points_0, points_1, alignment,
     fig.write_image(png_outpath)
     plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
     print("Saved the alignment graphs in directory %s" % outdir)
+
+
+def render_dendrogram(animal_list, results, outdir, outfilename, threshold=0.5):
+    """ Renders a Dendrogram given a BDD or CSD matrix.
+
+    Given an animal_list of length n and an n by n triangular matrix of distances
+    between the animal objects, this function renders a dendrogram using Plotly and
+    prints the result (in both .png and .html form) to outdir.
+
+    Parameters
+    ----------
+    animal_list : list of Animal() objects
+        Corresponds to the animals that the pair-wise distances were calculated for.
+        Order is assumed to match the order of the results.
+    results : 2D array of floats (upper-triangular, empty diagonal)
+        results[i][j] is the distances between trajectories of animal[i] and animal[j].
+    outdir : str
+        Absolute path to the output directory for the .csv files exported by the function.
+    outfilename : str
+        Name that will be given to the files printed by this function.
+    threshold : float
+        Value at which the separation of clusters in the dendrogram will be made.
+    """
+    html_outpath = os.path.join(outdir, outfilename + '.html').replace(' ', '')
+    png_outpath = os.path.join(outdir, outfilename + '.png').replace(' ', '')
+
+    # Flatten results into condensed distance array
+    dists = [item for sublist in results for item in sublist]
+    dists = np.array([[d for d in dists if d != '']])
+
+    fig = ff.create_dendrogram(dists,
+                               labels=animal_list,
+                               distfun=lambda x:x[0],
+                               linkagefun=lambda y:linkage(y, 'ward'),
+                               color_threshold=threshold)
+    animals_sorted = fig['layout']['xaxis']['ticktext']
+    label_vals = fig['layout']['xaxis']['tickvals']
+
+    def tickgen(animal):
+        color = COLORS[animal.get_group()]
+        text = animal.get_name()
+        return f"<span style='color:{str(color)}'> {str(text)} </span>"
+
+    fig.update_layout(xaxis={'ticktext':[tickgen(a) for a in animals_sorted],
+                             'range':[0, label_vals[0]+label_vals[-1]]})
+    fig.write_image(png_outpath)
+    plotly.offline.plot(fig, filename=html_outpath, auto_open=False)
 
 
 def render_single_animal_graph(points, animal_obj, varname, outdir):
