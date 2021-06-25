@@ -11,23 +11,27 @@ group_1_json = PATH_TO_DIRECTORY + "/../samples/sample_check_SS.json"
 group_2_json = PATH_TO_DIRECTORY + "/../samples/sample_check_NSS.json"
 
 info_files = [group_1_json, group_2_json]
-animals = locomotion.setup_animal_objs(info_files,
-                                       smooth_order=3, # Degree of Polynomial used for Smoothing
-                                       smooth_window=25, # Length of Half-Window
-                                       smooth_method="savgol")
-
-# Before beginning analysis, check the smoothening by plotting animal paths
-for a in animals:
-    locomotion.write.plot_path(a, 'results/')
+animals = locomotion.setup_animal_objs(info_files)
 
 # Populate each animal objects with variables
 for a in animals:
+    # Setup smoothened coordinate data
+    mse = locomotion.trajectory.populate_curve_data(a,
+                                                    smooth_order=3,# Degree of Polynomial used for Smoothing
+                                                    smooth_window=25,# Length of Half-Window
+                                                    smooth_method='savgol')
+
+    # Print path to check smoothening
+    locomotion.write.plot_path(a, 'results/', 'smooth_X', 'smooth_Y')
+    print(f"MSE of smoothening for {a.get_name()} is {mse}.")
+
     # Setup Velocity and Curvature for BDD
     first_deriv, velocity = locomotion.trajectory.populate_velocity( a )
     locomotion.trajectory.populate_curvature(a, first_deriv=first_deriv, velocity=velocity)
 
     # Setup Distance to Point using "additional_info" in .json files for BDD
-    locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point', col_names=['X', 'Y'])
+    locomotion.trajectory.populate_distance_from_point(a, "point", 'Dist to Point',
+                                                       col_names=['smooth_X', 'smooth_Y'])
 
     # Setup surface data for CSD and Plot Heatmap for checking
     locomotion.heatmap.populate_surface_data(a, plot_heatmap=True, outdir='results/')
@@ -38,7 +42,7 @@ raw_vals = {'Velocity':[], 'Curvature':[]}
 # Extract all values from all animals
 for a in animals:
     for var in ['Velocity', 'Curvature']:
-        raw_vals[var].extend(a.get_raw_vals(var))
+        raw_vals[var].extend(a.get_vals(var))
 
 # Calculate mean and std and use it to define new normalization method
 for var in ['Velocity', 'Curvature']:

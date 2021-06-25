@@ -19,11 +19,8 @@ import csv
 import re
 import json
 import warnings
-from math import ceil
 import numpy as np
 from scipy.special import expit
-from scipy.signal import savgol_filter
-from numpy.polynomial import polynomial as P
 
 ####################
 ### Animal class ###
@@ -67,7 +64,7 @@ class Animal():
         self.__y_lims = json_item["capture_attributes"]["y_lims"] # Tuple of Pixels
         self.__dim_x = self.__x_lims[1] - self.__x_lims[0]
         self.__dim_y = self.__y_lims[1] - self.__y_lims[0]
-        self.__raw_vals = {}
+        self.__vals = {}
         self.__norm_info = {}
         self.__boundary_vertices = None
         self.__boundary_edges = None
@@ -121,7 +118,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in dict self.__raw_vals.
+            Hashable key pointing to variables stored in dict self.__vals.
         scope : str
             Hashable key used to define new scope in self.__norm_info.
         lower : float
@@ -144,7 +141,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in dict self.__raw_vals.
+            Hashable key pointing to variables stored in dict self.__vals.
         scope : str
             Hashable key used to define new scope in self.__norm_info.
         mean : float
@@ -157,19 +154,34 @@ class Animal():
         self.__norm_info[var_name].update({scope:{"mean": mean,
                                                   "std" : std}})
 
-    def add_raw_vals(self, var_name, val_list):
-        """ Updates dictionary self.__raw_vals with new data.
+    def add_vals(self, var_name, val_list):
+        """ Updates dictionary self.__vals with new data.
 
         Function creates a new entry in the dictionary, with key var_name and value val_list.
 
         Parameters
         ----------
         var_name : str
-            Hashable key that will be used to point to variable in self.__raw_vals.
+            Hashable key that will be used to point to variable in self.__vals.
         val_list : list of floats
-            List of data values corresponding to var_name to be stored in self.__raw_vals.
+            List of data values corresponding to var_name to be stored in self.__vals.
         """
-        self.__raw_vals.update({var_name:val_list})
+        self.__vals.update({var_name:val_list})
+
+    def check_existing_val(self, var_name):
+        """Checks if var_name is already stored in animal object.
+
+        Parameters
+        ----------
+        var_name: str
+            Hashable key to check for in self.__vals.
+
+        Returns
+        -------
+        bool
+            Function returns True if var_name exists in self.__vals.
+        """
+        return var_name in self.__vals
 
     def check_existing_scope(self, var_name, scope):
         """Checks if scope is already defined for var_name.
@@ -177,7 +189,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__vals.
         scope : str
             Hashable key to check if exists in self.__norm_info[var_name].
 
@@ -204,7 +216,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__vals.
         scope : str
             Hashable key pointing to scope stored in self.__norm_info[var_name].
 
@@ -235,7 +247,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in dict self.__raw_vals.
+            Hashable key pointing to variable stored in dict self.__vals.
         """
         self.__norm_info.update({var_name:{}})
 
@@ -352,22 +364,22 @@ class Animal():
                              % (info_key, self.__name)) from None
         return value
 
-    def get_mult_raw_vals(self, var_names, start_frame=None, end_frame=None):
-        """ Retrieve multiple raw values stored in Animal object.
+    def get_mult_vals(self, var_names, start_frame=None, end_frame=None):
+        """ Retrieve multiple values stored in Animal object.
 
-        Runs self.get_raw_vals for all the variables in var_names stored in Animal object.
+        Runs self.get_vals for all the variables in var_names stored in Animal object.
         If no start_frame or end_frame is given, then the experiment start / end time is used.
 
         Parameters
         ----------
         var_names : list of strs
-            List of hashable keys pointing to variables stored in self.__raw_vals.
+            List of hashable keys pointing to variables stored in self.__vals.
         start_frame : int, optional
             Starting frame of portion to extract. Default value : None.
         end_frame : int, optional
             Ending frame of portion to extract. Default value : None.
         """
-        return [self.get_raw_vals(v, start_frame, end_frame) for v in var_names]
+        return [self.get_vals(v, start_frame, end_frame) for v in var_names]
 
     def get_norm_bounds(self, var_name, scope):
         """ Returns the stored lower and upper bounds for var_name over scope period.
@@ -378,7 +390,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__vals.
         scope : str
             Hashable key pointing to predefined scope in self.__norm_info.
 
@@ -407,7 +419,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__vals.
         scope : str
             Hashable key pointing to predefined scope in self.__norm_info.
 
@@ -432,7 +444,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__vals.
 
         Returns
         -------
@@ -447,16 +459,16 @@ class Animal():
                              % wrong_key) from None
         return norm_info.keys()
 
-    def get_raw_vals(self, var_name, start_frame=None, end_frame=None):
-        """ Return the raw values with key var_name stored in Animal object.
+    def get_vals(self, var_name, start_frame=None, end_frame=None):
+        """ Return the values with key var_name stored in Animal object.
 
-        Retrieves the raw values stored in self.__raw_vals of the Animal object. If no start_frame
+        Retrieves the values stored in self.__vals of the Animal object. If no start_frame
         or end_frame is given, then the experiment start / end time is used.
 
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in self.__raw_vals.
+            Hashable key pointing to variables stored in self.__vals.
         start_frame : int, optional
             Starting frame of portion to extract. Default value : None.
         end_frame : int, optional
@@ -468,16 +480,16 @@ class Animal():
             end_frame = self.__end*self.__frame_rate
         # logic check
         try:
-            values = self.__raw_vals[var_name]
+            values = self.__vals[var_name]
         except KeyError:
-            raise ValueError("get_raw_vals: %s not found in animal object."
+            raise ValueError("get_vals: %s not found in animal object."
                              % (var_name)) from None
         if start_frame > end_frame:
-            raise ValueError("get_raw_vals: Start frame is after End frame.")
+            raise ValueError("get_vals: Start frame is after End frame.")
         if start_frame > len(values):
-            raise ValueError("get_raw_vals: Start frame comes after existing frames.")
+            raise ValueError("get_vals: Start frame comes after existing frames.")
         if end_frame > len(values):
-            warnings.warn("get_raw_vals: End frame comes after existing frames. "
+            warnings.warn("get_vals: End frame comes after existing frames. "
                           "Defaulting to the final frame stored.")
         return values[start_frame:end_frame]
 
@@ -492,7 +504,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variable stored in self.__raw_vals.
+            Hashable key pointing to variable stored in self.__vals.
         scope : str
             Hashable key pointing to predefined scope in self.__norm_info.
 
@@ -513,7 +525,7 @@ class Animal():
         return means, stds
 
     def populate_stats(self, var_name, scope, start_frame, end_frame):
-        """ Calculates and updates self.__norm_info for raw value var_name.
+        """ Calculates and updates self.__norm_info for value var_name.
 
         Calculates statistics (means and standard deviation) of var_name over a specific scope,
         as defined by start_frame and end_frame. Uses the norm() method to do so. The function
@@ -523,7 +535,7 @@ class Animal():
         Parameters
         ----------
         var_name : str
-            Hashable key pointing to variables stored in dict self.__raw_vals.
+            Hashable key pointing to variables stored in dict self.__vals.
         scope : str
             Hashable key that will be used to point to scope defined by start_frame and end_frame.
         start_frame : int
@@ -533,7 +545,7 @@ class Animal():
         """
         if var_name not in self.__norm_info:
             self.init_norm_dict(var_name)
-        mean, std = calculate_norm_stats(self.__raw_vals[var_name][start_frame:end_frame])
+        mean, std = calculate_norm_stats(self.__vals[var_name][start_frame:end_frame])
         self.__norm_info[var_name].update({scope:{"mean": mean,
                                                   "std" : std}})
 
@@ -892,8 +904,7 @@ def read_info(infile_path):
     return info
 
 
-def setup_animal_objs(infofiles, name_list=None, smooth_order=3,
-                      smooth_window=20,smooth_method="savgol"):
+def setup_animal_objs(infofiles, name_list=None):
     """ Generates and initializes Animal objects from a list of JSONs.
 
     Given a list of JSON files, generate and return the Animal object. If name_list is
@@ -906,13 +917,7 @@ def setup_animal_objs(infofiles, name_list=None, smooth_order=3,
         as a dict, which should contain an entry for each animal in the group.
     name_list : list of strs, optional
         Names of animals to be generated.
-    smooth_order : int
-        Order of the polynomial used in the smoothening function. Default value : 3.
-    smooth_window : int
-        Half-window of frames used for smoothening. Default value : 20.
-    smooth_method : str
-        Method for smoothing. Should be either "savgol" or "lowess".
-        Default value: "savgol"
+
     Returns
     -------
     objs : list of Animal() objects
@@ -922,26 +927,18 @@ def setup_animal_objs(infofiles, name_list=None, smooth_order=3,
     # check if infofiles is a list:
     if not isinstance(infofiles, list):
         raise TypeError("setup_animal_objs: infofiles variable needs to be a list.")
-    if not isinstance(smooth_order, int):
-        raise TypeError("setup_animal_objs : smooth_order must be an int.")
-    if not isinstance(smooth_window, int):
-        raise TypeError("setup_animal_objs : smooth_window must be an int.")
     objs = []
     for group_no, infofile in enumerate(infofiles):
         info = read_info(infofile)
         if name_list is not None:
-            objs += [_init_animal(item, group_no, smooth_order=smooth_order,
-                                  smooth_window=smooth_window,
-                                  smooth_method=smooth_method) for item in info if
+            objs += [_init_animal(item, group_no) for item in info if
                      item["name"] in name_list]
         else:
-            objs += [_init_animal(item, group_no, smooth_order=smooth_order,
-                                  smooth_window=smooth_window,
-                                  smooth_method=smooth_method) for item in info]
+            objs += [_init_animal(item, group_no) for item in info]
     return objs
 
 
-def setup_raw_data(animal, smooth_order, smooth_window, smooth_method):
+def setup_raw_data(animal):
     """ Extracts the raw data from the data file linked in the Animal() object.
 
     Store the raw data values from the data file location of the animal object
@@ -951,12 +948,6 @@ def setup_raw_data(animal, smooth_order, smooth_window, smooth_method):
     ----------
     animal : Animal() object
         The Animal() object that the raw data is to be set up for.
-    smooth_order : int
-        Order of the polynomial used in the smoothening function.
-    smooth_window : int
-        Half-window of frames used for smoothening.
-    smooth_method : str
-        Method for smoothing. Should be either "savgol" or "lowess".
     """
     # pylint: disable=too-many-locals
     # Function is complicated, the local variables are necessary.
@@ -1000,24 +991,17 @@ def setup_raw_data(animal, smooth_order, smooth_window, smooth_method):
             x_vals.append(float(x_val)/animal.get_unit_conversion()) #scaling for pixel density
             y_vals.append(float(y_val)/animal.get_unit_conversion())
 
-    smooth_x = _smooth(np.array(x_vals), smooth_order, smooth_window, smooth_method)
-    smooth_y = _smooth(np.array(y_vals), smooth_order, smooth_window, smooth_method)
-
-    mse = (np.linalg.norm(np.array([smooth_x, smooth_y]) -
-                          np.array([x_vals, y_vals]))**2).mean()
-    print(f"MSE of Smoothed Data for {animal.get_name()}: {mse}")
-
-    animal.add_raw_vals('X', smooth_x)
-    animal.add_raw_vals('Y', smooth_y)
+    animal.add_vals('raw_X', np.array(x_vals))
+    animal.add_vals('raw_Y', np.array(y_vals))
 
     baseline_start, baseline_end = animal.get_baseline_times()
     baseline_start_frame = calculate_frame_num(animal, baseline_start)
     baseline_end_frame = calculate_frame_num(animal, baseline_end)
-    animal.populate_stats('X', 'baseline', baseline_start_frame, baseline_end_frame)
-    animal.populate_stats('Y', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.populate_stats('raw_X', 'baseline', baseline_start_frame, baseline_end_frame)
+    animal.populate_stats('raw_Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
-def _init_animal(json_item, group_no, smooth_order, smooth_window, smooth_method):
+def _init_animal(json_item, group_no):
     """ Initializes the Animal() object.
 
     Given a json entry, extracts the relevant information and returns an initialized
@@ -1030,12 +1014,6 @@ def _init_animal(json_item, group_no, smooth_order, smooth_window, smooth_method
         object.
     group_no : int
         Group number that the Animal() object is a part of.
-    smooth_order : int
-        Order of the polynomial used in the smoothening function.
-    smooth_window : int
-        Window of frames used for smoothening. Must be odd.
-    smooth_method : str
-        Method for smoothing. Should be either "savgol" or "lowess".
 
     Returns
     -------
@@ -1043,10 +1021,7 @@ def _init_animal(json_item, group_no, smooth_order, smooth_window, smooth_method
         Initialized Animal() object.
     """
     animal = Animal(json_item)
-    setup_raw_data(animal,
-                   smooth_order=smooth_order,
-                   smooth_window=smooth_window,
-                   smooth_method=smooth_method)
+    setup_raw_data(animal)
     animal.set_group(group_no)
     return animal
 
@@ -1116,78 +1091,3 @@ def _remove_outliers(data):
     idx = (data > first_quart - 1.5 * iqr) & (data < third_quart + 1.5 * iqr)
     return data[idx]
 
-
-def _smooth(sequence, degree, half_window, smooth_method = "savgol"):
-    """ Smooths sequence by applying Savitzky-Golay smoothing.
-
-    Parameters
-    ----------
-    sequence : list of floats
-        Sequence to be smoothed.
-    degree : int
-        Degree of polynomials to be used for fitting
-    half_window : int
-        Used to determine window length. Window = (2 * half_window) + 1
-    smooth_method : str
-        Method for smoothing. Should be either "savgol" or "lowess".
-        Default value: "savgol".
-
-    Returns
-    -------
-    smoothed : list of floats
-        Smoothed sequence.
-    """
-    # Check smooth_method
-    if smooth_method not in ["savgol", "lowess"]:
-        raise ValueError(f"{smooth_method} not a valid smoothening method.")
-
-    n = len(sequence)
-    window = (half_window * 2) + 1
-
-    if smooth_method == "savgol":
-        smoothed = savgol_filter(sequence, window, degree)
-
-    if smooth_method == "lowess":
-        fitted = np.array([0.0 for _ in sequence])
-        xarr = np.arange(-half_window, half_window+1)
-
-        # Step 1: Weighted Polyfit
-        weight = (1 - (np.abs(xarr)/half_window) ** 3) ** 3
-        for i in range(half_window, n-half_window):
-            z = P.polyfit(xarr, sequence[i-half_window:i+half_window+1],
-                          deg=degree, w=weight)
-            fitted[i] = P.polyval(0.0, z)
-
-        z = P.polyfit(xarr, sequence[:window], deg=degree, w=weight)
-        for i in range(half_window):
-            fitted[i] = P.polyval(xarr[i], z)
-
-        z = P.polyfit(xarr, sequence[-window:], deg=degree, w=weight)
-        for i in range(half_window):
-            fitted[n-half_window+i] = P.polyval(xarr[i+half_window+1], z)
-
-        smoothed = fitted
-        # # Step 2: Running Median
-        res = sequence - fitted
-        def new_weights(i):
-            res_interval = res[i-half_window:i+half_window+1]
-            med = np.median(np.abs(res_interval))
-            deltas = (1 - (res_interval/(6 * med)) ** 2) ** 2
-            deltas[np.abs(res_interval) > 6 * med] = 0
-            return deltas * weight
-
-        smoothed = np.array([0.0 for _ in sequence])
-        for i in range(half_window, n-half_window):
-            z = P.polyfit(xarr, sequence[i-half_window:i+half_window+1],
-                          deg=degree, w=new_weights(i))
-            smoothed[i] = P.polyval(0.0, z)
-
-        z = P.polyfit(xarr, sequence[:window], deg=degree, w=new_weights(half_window))
-        for i in range(half_window):
-            smoothed[i] = P.polyval(xarr[i], z)
-
-        z = P.polyfit(xarr, sequence[-window:], deg=degree, w=new_weights(n-half_window-1))
-        for i in range(half_window):
-            smoothed[n-half_window+i] = P.polyval(xarr[i+half_window+1], z)
-
-    return smoothed

@@ -94,7 +94,7 @@ def post_process(animal_list, dists, outdir, outfilename, sort_table,
                                     color_min, color_max)
 
 
-def plot_heatmap(animal, outdir, add_path=False):
+def plot_heatmap(animal, outdir, add_path=False, path_x='raw_X', path_y='raw_Y'):
     """ Plot heatmap representing the frequencies used for CSD.
 
     Given a 2D matrix of frequencies where frequencies[x][y] represents the number of
@@ -111,6 +111,12 @@ def plot_heatmap(animal, outdir, add_path=False):
         File path to output directory where the output is to be saved.
     add_path: bool
         If True, the path of the animal will be overlayed over the heatmap plot.
+    path_x: str, optional
+        Val name of the X value. Should be found in animal.__vals.
+        Default value = 'raw_X'
+    path_y: str, optional
+        Val name of the Y value. Should be found in animal.__vals.
+        Default value = 'raw_Y'
     """
     animal_name = animal.get_name()
     freqs = animal.get_frequencies()
@@ -139,8 +145,8 @@ def plot_heatmap(animal, outdir, add_path=False):
     figure['data'].append(trace)
 
     if add_path:
-        x_vals = animal.get_raw_vals('X')
-        y_vals = animal.get_raw_vals('Y')
+        x_vals = animal.get_vals(path_x)
+        y_vals = animal.get_vals(path_y)
         path = go.Scatter(x=x_vals, y=y_vals,
                           mode='lines', showlegend=False,
                           marker={'color':'rgba(0,255,255,0.7)'},
@@ -162,7 +168,7 @@ def plot_heatmap(animal, outdir, add_path=False):
     print("Saved heatmap in %s" % html_outpath)
 
 
-def plot_path(animal, outdir):
+def plot_path(animal, outdir, x_val='raw_X', y_val='raw_Y'):
     """ Plot path of animal.
 
     Given the X and Y coordinates stored in animal, plot the path of the animal,
@@ -174,6 +180,12 @@ def plot_path(animal, outdir):
         Animal object containing the coordinate data to be plotted.
     outdir: str
         File path to output directory where the output is to be saved.
+    x_val: str, optional
+        Val name of the X value. Should be found in animal.__vals.
+        Default value = 'raw_X'
+    y_val: str, optional
+        Val name of the Y value. Should be found in animal.__vals.
+        Default value = 'raw_Y'
     """
     animal_name = animal.get_name()
     filename = "plot_%s_smoothened_path" % (animal_name)
@@ -182,8 +194,8 @@ def plot_path(animal, outdir):
 
     x_lims, y_lims = animal.get_lims()
     width, height = x_lims[1]-x_lims[0], y_lims[1]-y_lims[0]
-    x_vals = animal.get_raw_vals('X')
-    y_vals = animal.get_raw_vals('Y')
+    x_vals = animal.get_vals(x_val)
+    y_vals = animal.get_vals(y_val)
 
     data = [
         go.Scatter(x=x_vals, y=y_vals,

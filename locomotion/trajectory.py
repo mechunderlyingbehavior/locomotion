@@ -18,6 +18,8 @@ import numpy as np
 import dtw
 import locomotion.write as write
 import locomotion.animal as animal
+from scipy.signal import savgol_filter
+from numpy.polynomial import polynomial as P
 
 #Static Variables
 EPSILON = 0.0001
@@ -26,6 +28,84 @@ EPSILON = 0.0001
 ### Main Functions ###
 ######################
 
+
+def populate_curve_data(animal_obj,
+                        smooth_order=None,
+                        smooth_window=None,
+                        smooth_method='savgol',
+                        raw_vals=['raw_X', 'raw_Y'],
+                        new_vals=['smooth_X', 'smooth_Y']):
+    """Smoothens raw coordinate data and stores them in animal object.
+
+    Given various parameters for smoothing, this function smoothens raw
+    coordinate values, given by raw_vals, and stores them in animal_obj.__vals
+    under new_vals. If any of the smoothening parameters are not provided, this
+    function will provide a default option. TODO: Function should calculate a
+    possible optimal smoothening window if no parameters are provided.
+
+    Parameters
+    ----------
+    animal_obj : Animal() object
+        Initialized Animal() object, which should already contain coordinate data.
+    smooth_order : int, optional
+        Order of the polynomial used in the smoothening function.
+    smooth_window : int, optional
+        Half-window of frames used for smoothening.
+    smooth_method : str, optional
+        Method for smoothing. Should be either "savgol" or "lowess".
+    raw_vals : list of strs, optional
+        Names of data columns used for calculations. Must coincide with data stored
+        in animal_obj.__vals. Default value = ['raw_X', 'raw_Y']
+    new_vals : list of strs, optional
+        New names assigned to smoothened coordinate data. The list should be of the
+        same length as raw_vals, and the column names should not be keys in
+        animal_obj.__vals. Default value = ['smooth_X', 'smooth_Y']
+
+    Returns
+    -------
+    mse : float
+        Mean Squared Error between raw data and smoothened data.
+    """
+    # Checks
+    if not isinstance(smooth_order, int):
+        raise TypeError("setup_animal_objs : smooth_order must be an int.")
+    if not isinstance(smooth_window, int):
+        raise TypeError("setup_animal_objs : smooth_window must be an int.")
+    if len(raw_vals) != len(new_vals):
+        raise ValueError("raw_vals and new_vals need to have the same length.")
+    for new in new_vals:
+        if animal_obj.check_existing_val(new):
+            raise KeyError(f"New column name {new} already exists in animal object.")
+
+    # If no smooth parameters are given, replace with defaults (for now)
+    if smooth_order == None or smooth_window == None:
+        smooth_order = 3
+        smooth_window = 10
+
+    # Extract raw values
+    baseline_start, baseline_end = animal_obj.get_baseline_times()
+    baseline_start_frame = animal.calculate_frame_num(animal_obj, baseline_start)
+    baseline_end_frame = animal.calculate_frame_num(animal_obj, baseline_end)
+    raw = []
+    smooth = []
+    for i, col in enumerate(raw_vals):
+        try:
+            coords = (animal_obj.get_vals(col))
+            raw.append(coords)
+        except KeyError:
+            raise KeyError(f"Raw data {col} does not exist in animal object.")
+        smooth_vals = _smooth(coords, smooth_order, smooth_window, smooth_method)
+        animal_obj.add_vals(new_vals[i], smooth_vals)
+        animal_obj.populate_stats(new_vals[i], 'baseline',
+                                  baseline_start_frame, baseline_end_frame)
+        smooth.append(smooth_vals)
+
+    if len(raw_vals) <= 2:
+        mse = (np.linalg.norm(np.array(smooth) - np.array(raw))**2).mean()
+    else:
+        mse = None
+
+    return mse
 
 def populate_velocity(animal_obj, col_names=None):
     """Computes the velocity given coordinates stored in animal_obj.
@@ -42,7 +122,7 @@ def populate_velocity(animal_obj, col_names=None):
         Initialized Animal() object, which should already contain coordinate data.
     col_names : list of strs, optional
         Names of data columns used for calculations. Must coincide with data stored in
-        animal_obj.__raw_vals. If not given, defaults to ['X', 'Y']
+        animal_obj.__vals. If not given, defaults to ['smooth_X','smooth_Y']
 
     Returns
     -------
@@ -54,7 +134,7 @@ def populate_velocity(animal_obj, col_names=None):
     """
     # Extract and smoothens coordinate data
     if col_names is None:
-        col_names = ['X', 'Y']
+        col_names = ['smooth_X', 'smooth_Y']
     n_dims = len(col_names)
     if n_dims < 2 or n_dims > 3:
         raise ValueError("length of col_names is %s, but it should be 2 or 3."
@@ -62,7 +142,7 @@ def populate_velocity(animal_obj, col_names=None):
     coords = []
     for col in col_names:
         try:
-            coords.append(animal_obj.get_raw_vals(col))
+            coords.append(animal_obj.get_vals(col))
         except KeyError:
             raise ValueError("column name %s does not exist in animal dataset"
                              % (col)) from None
@@ -77,7 +157,7 @@ def populate_velocity(animal_obj, col_names=None):
     start_time, end_time = animal_obj.get_baseline_times()
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    animal_obj.add_raw_vals('Velocity', velocity)
+    animal_obj.add_vals('Velocity', velocity)
     animal_obj.populate_stats('Velocity', 'baseline', start_frame, end_frame)
     return first_deriv, velocity
 
@@ -96,8 +176,8 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
         Initialized Animal() object, which should already contain coordinate data.
     col_names : list of strs, optional
         Names of data columns used for calculations. Must coincide with data stored in
-        animal_obj.__raw_vals. Will only be used if first_deriv and velocity is None.
-        If not given, defaults to ['X', 'Y'].
+        animal_obj.__vals. Will only be used if first_deriv and velocity is None.
+        If not given, defaults to ['smooth_X', 'smooth_Y'].
     first_deriv : numpy arrays of floats, optional
         Previously calculated first derivatives. If not given, the first derivative would
         be calculated using col_names if velocity is also None.
@@ -121,7 +201,7 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
     if first_deriv is None and velocity is None:
         # Calculate first_deriv and velocity
         if col_names is None:
-            col_names = ['X', 'Y']
+            col_names = ['smooth_X', 'smooth_Y']
         n_dims = len(col_names)
         if n_dims < 2 or n_dims > 3:
             raise ValueError("length of col_names is %s, but it should be 2 or 3."
@@ -129,7 +209,7 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
         coords = []
         for col in col_names:
             try:
-                coords.append(animal_obj.get_raw_vals(col))
+                coords.append(animal_obj.get_vals(col))
             except KeyError:
                 raise ValueError("column name %s does not exist in animal dataset"
                                  % (col)) from None
@@ -153,7 +233,7 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
     start_time, end_time = animal_obj.get_baseline_times()
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    animal_obj.add_raw_vals('Curvature', curvature)
+    animal_obj.add_vals('Curvature', curvature)
     animal_obj.populate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
 
@@ -163,7 +243,7 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     Given the position coordinates of an animal, calculates the euclidean
     distance of the animal from a point, pre-defined with coordinates stored in
     animal_obj.__info with key point_key. Then, update the dictionary
-    animal_obj.__raw_vals with the new distance data, with key param_key.
+    animal_obj.__vals with the new distance data, with key param_key.
     Finally, calculates and updates animal_obj.__norm_info for param_key.
 
     Parameters
@@ -174,11 +254,11 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     point_key : str
         Hashable key pointing to goal coordinate data stored in animal_obj.__info.
     param_key : str
-        Hashable key that will be used to point to distance data stored in self.__raw_vals.
+        Hashable key that will be used to point to distance data stored in self.__vals.
     col_names : list of str, optional
         Names of data columns used for calculations. Must coincide with data stored in
-        animal_obj.__raw_vals, and must be ordered in the same order as the coordinates of
-        the goal. If not given, defaults to ['X', 'Y'].
+        animal_obj.__vals, and must be ordered in the same order as the coordinates of
+        the goal. If not given, defaults to ['smooth_X', 'smooth_Y'].
 
     Returns
     -------
@@ -187,12 +267,12 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
 
     """
     if col_names is None:
-        col_names = ['X', 'Y']
+        col_names = ['smooth_X', 'smooth_Y']
     n_dims = len(col_names)
     coords = []
     for col in col_names:
         try:
-            coords.append(animal_obj.get_raw_vals(col))
+            coords.append(animal_obj.get_vals(col))
         except KeyError:
             raise ValueError("column name %s does not exist in animal dataset"
                              % (col)) from None
@@ -217,75 +297,9 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     start_time, end_time = animal_obj.get_baseline_times()
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    animal_obj.add_raw_vals(param_key, distances)
+    animal_obj.add_vals(param_key, distances)
     animal_obj.populate_stats(param_key, 'baseline', start_frame, end_frame)
     return distances
-
-def populate_curve_data(animal_obj, col_names=None):
-    """ OUTDATED: Computes the behavioural curve data such as Velocity and Curvature.
-
-    This function computes and stores the Velocity and Curvature of the coordinate
-    data stored in animal_obj. The data used to calculate this is given by col_names,
-    the list of column names.
-
-    Currently only works in 2 or 3 dimensions.
-
-    Parameters
-    ----------
-    animal_obj : Animal() object
-        Initialized Animal() object, which should already contain coordinate data.
-    col_names : list of strs, optional
-        Names of data columns used for calculations. Must coincide with data stored in
-        animal_obj.__raw_vals. If not given, defaults to ['X', 'Y']
-
-    Returns
-    -------
-    first_deriv : list of numpy arrays
-        Each numpy array corresponds to the first derivative of the respective coordinate
-        data as ordered by col_names.
-    second_deriv : list of numpy arrays
-        Each numpy array corresponds to the second derivative of the respective coordinate
-        data as ordered by col_names.
-    velocity : numpy array
-        The computed velocity at each frame.
-    curvature: numpy array
-        The computed curvature at each frame.
-    """
-    print("OUTDATED: This method has been split into populate_velocity and populate_curvature.")
-    # Extract and smoothens coordinate data
-    if col_names is None:
-        col_names = ['X', 'Y']
-    n_dims = len(col_names)
-    if n_dims < 2 or n_dims > 3:
-        raise ValueError("length of col_names is %s, but it should be 2 or 3."
-                         % (n_dims))
-    coords = []
-    for col in col_names:
-        try:
-            coords.append(animal_obj.get_raw_vals(col))
-        except KeyError:
-            raise ValueError("column name %s does not exist in animal dataset"
-                             % (col)) from None
-
-    # Calculate derivatives and adjust units
-    coords = np.array(coords) # MM
-    first_deriv = _calculate_derivatives(coords, axis=1) # MM per frame
-    first_deriv = first_deriv * animal_obj.get_frame_rate() # MM per second
-    second_deriv = _calculate_derivatives(first_deriv, axis=1) # MM per second per frame
-    second_deriv = second_deriv * animal_obj.get_frame_rate() # MM per second per second
-
-    # Calculate velocity and curvature and adds to Animal() object
-    velocity = _calculate_velocity(first_deriv)
-    curvature = _calculate_signed_curvature(first_deriv, second_deriv, velocity)
-
-    start_time, end_time = animal_obj.get_baseline_times()
-    start_frame = animal.calculate_frame_num(animal_obj, start_time)
-    end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    animal_obj.add_raw_vals('Velocity', velocity)
-    animal_obj.populate_stats('Velocity', 'baseline', start_frame, end_frame)
-    animal_obj.add_raw_vals('Curvature', curvature)
-    animal_obj.populate_stats('Curvature', 'baseline', start_frame, end_frame)
-    return first_deriv, second_deriv, velocity, curvature
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
                     seg_start_time_0, seg_end_time_0, seg_start_time_1, seg_end_time_1,
@@ -344,11 +358,11 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
     # Extract relevant information from Animal() objects
     seg_start_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_start_time_0)
     seg_end_frame_0 = animal.calculate_frame_num(animal_obj_0, seg_end_time_0)
-    data_0 = animal_obj_0.get_mult_raw_vals(varnames, seg_start_frame_0, seg_end_frame_0)
+    data_0 = animal_obj_0.get_mult_vals(varnames, seg_start_frame_0, seg_end_frame_0)
 
     seg_start_frame_1 = animal.calculate_frame_num(animal_obj_1, seg_start_time_1)
     seg_end_frame_1 = animal.calculate_frame_num(animal_obj_1, seg_end_time_1)
-    data_1 = animal_obj_1.get_mult_raw_vals(varnames, seg_start_frame_1, seg_end_frame_1)
+    data_1 = animal_obj_1.get_mult_vals(varnames, seg_start_frame_1, seg_end_frame_1)
 
     print("LOG: Applying DTW to the data from files %s and %s..." % (animal_obj_0.get_name(),
                                                                      animal_obj_1.get_name()))
@@ -684,3 +698,79 @@ def _calculate_velocity(coordinates):
     """
     velocity = np.sqrt(np.sum(np.power(coordinates, 2), axis=0))
     return velocity
+
+
+def _smooth(sequence, degree, half_window, smooth_method = "savgol"):
+    """ Smooths sequence by applying Savitzky-Golay smoothing.
+
+    Parameters
+    ----------
+    sequence : list of floats
+        Sequence to be smoothed.
+    degree : int
+        Degree of polynomials to be used for fitting
+    half_window : int
+        Used to determine window length. Window = (2 * half_window) + 1
+    smooth_method : str
+        Method for smoothing. Should be either "savgol" or "lowess".
+        Default value: "savgol".
+
+    Returns
+    -------
+    smoothed : list of floats
+        Smoothed sequence.
+    """
+    # Check smooth_method
+    if smooth_method not in ["savgol", "lowess"]:
+        raise ValueError(f"{smooth_method} not a valid smoothening method.")
+
+    n = len(sequence)
+    window = (half_window * 2) + 1
+
+    if smooth_method == "savgol":
+        smoothed = savgol_filter(sequence, window, degree)
+
+    if smooth_method == "lowess":
+        fitted = np.array([0.0 for _ in sequence])
+        xarr = np.arange(-half_window, half_window+1)
+
+        # Step 1: Weighted Polyfit
+        weight = (1 - (np.abs(xarr)/half_window) ** 3) ** 3
+        for i in range(half_window, n-half_window):
+            z = P.polyfit(xarr, sequence[i-half_window:i+half_window+1],
+                          deg=degree, w=weight)
+            fitted[i] = P.polyval(0.0, z)
+
+        z = P.polyfit(xarr, sequence[:window], deg=degree, w=weight)
+        for i in range(half_window):
+            fitted[i] = P.polyval(xarr[i], z)
+
+        z = P.polyfit(xarr, sequence[-window:], deg=degree, w=weight)
+        for i in range(half_window):
+            fitted[n-half_window+i] = P.polyval(xarr[i+half_window+1], z)
+
+        smoothed = fitted
+        # # Step 2: Running Median
+        res = sequence - fitted
+        def new_weights(i):
+            res_interval = res[i-half_window:i+half_window+1]
+            med = np.median(np.abs(res_interval))
+            deltas = (1 - (res_interval/(6 * med)) ** 2) ** 2
+            deltas[np.abs(res_interval) > 6 * med] = 0
+            return deltas * weight
+
+        smoothed = np.array([0.0 for _ in sequence])
+        for i in range(half_window, n-half_window):
+            z = P.polyfit(xarr, sequence[i-half_window:i+half_window+1],
+                          deg=degree, w=new_weights(i))
+            smoothed[i] = P.polyval(0.0, z)
+
+        z = P.polyfit(xarr, sequence[:window], deg=degree, w=new_weights(half_window))
+        for i in range(half_window):
+            smoothed[i] = P.polyval(xarr[i], z)
+
+        z = P.polyfit(xarr, sequence[-window:], deg=degree, w=new_weights(n-half_window-1))
+        for i in range(half_window):
+            smoothed[n-half_window+i] = P.polyval(xarr[i+half_window+1], z)
+
+    return smoothed

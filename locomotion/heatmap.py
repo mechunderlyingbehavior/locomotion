@@ -35,7 +35,8 @@ ENABLE_BOUNDARY_WARNINGS = False
 ### Main Functions ###
 ######################
 
-def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None,
+def populate_surface_data(animal_obj, val_names=['raw_X', 'raw_Y'],
+                          x_grid_count=None, y_grid_count=None,
                           start_time=None, end_time=None, plot_heatmap=False, outdir=None):
     """ Computes the heatmap representation of an animal's movement.
 
@@ -48,6 +49,9 @@ def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None,
     ----------
     animal_obj : animal object
         Initialized Animal() object.
+    val_names : list of str, optional
+        List containing the val names of X and Y data stored in animal_obj. Should
+        be length 2, X and Y respectively. Default value = ['raw_X', 'raw_Y']
     x_grid_count/y_grid_count : int, optional
         Specifies the number of columns and rows used for calculating the heatmap.
     start/end_time : float or int, optional
@@ -73,9 +77,11 @@ def populate_surface_data(animal_obj, x_grid_count=None, y_grid_count=None,
     #gather specified range of frames
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
-    x_vals = animal_obj.get_raw_vals('X', start_frame, end_frame)
-    y_vals = animal_obj.get_raw_vals('Y', start_frame, end_frame)
-
+    try:
+        x_vals = animal_obj.get_vals(val_names[0], start_frame, end_frame)
+        y_vals = animal_obj.get_vals(val_names[1], start_frame, end_frame)
+    except ValueError as error:
+        raise ValueError(error)
     #Check if grid needs to be set:
     if x_grid_count is None or y_grid_count is None:
         frame_count = len(x_vals)
