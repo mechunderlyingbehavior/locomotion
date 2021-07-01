@@ -548,6 +548,7 @@ class Animal():
         mean, std = calculate_norm_stats(self.__vals[var_name][start_frame:end_frame])
         self.__norm_info[var_name].update({scope:{"mean": mean,
                                                   "std" : std}})
+        return mean, std
 
     ################################
     ### Functions for heatmap.py ###
@@ -993,12 +994,6 @@ def setup_raw_data(animal):
 
     animal.add_vals('raw_X', np.array(x_vals))
     animal.add_vals('raw_Y', np.array(y_vals))
-
-    baseline_start, baseline_end = animal.get_baseline_times()
-    baseline_start_frame = calculate_frame_num(animal, baseline_start)
-    baseline_end_frame = calculate_frame_num(animal, baseline_end)
-    animal.populate_stats('raw_X', 'baseline', baseline_start_frame, baseline_end_frame)
-    animal.populate_stats('raw_Y', 'baseline', baseline_start_frame, baseline_end_frame)
 
 
 def _init_animal(json_item, group_no):

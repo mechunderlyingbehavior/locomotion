@@ -96,14 +96,9 @@ def populate_curve_data(animal_obj,
             raise KeyError(f"Raw data {col} does not exist in animal object.")
         smooth_vals = _smooth(coords, smooth_order, smooth_window, smooth_method)
         animal_obj.add_vals(new_vals[i], smooth_vals)
-        animal_obj.populate_stats(new_vals[i], 'baseline',
-                                  baseline_start_frame, baseline_end_frame)
         smooth.append(smooth_vals)
 
-    if len(raw_vals) <= 2:
-        mse = (np.linalg.norm(np.array(smooth) - np.array(raw))**2).mean()
-    else:
-        mse = None
+    mse = (np.linalg.norm(np.array(smooth) - np.array(raw))**2).mean()
 
     return mse
 
@@ -158,7 +153,6 @@ def populate_velocity(animal_obj, col_names=None):
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_vals('Velocity', velocity)
-    animal_obj.populate_stats('Velocity', 'baseline', start_frame, end_frame)
     return first_deriv, velocity
 
 def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=None):
@@ -234,7 +228,6 @@ def populate_curvature(animal_obj, col_names=None, first_deriv=None, velocity=No
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_vals('Curvature', curvature)
-    animal_obj.populate_stats('Curvature', 'baseline', start_frame, end_frame)
     return first_deriv, second_deriv, velocity, curvature
 
 def populate_distance_from_point(animal_obj, point_key, param_key, col_names=None):
@@ -298,7 +291,6 @@ def populate_distance_from_point(animal_obj, point_key, param_key, col_names=Non
     start_frame = animal.calculate_frame_num(animal_obj, start_time)
     end_frame = animal.calculate_frame_num(animal_obj, end_time)
     animal_obj.add_vals(param_key, distances)
-    animal_obj.populate_stats(param_key, 'baseline', start_frame, end_frame)
     return distances
 
 def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
@@ -376,28 +368,52 @@ def compute_one_bdd(animal_obj_0, animal_obj_1, varnames,
             raise ValueError("compute_one_bdd: norm_mode should be as long as var_names.")
     for i in range(num_vars):
         norm_method = norm_mode[i]
-        if norm_method == 'spec':
-            means, stds = animal.calculate_norm_stats(data_0[i])
+        # Check if norm_mode exists
+        if animal_obj_0.check_existing_scope(varnames[i], norm_method) and \
+           animal_obj_1.check_existing_scope(varnames[i], norm_method):
+            if animal_obj_0.check_if_standard(varnames[i], norm_method):
+                # Standard Normalization
+                means, stds = animal_obj_0.get_norm_stats(varnames[i], norm_method)
+                data_0[i] = animal.normalize_standard(data_0[i], means, stds)
+                means, stds = animal_obj_1.get_norm_stats(varnames[i], norm_method)
+                data_1[i] = animal.normalize_standard(data_1[i], means, stds)
+            else:
+                # Bounded Normalization
+                lower, upper = animal_obj_0.get_norm_bounds(varnames[i], norm_method)
+                data_0[i] = animal.normalize_bounded(data_0[i], lower, upper)
+                lower, upper = animal_obj_1.get_norm_bounds(varnames[i], norm_method)
+                data_1[i] = animal.normalize_bounded(data_1[i], lower, upper)
+        elif norm_method == 'baseline':
+            baseline_start, baseline_end = animal_obj_0.get_baseline_times()
+            baseline_start_frame = animal.calculate_frame_num(animal_obj_0,
+                                                              baseline_start)
+            baseline_end_frame = animal.calculate_frame_num(animal_obj_0,
+                                                            baseline_end)
+            means, stds = animal_obj_0.populate_stats(varnames[i], norm_method,
+                                                      baseline_start_frame,
+                                                      baseline_end_frame)
             data_0[i] = animal.normalize_standard(data_0[i], means, stds)
-            means, stds = animal.calculate_norm_stats(data_1[i])
+
+            baseline_start, baseline_end = animal_obj_1.get_baseline_times()
+            baseline_start_frame = animal.calculate_frame_num(animal_obj_1,
+                                                              baseline_start)
+            baseline_end_frame = animal.calculate_frame_num(animal_obj_1,
+                                                            baseline_end)
+            means, stds = animal_obj_1.populate_stats(varnames[i], norm_method,
+                                                      baseline_start_frame,
+                                                      baseline_end_frame)
+            data_1[i] = animal.normalize_standard(data_1[i], means, stds)
+        elif norm_method == 'spec':
+            means, stds = animal_obj_0.populate_stats(varnames[i], norm_method,
+                                                      seg_start_frame_0,
+                                                      seg_end_frame_0)
+            data_0[i] = animal.normalize_standard(data_0[i], means, stds)
+            means, stds = animal_obj_1.populate_stats(varnames[i], norm_method,
+                                                      seg_start_frame_1,
+                                                      seg_end_frame_1)
             data_1[i] = animal.normalize_standard(data_1[i], means, stds)
         else:
-            if animal_obj_0.check_existing_scope(varnames[i], norm_method) and \
-               animal_obj_1.check_existing_scope(varnames[i], norm_method):
-                if animal_obj_0.check_if_standard(varnames[i], norm_method):
-                    # Standard Normalization
-                    means, stds = animal_obj_0.get_norm_stats(varnames[i], norm_method)
-                    data_0[i] = animal.normalize_standard(data_0[i], means, stds)
-                    means, stds = animal_obj_1.get_norm_stats(varnames[i], norm_method)
-                    data_1[i] = animal.normalize_standard(data_1[i], means, stds)
-                else:
-                    # Bounded Normalization
-                    lower, upper = animal_obj_0.get_norm_bounds(varnames[i], norm_method)
-                    data_0[i] = animal.normalize_bounded(data_0[i], lower, upper)
-                    lower, upper = animal_obj_1.get_norm_bounds(varnames[i], norm_method)
-                    data_1[i] = animal.normalize_bounded(data_1[i], lower, upper)
-            else:
-                raise KeyError("compute_one_bdd : %s is not a defined norm method."
+            raise KeyError("compute_one_bdd : %s is not a defined norm method."
                                % norm_method)
     for i in range(num_vars):
         if varnames[i] == "Curvature": # Convert signed curvature to curvature
