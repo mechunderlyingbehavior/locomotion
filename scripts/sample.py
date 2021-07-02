@@ -22,7 +22,7 @@ for a in animals:
                                                     smooth_method='savgol')
 
     # Print path to check smoothening
-    locomotion.write.plot_path(a, 'results/', 'smooth_X', 'smooth_Y')
+    locomotion.write.plot_path(a, 'results/', 'smoothed_path', 'smooth_X', 'smooth_Y')
     print(f"MSE of smoothening for {a.get_name()} is {mse}.")
 
     # Setup Velocity and Curvature for BDD

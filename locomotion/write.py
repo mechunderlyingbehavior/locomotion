@@ -168,7 +168,7 @@ def plot_heatmap(animal, outdir, add_path=False, path_x='raw_X', path_y='raw_Y')
     print("Saved heatmap in %s" % html_outpath)
 
 
-def plot_path(animal, outdir, x_val='raw_X', y_val='raw_Y'):
+def plot_path(animal, outdir, file_name='path', x_val='raw_X', y_val='raw_Y'):
     """ Plot path of animal.
 
     Given the X and Y coordinates stored in animal, plot the path of the animal,
@@ -176,19 +176,22 @@ def plot_path(animal, outdir, x_val='raw_X', y_val='raw_Y'):
 
     Parameters
     ----------
-    animal: Animal() object
+    animal : Animal() object
         Animal object containing the coordinate data to be plotted.
-    outdir: str
+    outdir : str
         File path to output directory where the output is to be saved.
-    x_val: str, optional
+    file_name : str, optional
+        Name to be appended to animal name to create file name.
+        Default value = 'path'
+    x_val : str, optional
         Val name of the X value. Should be found in animal.__vals.
         Default value = 'raw_X'
-    y_val: str, optional
+    y_val : str, optional
         Val name of the Y value. Should be found in animal.__vals.
         Default value = 'raw_Y'
     """
     animal_name = animal.get_name()
-    filename = "plot_%s_smoothened_path" % (animal_name)
+    filename = f"plot_{animal_name}_{file_name}"
     html_outpath = os.path.join(outdir, filename + '.html').replace(' ', '')
     png_outpath = os.path.join(outdir, filename + '.png').replace(' ', '')
 
