@@ -1,5 +1,5 @@
 import pathlib
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # Path to main package directory
 HERE = pathlib.Path(__file__).parent
@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 setup(
     name="locomotion",
     version="1.0.0",
-    packages=["locomotion"],
+    packages=find_packages(),
     install_requires=["numpy>=1.16.2", "plotly>=4.4.1", "scipy>=1.2.1",
                       "dtw-python>=1.1.4"],
 

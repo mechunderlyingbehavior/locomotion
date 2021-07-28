@@ -9,24 +9,33 @@ for quantitative comparison of locomotory behavior" by MT Stamps, S Go, and AS M
 
 This python script contains methods for computing conformal spatiotemporal distances
 (CSD) between heatmaps of animal trajectories representing the amount of time each
-subject spends in a given location. The heatmaps are modeled as triangular meshes
-that are conformally flattened to the unit disk for the purpose of shape alignment
+subject spends in a given location. The heatmaps are modeled ant
 and analysis. The implementation for conformal flattening used in this package is
 the one provided in the libigl package (https://libigl.github.io/).
 """
 # pylint:disable=too-many-lines
 
-from math import sin, cos, pi, sqrt
+from math import sin, cos, pi, sqrt, trunc
+import numpy as np
 from numpy import mean, std, array, linalg, cbrt
 from scipy.optimize import minimize
+from scipy.spatial import Delaunay
 from igl import boundary_loop, map_vertices_to_circle, harmonic_weights, \
     adjacency_matrix, bfs, triangle_triangle_adjacency
 import locomotion.write as write
 import locomotion.animal as animal
+from locomotion.delaunay import ToPointsAndSegments, triangulate
+from locomotion.delaunay.iter import TriangleIterator, InteriorTriangleIterator
+from locomotion.delaunay.inout import output_triangles
+from locomotion.helper import Piece, MyGraph, inside_triangle
 
 #Static Variables
 PERTURBATION = 0.000000001
 TOLERANCE = 0.00001
+
+#Variables for Kirkpatrick Algorithm
+MAX_DEGREE = 8
+POINT_START = 3
 
 #Enable warnings for boundary mappings
 ENABLE_BOUNDARY_WARNINGS = False
@@ -148,6 +157,242 @@ def populate_surface_data(animal_obj, val_names=['raw_X', 'raw_Y'],
     #calculate and record triangle-triangle adjacency matrix
     triangle_adjacency_matrix = triangle_triangle_adjacency(array(triangles))[0]
     animal_obj.set_triangle_triangle_adjacency(triangle_adjacency_matrix)
+
+    animal_obj.point_locator = PointLocator(animal_obj)
+    return animal_obj.point_locator
+
+
+class PointLocator:
+    """
+    Class object containing the Kirkpatrick DAG, as well as the methods associated with
+    initializing and using the Kirkpatrick DAG.
+    """
+    def __init__(self, animal_obj):
+        flat_coords = animal_obj.get_flattened_coordinates()
+        bounding_triangle = self.determine_bounding_triangle(flat_coords)
+
+        # append bounding triangle to the front of points
+        self.points = bounding_triangle + flat_coords
+
+        interior = [i + POINT_START for i in animal_obj.get_boundary_vertices()]
+        exterior = [0, 1, 2]
+
+        int_triangles = animal_obj.get_triangulation()
+        ext_triangles = self.triangulate_ring(exterior, interior)
+
+        pieces = []
+        for triangle in int_triangles:
+            triangle = [i + POINT_START for i in triangle]
+            pieces.append(Piece(triangle, is_leaf=True, is_inside=True))
+        for triangle in ext_triangles:
+            pieces.append(Piece(triangle, is_leaf=True, is_inside=False))
+
+        self.g = MyGraph(self.points, pieces)
+        self.N = len(self.points)
+        self.root = None
+
+        while self.g.current_N > 3:
+            self.root = self.get_next_layer()
+            print(self.g.current_N)
+
+        assert (len(self.root) == 1)
+        self.root = self.root[0]
+
+    def determine_bounding_triangle(self, points):
+        x_coords = [p[0] for p in points]
+        y_coords = [p[1] for p in points]
+
+        # get a bounding box
+        x_min = float(min(x_coords) - 1)
+        x_max = float(max(x_coords) + 1)
+        y_min = float(min(y_coords) - 1)
+        y_max = float(max(y_coords) + 1)
+
+        height = y_max - y_min
+        width = x_max - x_min
+
+        # get triangle tip point
+        tip = [(x_min + x_max)/2, height + y_max]
+
+        y_min = y_min - height
+
+        # left corner
+        box_corner = [x_min, y_max]
+        m = (box_corner[1] - tip[1])/(box_corner[0] - tip[0])
+        b = box_corner[1] - m * box_corner[0]
+        left_corner = [((y_min - b)/m)*1.5, y_min]
+
+        # right corner
+        box_corner = [x_max, y_max]
+        m = (box_corner[1] - tip[1])/(box_corner[0] - tip[0])
+        b = box_corner[1] - m * box_corner[0]
+        right_corner = [((y_min - b)/m)*1.5, y_min]
+
+        return [left_corner, tip, right_corner]
+
+    def triangulate_ring(self, exterior, interior):
+	    # each point becomes a tuple
+	    point_tuples = [(point[0], point[1]) for point in self.points]
+	    point_dict = {}
+	    for i, point in enumerate(point_tuples):
+		    point_dict[point] = i
+
+	    exterior_vals = [point_tuples[i] for i in exterior]
+	    exterior_vals.append(point_tuples[exterior[0]])
+	    interior_vals = [point_tuples[i] for i in interior]
+	    interior_vals.append(point_tuples[interior[0]])
+
+	    # create points and segments for triangulation
+	    pts_segs = ToPointsAndSegments()
+	    pts_segs.add_polygon([exterior_vals, interior_vals])
+
+	    dt = triangulate(pts_segs.points, pts_segs.infos, pts_segs.segments)
+
+	    triangles = []
+
+	    # retrieve triangles
+	    for t in InteriorTriangleIterator(dt):
+		    triangle = []
+		    for vertex in t.vertices:
+			    triangle.append(point_dict[(vertex.x, vertex.y)])
+		    triangles.append(triangle)
+
+	    # graph triangles
+	    edges = []
+	    for triangle in triangles:
+		    for edge in self._list_to_pairs(triangle):
+			    edges.append(edge)
+
+	    return triangles
+
+    def triangulate_polygon(self, polygon):
+        point_tuples = [(point[0], point[1]) for point in self.points]
+        point_dict = {}
+        for i, point in enumerate(point_tuples):
+            point_dict[point] = i
+
+        polygon_vals = [point_tuples[i] for i in polygon]
+        polygon_vals.append(polygon_vals[0])
+        if polygon[0] == 416:
+            print(polygon_vals)
+
+        pts_segs = ToPointsAndSegments()
+        pts_segs.add_polygon([polygon_vals])
+        dt = triangulate(pts_segs.points, pts_segs.infos, pts_segs.segments)
+
+        triangles = []
+
+        # Retrieve triangles
+        for t in InteriorTriangleIterator(dt):
+            triangle = []
+            for vertex in t.vertices:
+                triangle.append(point_dict[(vertex.x, vertex.y)])
+            triangles.append(triangle)
+
+        return triangles
+
+    def _list_to_pairs(self, items):
+	    pairs = []
+	    n = len(items)
+	    for i in range(0, n):
+		    if i < n - 1:
+			    pairs.append([items[i], items[i + 1]])
+		    else:
+			    pairs.append([items[i], items[0]])
+	    return pairs
+
+    def get_next_layer(self):
+        # Generate independent set
+        indep_set = self.find_independent_set()
+        # For each vertex in independent set,
+        for vertex in indep_set:
+            # Find the surrounding polygon
+            polygon_hole = self.g.get_surrounding_polygon(vertex)
+            # Triangulate Hole and get Triangles
+            if polygon_hole[0] == 416:
+                print(polygon_hole)
+                print(vertex)
+                print(self.points[vertex])
+            triangulation = self.triangulate_polygon(polygon_hole)
+            # Create pieces from triangles, assigning children by checking intersecting pieces
+            pieces = []
+            for triangle in triangulation:
+                pieces.append(Piece(triangle,
+                                    children=self.g.get_intersecting_pieces(vertex, triangle)))
+            # Remove vertex from graph
+            self.g.remove_vertex(vertex)
+            # Add new faces to graph
+            for piece in pieces:
+                self.g.add_piece(piece)
+        return pieces
+
+    def find_independent_set(self):
+        marked = np.zeros(self.N, dtype=bool)
+        # Mark (i.e. don't check) bounding triangle
+        for i in range(0, POINT_START):
+            marked[i] = True
+        # Mark all inactive noddes or nodes with degree greater than MAX_DEGREE
+        for i in range(POINT_START, self.N):
+            if not self.g.active_points[i] or self.g.degree(i) > MAX_DEGREE:
+                marked[i] = True
+
+        independent_set = []
+        # Add nodes to independent set, mark as visited, and continue until all marked.
+        for i in range(POINT_START, self.N):
+            if not marked[i]:
+                independent_set.append(i)
+                marked[i] = True
+                for neighbor in self.g.get_neighbors(i):
+                    marked[neighbor] = True
+        return independent_set
+
+    def locate(self, point):
+        root = self.root
+        points = self.points
+
+        # Check if point is inside external boundary triangle
+        assert inside_triangle(points[root.p1], points[root.p2], points[root.p3], point)
+
+        pieces = [root]
+        while pieces != []:
+            piece = pieces.pop()
+            if inside_triangle(points[piece.p1], points[piece.p2], points[piece.p3], point):
+                # Point is inside piece
+                if piece.is_leaf:
+                    # Return piece
+                    return piece
+                else:
+                    # Not leaf, continue search on children
+                    pieces = piece.children
+        # Not in any of the pieces
+        return None
+
+    def _round_point(self, p):
+        return [_thou_trunc(p[0]), _thou_trunc(p[1])]
+
+
+def find_aligned_coordinate_2(point, target_animal):
+    """ Given a transformed point in target_animal's flat coords, return aligned coords.
+
+    Parameters
+    ----------
+    point : 2-tuple of floats
+        Transformed point in target_animal's flat coordinate system.
+    target_animal : Animal object
+        Animal object for animal that point is to be mapped to.
+    """
+    pl = target_animal.point_locator
+    triangle = pl.locate(point)
+    if triangle.inside():
+        # Point is within boundary, can use barycentric coordinates.
+        converted = _convert_to_barycentric(point, triangle.to_list(),
+                                            target_animal.get_flattened_coordinates())
+        return _convert_from_barycentric(converted, triangle.to_list(),
+                                         target_animal.get_regular_coordinates())
+    else:
+        # Point is not within boundary, must map to boundary edge.
+        # TODO: Complete this portion
+        return None
 
 
 def compute_one_csd(animal_0, animal_1, fullmode=False, outdir=None):
@@ -1289,37 +1534,41 @@ def _determine_flat_coordinates(animal_obj):
         has been conformally flattened to the unit disk.
     """
 
-    # store relevant parameters and convert to arrays
-    reg_coordinates = array(animal_obj.get_regular_coordinates())
-    triangles = array(animal_obj.get_triangulation())
-
-    # get boundary vertice indices (already an array) from the animal
-    boundary_vertices = animal_obj.get_boundary_vertices()
-
-    # map boundary vertices to unit circle, preserving edge proportions, to get
-    # the flattened boundary coordinates
-    flattened_boundary_coordinates = map_vertices_to_circle(reg_coordinates,
-                                                            boundary_vertices)
-
-    # map internal vertices to unit circle
-    flat_coordinates = harmonic_weights(reg_coordinates, triangles,
-                                        boundary_vertices, flattened_boundary_coordinates, 1)
-    flat_coordinates = list(flat_coordinates)
-
-    # apply a conformal automorphism (Mobius transformation) of the unit disk
-    # that moves the center of mass of the flattened coordinates to the origin
-    p_val = mean([c[0] for c in flat_coordinates])
-    q_val = mean([c[1] for c in flat_coordinates])
-
-    while p_val**2+q_val**2 > TOLERANCE:
-        print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
-              "Moving closer to origin.")
-        for i, _ in enumerate(flat_coordinates):
-            flat_coordinates[i] = _mobius(flat_coordinates[i],
-                                          [p_val, q_val])
-        p_val = mean([c[0] for c in flat_coordinates])
-        q_val = mean([c[1] for c in flat_coordinates])
+    reg_coordinates = animal_obj.get_regular_coordinates()
+    flat_coordinates = [x[:2] for x in reg_coordinates]
     return flat_coordinates
+
+    # # store relevant parameters and convert to arrays
+    # reg_coordinates = array(animal_obj.get_regular_coordinates())
+    # triangles = array(animal_obj.get_triangulation())
+
+    # # get boundary vertice indices (already an array) from the animal
+    # boundary_vertices = animal_obj.get_boundary_vertices()
+
+    # # map boundary vertices to unit circle, preserving edge proportions, to get
+    # # the flattened boundary coordinates
+    # flattened_boundary_coordinates = map_vertices_to_circle(reg_coordinates,
+    #                                                         boundary_vertices)
+
+    # # map internal vertices to unit circle
+    # flat_coordinates = harmonic_weights(reg_coordinates, triangles,
+    #                                     boundary_vertices, flattened_boundary_coordinates, 1)
+    # flat_coordinates = list(flat_coordinates)
+
+    # # apply a conformal automorphism (Mobius transformation) of the unit disk
+    # # that moves the center of mass of the flattened coordinates to the origin
+    # p_val = mean([c[0] for c in flat_coordinates])
+    # q_val = mean([c[1] for c in flat_coordinates])
+
+    # while p_val**2+q_val**2 > TOLERANCE:
+    #     print(f"LOG: Distance of original centroid to origin is {(p_val**2+q_val**2)}. " \
+    #           "Moving closer to origin.")
+    #     for i, _ in enumerate(flat_coordinates):
+    #         flat_coordinates[i] = _mobius(flat_coordinates[i],
+    #                                       [p_val, q_val])
+    #     p_val = mean([c[0] for c in flat_coordinates])
+    #     q_val = mean([c[1] for c in flat_coordinates])
+    # return flat_coordinates
 
 
 def _mobius(p, q):
@@ -1345,3 +1594,8 @@ def _mobius(p, q):
     a, b = q
     return [-1 * ((u-a)*(a*u+b*v-1)+(v-b)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2),
             -1 * ((v-b)*(a*u+b*v-1)-(u-a)*(a*v-b*u))/((a*u+b*v-1)**2+(a*v-b*u)**2)]
+
+
+def _thou_trunc(num):
+    """ Helper function to truncate a number to nearest 1/1000."""
+    return trunc(num * 1000) / float(1000)

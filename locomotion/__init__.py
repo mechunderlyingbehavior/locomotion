@@ -14,5 +14,6 @@ from locomotion.animal import *
 import locomotion.trajectory as trajectory
 import locomotion.heatmap as heatmap
 import locomotion.write as write
+import locomotion.delaunay as delaunay
 
 __version__="1.0.0"

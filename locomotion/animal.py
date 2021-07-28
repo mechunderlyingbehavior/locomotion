@@ -82,6 +82,7 @@ class Animal():
         self.__y_grid_count = None
         self.__x_grid_len = None
         self.__y_grid_len = None
+        self.point_locator = None
 
     ############################
     ### Population Functions ###
