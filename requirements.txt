@@ -1,5 +1,5 @@
 numpy==1.19.4
-scipy==1.5.4
+scipy==1.10.0
 plotly==4.13.0
 dtw-python==1.1.6
 igl==0.4.1
